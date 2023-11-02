@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "ptyx-mcq-editor"
+version = "0.1.0"
+description = ""
+authors = ["Nicolas Pourcelot <nicolas.pourcelot@gmail.com>"]
+readme = "README.md"
+packages = [{include = "ptyx_mcq_editor"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pyqt6-qscintilla = "^2.14.1"
+ptyx-mcq = "^25.0.0"
+black = "^23.10.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
