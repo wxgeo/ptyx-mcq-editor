@@ -153,8 +153,8 @@ class MyLexer(QsciLexerCustom):
 
         # 2. Slice out a part from the text
         # ----------------------------------
-        text = editor.text()[start:end]
-
+        text = editor.text(start, end)
+        print(repr(text))
         # 3. Tokenize the text
         # ---------------------
         # Test in https://regex101.com/
@@ -182,6 +182,7 @@ class MyLexer(QsciLexerCustom):
             assert isinstance(token, str) and isinstance(length, int), (token, length)
             style, mode = self.get_style_and_mode(token, mode, style)
             self.setStyling(length, style)
+            print(repr(token), length)
 
     @staticmethod
     def get_style_and_mode(token: str, mode: Mode, style: Style) -> tuple[Style, Mode]:
@@ -190,7 +191,6 @@ class MyLexer(QsciLexerCustom):
                 Style.PYTHON_SINGLE_QUOTE_STRING,
                 Style.PYTHON_DOUBLE_QUOTE_STRING,
             ):
-                mode = Mode.PYTHON
                 style = Style.PYTHON_UNCLOSED_STRING
                 mode = Mode.PYTHON
             elif token == QUOTES[style]:
