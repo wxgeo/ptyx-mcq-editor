@@ -35,6 +35,7 @@ class Style(IntEnum):
     PTYX_LATEX_MACRO = auto()
 
     PYTHON_BLOCK = auto()
+    PYTHON_BLOCK_DELIMITER = auto()
     PYTHON_INT = auto()
     PYTHON_STR = auto()
     PYTHON_KEYWORD = auto()
@@ -89,6 +90,7 @@ STYLES_LIST: dict[Style, StyleInfo] = {
     Style.PTYX_EXPRESSION: StyleInfo(Mode.EXPRESSION, "#000000", "#fcf5bb", False, False, False),
     # Python code
     Style.PYTHON_BLOCK: StyleInfo(Mode.PYTHON, "#000000", "#fcf9d9", False, False, True),
+    Style.PYTHON_BLOCK_DELIMITER: StyleInfo(Mode.PYTHON, "#000000", "#faf4b6", False, False, True),
     Style.PYTHON_INT: StyleInfo(Mode.PYTHON, "#0000bf", "#fffad1", False, False, False),
     Style.PYTHON_STR: StyleInfo(Mode.PYTHON, "#007f00", "#fffad1", False, False, False),
     Style.PYTHON_KEYWORD: StyleInfo(Mode.PYTHON, "#ffb230", "#fffad1", True, False, False),
@@ -195,14 +197,14 @@ class MyLexer(QsciLexerCustom):
                 mode = Mode.PYTHON
                 # No need to change style.
         elif token.startswith("...."):
-            style = Style.PYTHON_BLOCK
+            style = Style.PYTHON_BLOCK_DELIMITER
             assert token.rstrip("\n").rstrip(".") == "", token
             mode = Mode.PYTHON if mode == Mode.DEFAULT else Mode.DEFAULT
         elif token == "#PYTHON":
-            style = Style.PYTHON_BLOCK
+            style = Style.PYTHON_BLOCK_DELIMITER
             mode = mode.PYTHON
         elif token == "#END_PYTHON" or (token == "#END" and mode == Mode.PYTHON):
-            style = Style.PYTHON_BLOCK
+            style = Style.PYTHON_BLOCK_DELIMITER
             mode = mode.DEFAULT
         elif token == "}" and mode == Mode.EXPRESSION:
             mode = mode.DEFAULT
