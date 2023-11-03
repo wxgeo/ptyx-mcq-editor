@@ -6,6 +6,17 @@ authors = ["Nicolas Pourcelot <nicolas.pourcelot@gmail.com>"]
 readme = "README.md"
 packages = [{include = "ptyx_mcq_editor"}]
 
+
+[tool.poetry.scripts]
+mcq-editor = "ptyx_mcq_editor.editor:main"
+
+[tool.black]
+line-length = 110
+
+[tool.ruff]
+line-length = 110
+
+
 [tool.poetry.dependencies]
 python = "^3.10"
 pyqt6-qscintilla = "^2.14.1"

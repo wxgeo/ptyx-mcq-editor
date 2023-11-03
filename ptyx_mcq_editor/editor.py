@@ -5,7 +5,26 @@ from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtWidgets import QMainWindow, QFrame, QVBoxLayout, QPushButton, QApplication, QStyleFactory
 
-from lexer import MyLexer
+from ptyx_mcq_editor.lexer import MyLexer
+
+TEST = """
+* Combien fait
+...............
+while True:
+    let a, b, c, d in 2..9
+    if distinct(a/b-c/d+S(1)/2, a/b-c/d-S(1)/2, (a+c+1)/(b+d+2), (a-c+1)/(b+d+2), (a-c+1)/(b-d+2)):
+        break
+...............
+$\dfrac{#a}{#b}-\dfrac{#c}{#d}+\dfrac12$~?
+
++ $#{a/b-c/d+S(1)/2}$
+- $#{a/b-c/d-S(1)/2}$
+- $#{(a+c+1)/(b+d+2)}$
+- $#{(a-c+1)/(b+d+2)}$
+- $#{(a-c+1)/(b-d+2)}$
+
+- aucune de ces réponses n'est correcte
+"""
 
 
 class CustomMainWindow(QMainWindow):
@@ -18,7 +37,7 @@ class CustomMainWindow(QMainWindow):
 
         # 1. Define the geometry of the main window
         # ------------------------------------------
-        self.setGeometry(300, 300, 800, 400)
+        self.setGeometry(200, 200, 900, 500)
         self.setWindowTitle("QScintilla Test")
 
         # 2. Create frame and layout
@@ -47,10 +66,10 @@ class CustomMainWindow(QMainWindow):
         # ! Make instance of QSciScintilla class!
         # ----------------------------------------
         self.__editor = QsciScintilla()
-        self.__editor.setText("hello")     # 'myCodeSample' is a string containing some C-code
-        self.__editor.setLexer(None)            # We install lexer later
-        self.__editor.setUtf8(True)             # Set encoding to UTF-8
-        self.__editor.setFont(self.__myFont)    # Gets overridden by lexer later on
+        self.__editor.setText(TEST)  # 'myCodeSample' is a string containing some C-code
+        self.__editor.setLexer(None)  # We install lexer later
+        self.__editor.setUtf8(True)  # Set encoding to UTF-8
+        self.__editor.setFont(self.__myFont)  # Gets overridden by lexer later on
 
         # 1. Text wrapping
         # -----------------
@@ -100,9 +119,13 @@ class CustomMainWindow(QMainWindow):
         print("Hello World!")
 
 
-if __name__ == '__main__':
+def main():
     app = QApplication(sys.argv)
-    QApplication.setStyle(QStyleFactory.create('Fusion'))
+    QApplication.setStyle(QStyleFactory.create("Fusion"))
     myGUI = CustomMainWindow()
 
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()
