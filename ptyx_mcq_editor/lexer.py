@@ -105,7 +105,8 @@ STYLES_LIST: dict[Style, StyleInfo] = {
     Style.PYTHON_TRIPLE_SINGLE_QUOTE_STRING: StyleInfo(
         Mode.PYTHON_STRING, "#43b064", "#ffd7d1", False, False, True
     ),
-    Style.PYTHON_UNCLOSED_STRING: StyleInfo(Mode.PYTHON_STRING, "#43b064", "#ffd7d1", False, False, True),
+    # Special style for unclosed strings. Mode must be set to PYTHON, and not PYTHON_STRING!
+    Style.PYTHON_UNCLOSED_STRING: StyleInfo(Mode.PYTHON, "#43b064", "#ffa1a1", False, False, True),
     # MCQ specific syntax
     Style.MCQ_CORRECT_ANSWER: StyleInfo(Mode.DEFAULT, "#138f00", "#d7ffd1", False, False, True),
     Style.MCQ_INCORRECT_ANSWER: StyleInfo(Mode.DEFAULT, "#ab1600", "#ffd7d1", False, False, True),
@@ -154,12 +155,12 @@ class MyLexer(QsciLexerCustom):
         # 2. Slice out a part from the text
         # ----------------------------------
         text = editor.text(start, end)
-        print(repr(text))
+        # print(repr(text))
         # 3. Tokenize the text
         # ---------------------
         # Test in https://regex101.com/
         p = re.compile(
-            r"""\.{4,}\n|#\w+|#\{|^[-+!] |\\\\|\\'|\\"|\\[a-zA-Z]+|'{3}|"{3}|\s+|\w+\d*|\.\d+|\d+\.?|\W""",
+            r"""^\.{4,}$|#\w+|#\{|^[-+!] |\\\\|\\'|\\"|\\[a-zA-Z]+|'{3}|"{3}|\n|[ \t]+|\w+\d*|\.\d+|\d+\.?|\W""",
             flags=re.MULTILINE,
         )
 
@@ -182,7 +183,7 @@ class MyLexer(QsciLexerCustom):
             assert isinstance(token, str) and isinstance(length, int), (token, length)
             style, mode = self.get_style_and_mode(token, mode, style)
             self.setStyling(length, style)
-            print(repr(token), length)
+            # print(repr(token), length)
 
     @staticmethod
     def get_style_and_mode(token: str, mode: Mode, style: Style) -> tuple[Style, Mode]:
@@ -224,12 +225,12 @@ class MyLexer(QsciLexerCustom):
         else:
             # print(repr(token))
             if token.startswith("#"):
-                if token in TAGS:
+                if token[1:] in TAGS:
                     style = Style.PTYX_TAG
                 elif token == "#{":
                     mode = Mode.EXPRESSION
                     style = Style.PTYX_TAG
-                elif token.startswith("#") and token[1:].isalpha():
+                elif token[1:].isalpha():
                     style = Style.PTYX_VARIABLE
                 else:
                     style = Style.DEFAULT
