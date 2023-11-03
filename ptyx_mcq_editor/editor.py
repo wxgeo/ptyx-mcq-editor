@@ -1,13 +1,17 @@
 #!/usr/bin/python3
 import sys
+from pathlib import Path
+import re
 
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtWidgets import QMainWindow, QFrame, QVBoxLayout, QPushButton, QApplication, QStyleFactory
+import ptyx_mcq
+from ptyx.latex_generator import compiler
 
 from ptyx_mcq_editor.lexer import MyLexer
 
-TEST = """
+TEST = r"""
 * Combien fait
 ...............
 while True:
@@ -52,9 +56,9 @@ class CustomMainWindow(QMainWindow):
 
         # 3. Place a button
         # ------------------
-        self.__btn = QPushButton("Qsci")
-        self.__btn.setFixedWidth(50)
-        self.__btn.setFixedHeight(50)
+        self.__btn = QPushButton("Compile")
+        # self.__btn.setFixedWidth(50)
+        # self.__btn.setFixedHeight(50)
         self.__btn.clicked.connect(self.__btn_action)
         self.__btn.setFont(self.__myFont)
         self.__lyt.addWidget(self.__btn)
@@ -116,13 +120,21 @@ class CustomMainWindow(QMainWindow):
         self.show()
 
     def __btn_action(self):
-        print("Hello World!")
+        template = (Path(ptyx_mcq.__file__).parent / "templates/original/new.ptyx").read_text()
+        content = self.__editor.text()
+        if not content.lstrip().startswith("* "):
+            content = "* " + content
+        # re.sub() doesn't seem to work when "\dfrac" is in the replacement string... using re.split() instead.
+        before, _, after = re.split("(<<<.+>>>)", template, flags=re.MULTILINE | re.DOTALL)
+        ptyx_code = f"{before}\n<<<\n{content}\n>>>\n{after}"
+        compiler.parse(code=ptyx_code)
 
 
 def main():
     app = QApplication(sys.argv)
     QApplication.setStyle(QStyleFactory.create("Fusion"))
-    myGUI = CustomMainWindow()
+    # noinspection PyUnusedLocal
+    gui = CustomMainWindow()  # noqa: F841
 
     sys.exit(app.exec())
 

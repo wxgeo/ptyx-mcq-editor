@@ -21,6 +21,11 @@ line-length = 110
 python = "^3.10"
 pyqt6-qscintilla = "^2.14.1"
 ptyx-mcq = "^25.0.0"
+ptyx = "^25.0.1"
+
+[tool.poetry.dev-dependencies]
+ptyx-mcq = {path = "../ptyx-mcq", develop = true}
+ptyx = {path = "../ptyx", develop = true}
 black = "^23.10.1"
 
 
