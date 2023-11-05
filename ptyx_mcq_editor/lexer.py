@@ -160,14 +160,32 @@ class MyLexer(QsciLexerCustom):
         # ---------------------
         # Test in https://regex101.com/
         p = re.compile(
-            r"""^\.{4,}$|#\w+|#\{|^[-+!] |\\\\|\\'|\\"|\\[a-zA-Z]+|'{3}|"{3}|\n|[ \t]+|\w+\d*|\.\d+|\d+\.?|\W""",
+            "|".join(
+                [
+                    r"^\.{4,}$",  # start of a python code section: ...........
+                    r"#\w+",  # pTyX tag or variable: #TAG_NAME
+                    "#[-+*=?]",  # special pTyX tags: #+, #-, #*, #=, #?
+                    r"#\{",  # starts a pTyX expression: #{
+                    "^[-+!] ",  # an answer (incorrect, correct or disabled)
+                    r"\\\\",  # \\ (to parse python strings, it's easier to consider it as a single token)
+                    r"\\'",  # \' (to parse python strings, it's easier to consider it as a single token)
+                    r'\\"',  # \" (to parse python strings, it's easier to consider it as a single token)
+                    r"\\[a-zA-Z]+",  # LaTeX macro: \macro
+                    "'{3}",  # '''
+                    '"{3}',  # """
+                    r"\n",  # \n
+                    r"[ \t]+",  # space or tab (don't include newlines!)
+                    r"\w+",  # potential variable names or number
+                    r"\.\d+",  # number (float)
+                    r"\d+\.?",  # number (float)
+                    r"\W",  # non-alphanumeric symbol
+                ]
+            ),
             flags=re.MULTILINE,
         )
 
         # 'token_list' is a list of tuples: (token_name, token_len)
-        token_list: list[tuple[str, int]] = [
-            (token, len(bytearray(token, "utf-8"))) for token in p.findall(text)
-        ]
+        token_list: list[str] = p.findall(text)
 
         # 4. Style the text
         # ------------------
@@ -179,10 +197,11 @@ class MyLexer(QsciLexerCustom):
             style = Style.DEFAULT
             mode = Mode.DEFAULT
         # 4.2 Style the text in a loop
-        for i, (token, length) in enumerate(token_list):
-            assert isinstance(token, str) and isinstance(length, int), (token, length)
+        for i, token in enumerate(token_list):
+            assert isinstance(token, str), token
             style, mode = self.get_style_and_mode(token, mode, style)
-            self.setStyling(length, style)
+            # In setStyling, the length is the number of bytes, not the number of unicode characters !
+            self.setStyling(len(bytearray(token, "utf-8")), style)
             # print(repr(token), length)
 
     @staticmethod
