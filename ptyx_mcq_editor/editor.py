@@ -1,16 +1,21 @@
 #!/usr/bin/python3
-import sys
-from pathlib import Path
 import re
+import shutil
+from pathlib import Path
+from tempfile import TemporaryDirectory, mkdtemp
 
+import PyQt6.QtPdfWidgets
+import ptyx_mcq
+from PyQt6 import Qsci, QtPdfWidgets
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QFont, QColor
-from PyQt6.QtWidgets import QMainWindow, QFrame, QVBoxLayout, QPushButton, QApplication, QStyleFactory
-import ptyx_mcq
+from PyQt6.QtPdf import QPdfDocument
+from PyQt6.QtWidgets import QMainWindow, QApplication
 from ptyx.latex_generator import compiler
-from ptyx_mcq_editor.main import Ui_MainWindow
+from ptyx.compilation import compile_latex, _build_command
 
 from ptyx_mcq_editor.lexer import MyLexer
+from ptyx_mcq_editor.main import Ui_MainWindow
 
 TEST = r"""
 * Combien fait
@@ -32,7 +37,7 @@ $\dfrac{#a}{#b}-\dfrac{#c}{#d}+\dfrac12$~?
 """
 
 
-class CustomUi_MainWindow(Ui_MainWindow):
+class CustomUiMainWindow(Ui_MainWindow):
     # def __init__(self):
     #     super(CustomMainWindow, self).__init__()
 
@@ -116,13 +121,20 @@ class CustomUi_MainWindow(Ui_MainWindow):
         #          Install lexer           #
         # -------------------------------- #
         self.mcq_editor.setLexer(MyLexer(self.mcq_editor))
+        self.latex_editor.setLexer(Qsci.QsciLexerTeX(self.latex_editor))
 
+        self.pdf_viewer = QtPdfWidgets.QPdfView(self.pdf_tab)
+        self.pdf_viewer.setObjectName("pdf_viewer")
+        self.pdf_tab_grid.addWidget(self.pdf_viewer, 0, 0, 1, 1)
+
+        self.tmp_dir = Path(mkdtemp(prefix="mcq-editor-"))
+        print("created temporary directory", self.tmp_dir)
         # ! Add editor to layout !
         # -------------------------
         # self.__lyt.addWidget(self.mcq_editor)
         # self.show()
 
-    def __btn_action(self):
+    def _get_latex(self) -> str:
         template = (Path(ptyx_mcq.__file__).parent / "templates/original/new.ptyx").read_text()
         content = self.mcq_editor.text()
         if not content.lstrip().startswith("* "):
@@ -130,7 +142,26 @@ class CustomUi_MainWindow(Ui_MainWindow):
         # re.sub() doesn't seem to work when "\dfrac" is in the replacement string... using re.split() instead.
         before, _, after = re.split("(<<<.+>>>)", template, flags=re.MULTILINE | re.DOTALL)
         ptyx_code = f"{before}\n<<<\n{content}\n>>>\n{after}"
-        compiler.parse(code=ptyx_code)
+        latex = compiler.parse(
+            code=ptyx_code, context={"MCQ_KEEP_ALL_VERSIONS": True, "PTYX_WITH_ANSWERS": True}
+        )
+        return latex
+
+    def display_latex(self):
+        self.latex_editor.setText(self._get_latex())
+        self.tabWidget.setCurrentIndex(0)
+
+    def display_pdf(self):
+        (latex_file := self.tmp_dir / "tmp.tex").write_text(self._get_latex())
+        pdf_file = self.tmp_dir / "tmp.pdf"
+        print(_build_command(latex_file, pdf_file))
+        compile_latex(latex_file, dest=self.tmp_dir)
+        self.pdf_doc = QPdfDocument(self.pdf_viewer)
+        self.pdf_doc.load(str(pdf_file))
+        self.pdf_viewer.setDocument(self.pdf_doc)
+
+    def __del__(self):
+        shutil.rmtree(self.tmp_dir)
 
 
 def main():
@@ -138,8 +169,10 @@ def main():
 
     app = QApplication(sys.argv)
     main_window = QMainWindow()
-    ui = CustomUi_MainWindow()
+    ui = CustomUiMainWindow()
     ui.setupUi(main_window)
+    (ui.action_LaTeX.triggered.connect(ui.display_latex))
+    (ui.action_Pdf.triggered.connect(ui.display_pdf))
     main_window.show()
     sys.exit(app.exec())
     # app = QApplication(sys.argv)
