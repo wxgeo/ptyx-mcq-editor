@@ -11,7 +11,7 @@ from typing import Optional, Type
 import ptyx_mcq
 from PyQt6 import Qsci, QtPdfWidgets
 from PyQt6.Qsci import QsciScintilla
-from PyQt6.QtGui import QFont, QColor, QDragEnterEvent, QDropEvent
+from PyQt6.QtGui import QFont, QColor, QDragEnterEvent, QDropEvent, QCloseEvent
 from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox
 from ptyx.compilation import compile_latex  # , _build_command
@@ -71,6 +71,12 @@ class McqEditorMainWindow(QMainWindow):
                 assert self.ui is not None
                 self.ui.open_file(path=url.toLocalFile())
 
+    def closeEvent(self, event: Optional[QCloseEvent]) -> None:
+        if self.ui.ask_for_saving_if_needed():
+            event.accept()
+        else:
+            event.ignore()
+
 
 class MainWindowContent(Ui_MainWindow):
     def __init__(self, window: McqEditorMainWindow) -> None:
@@ -121,7 +127,7 @@ class MainWindowContent(Ui_MainWindow):
         # ! Make instance of QSciScintilla class!
         # ----------------------------------------
         # self.mcq_editor = QsciScintilla()
-        self.mcq_editor.setText(TEST)  # 'myCodeSample' is a string containing some C-code
+        # self.mcq_editor.setText(TEST)  # 'TEST' is a string containing some pTyX-MCQ-code
         self.mcq_editor.setLexer(None)  # We install lexer later
         self.mcq_editor.setUtf8(True)  # Set encoding to UTF-8
         font = QFont()
@@ -183,10 +189,10 @@ class MainWindowContent(Ui_MainWindow):
         self.action_Pdf.triggered.connect(self.display_pdf)
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_menu_entry)
 
-        self.mcq_editor.textChanged.connect(self.text_changed)
+        # self.mcq_editor.textChanged.connect(self.text_changed)
 
-        self.mcq_editor.SCN_SAVEPOINTREACHED.connect(self.text_saved)
-        self.mcq_editor.SCN_SAVEPOINTLEFT.connect(self.text_changed)
+        self.mcq_editor.SCN_SAVEPOINTREACHED.connect(self._on_text_saved)
+        self.mcq_editor.SCN_SAVEPOINTLEFT.connect(self._on_text_changed)
 
         self.update_title()
 
@@ -252,7 +258,9 @@ class MainWindowContent(Ui_MainWindow):
                 self.current_file_saved = True
                 with open(path, encoding="utf8") as f:
                     self.mcq_editor.setText(f.read())
-                self.update_title()
+                self.mark_as_saved()
+            else:
+                print("open_file action canceled.")
         else:
             print("open_file action canceled.")
 
@@ -267,6 +275,8 @@ class MainWindowContent(Ui_MainWindow):
             with open(path, "w", encoding="utf8") as f:
                 f.write(self.mcq_editor.text())
             self.mark_as_saved()
+        else:
+            print("save_file action canceled.")
 
     def save_file(self) -> None:
         self.save_file_as(path=self.current_file)
@@ -293,20 +303,16 @@ class MainWindowContent(Ui_MainWindow):
             self.save_file()
         return result != QMessageBox.StandardButton.Abort
 
-    def close(self) -> None:
-        if self.ask_for_saving_if_needed():
-            self.window.close()
-
     def mark_as_saved(self) -> None:
         # Tell Scintilla that the current editor's state is its new saved state.
         # More information on Scintilla messages: http://www.scintilla.org/ScintillaDoc.html
         self.mcq_editor.SendScintilla(QsciScintilla.SCI_SETSAVEPOINT)
 
-    def text_changed(self) -> None:
+    def _on_text_changed(self) -> None:
         self.current_file_saved = False
         self.update_title()
 
-    def text_saved(self) -> None:
+    def _on_text_saved(self) -> None:
         self.current_file_saved = True
         self.update_title()
 
