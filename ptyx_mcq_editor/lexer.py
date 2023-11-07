@@ -121,7 +121,7 @@ class MyLexer(QsciLexerCustom):
         # ----------------------
         self.setDefaultColor(QColor("#ff000000"))
         self.setDefaultPaper(QColor("#ffffffff"))
-        self.setDefaultFont(QFont("Consolas", 14))
+        self.setDefaultFont(QFont("Consolas", 13))
 
         for style, (_, text_color, paper_color, is_bold, is_italic, fill_line) in STYLES_LIST.items():
             self.setColor(QColor(text_color), style)
@@ -129,7 +129,7 @@ class MyLexer(QsciLexerCustom):
             self.setFont(
                 QFont(
                     "Consolas",
-                    14,
+                    13,
                     weight=(QFont.Weight.Bold if is_bold else QFont.Weight.Normal),
                     italic=is_italic,
                 ),
@@ -222,12 +222,12 @@ class MyLexer(QsciLexerCustom):
             mode = Mode.PYTHON if mode == Mode.DEFAULT else Mode.DEFAULT
         elif token == "#PYTHON":
             style = Style.PYTHON_BLOCK_DELIMITER
-            mode = mode.PYTHON
+            mode = Mode.PYTHON
         elif token == "#END_PYTHON" or (token == "#END" and mode == Mode.PYTHON):
             style = Style.PYTHON_BLOCK_DELIMITER
-            mode = mode.DEFAULT
+            mode = Mode.DEFAULT
         elif token == "}" and mode == Mode.EXPRESSION:
-            mode = mode.DEFAULT
+            mode = Mode.DEFAULT
             style = Style.PTYX_TAG
         elif mode in (Mode.PYTHON, mode.EXPRESSION):
             if token in REVERSED_QUOTES:

@@ -10,12 +10,29 @@ packages = [{include = "ptyx_mcq_editor"}]
 [tool.poetry.scripts]
 mcq-editor = "ptyx_mcq_editor.editor:main"
 
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.6.1"
+ptyx-mcq = {path = "../ptyx-mcq", develop = true}
+ptyx = {path = "../ptyx", develop = true}
+black = "^23.10.1"
+ruff = "^0.1.4"
+tox = "^4.11.3"
+pytest = "^7.4.3"
+
 [tool.black]
 line-length = 110
 
 [tool.ruff]
 line-length = 110
+extend-exclude = ["ptyx_mcq_editor/ui/"]
 
+[tool.mypy]
+implicit_optional = true
+warn_redundant_casts = true
+# enable_error_code = true
+warn_unused_ignores = true
+# Warning: exclude strings are handled as regex by mypy!
+exclude = ["ptyx_mcq_editor/ui/"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -23,12 +40,23 @@ pyqt6-qscintilla = "^2.14.1"
 ptyx-mcq = "^25.0.0"
 ptyx = "^25.0.1"
 
-[tool.poetry.dev-dependencies]
-ptyx-mcq = {path = "../ptyx-mcq", develop = true}
-ptyx = {path = "../ptyx", develop = true}
-black = "^23.10.1"
-
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+skipsdist = true
+isolated_build = True
+envlist = py311
+
+[testenv]
+passenv = HOME
+allowlist_externals = poetry
+commands =
+    poetry install -v
+    poetry run ruff ptyx_mcq_editor tests
+    poetry run mypy ptyx_mcq_editor tests
+    poetry run pytest tests
+"""
