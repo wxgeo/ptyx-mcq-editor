@@ -18,6 +18,7 @@ from ptyx.compilation import compile_latex  # , _build_command
 from ptyx.latex_generator import compiler
 
 from ptyx_mcq_editor.lexer import MyLexer
+from ptyx_mcq_editor.tools import install_desktop_shortcut
 from ptyx_mcq_editor.ui.main import Ui_MainWindow
 
 TEST = r"""
@@ -180,6 +181,7 @@ class MainWindowContent(Ui_MainWindow):
         self.actionSave_as.triggered.connect(self.save_file_as)
         self.action_LaTeX.triggered.connect(self.display_latex)
         self.action_Pdf.triggered.connect(self.display_pdf)
+        self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_menu_entry)
 
         self.mcq_editor.textChanged.connect(self.text_changed)
 
@@ -220,6 +222,15 @@ class MainWindowContent(Ui_MainWindow):
         self.pdf_doc.load(str(pdf_file))
         self.pdf_viewer.setDocument(self.pdf_doc)
         self.tabWidget.setCurrentIndex(1)
+
+    def add_menu_entry(self) -> None:
+        completed_process = install_desktop_shortcut()
+        if completed_process.returncode == 0:
+            QMessageBox.information(
+                self.window, "Shortcut installed", "This application was successfully added to start menu."
+            )
+        else:
+            QMessageBox.critical(self.window, "Unable to install shortcut", completed_process.stdout)
 
     def new_file(self) -> None:
         if self.ask_for_saving_if_needed():
@@ -337,13 +348,6 @@ def main() -> None:
     sys.exit(return_code)
 
 
-# app = QApplication(sys.argv)
-# QApplication.setStyle(QStyleFactory.create("Fusion"))
-# # noinspection PyUnusedLocal
-# gui = McqEditorMainWindow()  # noqa: F841
-#
-# sys.exit(app.exec())
-
-
+# TODO: support for arguments (file to open)
 if __name__ == "__main__":
     main()

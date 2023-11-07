@@ -5,7 +5,7 @@ description = ""
 authors = ["Nicolas Pourcelot <nicolas.pourcelot@gmail.com>"]
 readme = "README.md"
 packages = [{include = "ptyx_mcq_editor"}]
-
+include = ["ressources"]
 
 [tool.poetry.scripts]
 mcq-editor = "ptyx_mcq_editor.editor:main"

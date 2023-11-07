@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'interfaces/main.ui'
+# Form implementation generated from reading ui file 'ui/main.ui'
 #
 # Created by: PyQt6 UI code generator 6.6.0
 #
@@ -33,6 +33,8 @@ class Ui_MainWindow(object):
         self.menuFichier.setObjectName("menuFichier")
         self.menuCompilation = QtWidgets.QMenu(parent=self.menubar)
         self.menuCompilation.setObjectName("menuCompilation")
+        self.menu_Tools = QtWidgets.QMenu(parent=self.menubar)
+        self.menu_Tools.setObjectName("menu_Tools")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -91,6 +93,8 @@ class Ui_MainWindow(object):
         self.action_Pdf.setObjectName("action_Pdf")
         self.actionRecent_Files = QtGui.QAction(parent=MainWindow)
         self.actionRecent_Files.setObjectName("actionRecent_Files")
+        self.action_Add_MCQ_Editor_to_start_menu = QtGui.QAction(parent=MainWindow)
+        self.action_Add_MCQ_Editor_to_start_menu.setObjectName("action_Add_MCQ_Editor_to_start_menu")
         self.menuFichier.addAction(self.action_New)
         self.menuFichier.addAction(self.actionRecent_Files)
         self.menuFichier.addAction(self.action_Open)
@@ -100,8 +104,10 @@ class Ui_MainWindow(object):
         self.menuFichier.addAction(self.action_Quitter)
         self.menuCompilation.addAction(self.action_LaTeX)
         self.menuCompilation.addAction(self.action_Pdf)
+        self.menu_Tools.addAction(self.action_Add_MCQ_Editor_to_start_menu)
         self.menubar.addAction(self.menuFichier.menuAction())
         self.menubar.addAction(self.menuCompilation.menuAction())
+        self.menubar.addAction(self.menu_Tools.menuAction())
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
@@ -113,6 +119,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MCQ Editor"))
         self.menuFichier.setTitle(_translate("MainWindow", "&File"))
         self.menuCompilation.setTitle(_translate("MainWindow", "&Make"))
+        self.menu_Tools.setTitle(_translate("MainWindow", "&Tools"))
         self.dockWidget.setWindowTitle(_translate("MainWindow", "Output"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.latex_tab), _translate("MainWindow", "LaTeX Code"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.pdf_tab), _translate("MainWindow", "Pdf Rendering"))
@@ -130,6 +137,7 @@ class Ui_MainWindow(object):
         self.action_Pdf.setText(_translate("MainWindow", "&Pdf"))
         self.action_Pdf.setShortcut(_translate("MainWindow", "Ctrl+Shift+Return"))
         self.actionRecent_Files.setText(_translate("MainWindow", "&Recent Files"))
+        self.action_Add_MCQ_Editor_to_start_menu.setText(_translate("MainWindow", "&Add shortcut to MCQ Editor in the applications menu"))
 from PyQt6 import Qsci
 
 
