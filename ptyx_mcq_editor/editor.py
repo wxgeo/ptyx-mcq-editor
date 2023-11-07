@@ -205,12 +205,12 @@ class MainWindowContent(Ui_MainWindow):
         template = (Path(ptyx_mcq.__file__).parent / "templates/original/new.ptyx").read_text()
         content = self.mcq_editor.text()
         if not content.lstrip().startswith("* "):
-            content = "* " + content
+            content = "* \n" + content
         # re.sub() doesn't seem to work when "\dfrac" is in the replacement string... using re.split() instead.
         before, _, after = re.split("(<<<.+>>>)", template, flags=re.MULTILINE | re.DOTALL)
         ptyx_code = f"{before}\n<<<\n{content}\n>>>\n{after}"
         latex = compiler.parse(
-            code=ptyx_code, context={"MCQ_KEEP_ALL_VERSIONS": True, "PTYX_WITH_ANSWERS": True}
+            code=ptyx_code, MCQ_KEEP_ALL_VERSIONS=True, PTYX_WITH_ANSWERS=True, MCQ_REMOVE_HEADER=True
         )
         return latex
 

@@ -133,9 +133,9 @@ class Ui_MainWindow(object):
         self.actionSave_as.setShortcut(_translate("MainWindow", "Ctrl+Shift+S"))
         self.action_Quitter.setText(_translate("MainWindow", "&Quitter"))
         self.action_LaTeX.setText(_translate("MainWindow", "&LaTeX"))
-        self.action_LaTeX.setShortcut(_translate("MainWindow", "Ctrl+Return"))
+        self.action_LaTeX.setShortcut(_translate("MainWindow", "Ctrl+Shift+Return"))
         self.action_Pdf.setText(_translate("MainWindow", "&Pdf"))
-        self.action_Pdf.setShortcut(_translate("MainWindow", "Ctrl+Shift+Return"))
+        self.action_Pdf.setShortcut(_translate("MainWindow", "Ctrl+Return"))
         self.actionRecent_Files.setText(_translate("MainWindow", "&Recent Files"))
         self.action_Add_MCQ_Editor_to_start_menu.setText(_translate("MainWindow", "&Add shortcut to MCQ Editor in the applications menu"))
 from PyQt6 import Qsci

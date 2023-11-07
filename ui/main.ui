@@ -17,7 +17,8 @@
    <string>MCQ Editor</string>
   </property>
   <property name="windowIcon">
-   <iconset theme="applications-utilities"/>
+   <iconset theme="applications-utilities">
+    <normaloff>.</normaloff>.</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="main_grid">
@@ -182,7 +183,7 @@
     <string>&amp;LaTeX</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Return</string>
+    <string>Ctrl+Shift+Return</string>
    </property>
   </action>
   <action name="action_Pdf">
@@ -190,7 +191,7 @@
     <string>&amp;Pdf</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+Return</string>
+    <string>Ctrl+Return</string>
    </property>
   </action>
   <action name="actionRecent_Files">
