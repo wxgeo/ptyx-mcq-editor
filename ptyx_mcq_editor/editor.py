@@ -72,6 +72,8 @@ class McqEditorMainWindow(QMainWindow):
                 self.ui.open_file(path=url.toLocalFile())
 
     def closeEvent(self, event: Optional[QCloseEvent]) -> None:
+        assert event is not None
+        assert self.ui is not None
         if self.ui.ask_for_saving_if_needed():
             event.accept()
         else:

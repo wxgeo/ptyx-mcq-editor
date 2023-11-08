@@ -51,6 +51,7 @@ class Style(IntEnum):
     MCQ_CORRECT_ANSWER = auto()
     MCQ_INCORRECT_ANSWER = auto()
     MCQ_NEUTRALIZED_ANSWER = auto()
+    MCQ_OR = auto()
 
 
 QUOTES = {
@@ -111,6 +112,7 @@ STYLES_LIST: dict[Style, StyleInfo] = {
     Style.MCQ_CORRECT_ANSWER: StyleInfo(Mode.DEFAULT, "#138f00", "#d7ffd1", False, False, True),
     Style.MCQ_INCORRECT_ANSWER: StyleInfo(Mode.DEFAULT, "#ab1600", "#ffd7d1", False, False, True),
     Style.MCQ_NEUTRALIZED_ANSWER: StyleInfo(Mode.DEFAULT, "#707070", "#c2c2c2", False, False, True),
+    Style.MCQ_OR: StyleInfo(Mode.DEFAULT, "#4c66fc", "#ffebc7", False, False, True),
 }
 
 
@@ -170,6 +172,7 @@ class MyLexer(QsciLexerCustom):
                     r"\\\\",  # \\ (to parse python strings, it's easier to consider it as a single token)
                     r"\\'",  # \' (to parse python strings, it's easier to consider it as a single token)
                     r'\\"',  # \" (to parse python strings, it's easier to consider it as a single token)
+                    r"^OR[ \t]*\n",  # OR (introduce another version of an exercise)
                     r"\\[a-zA-Z]+",  # LaTeX macro: \macro
                     "'{3}",  # '''
                     '"{3}',  # """
@@ -261,6 +264,8 @@ class MyLexer(QsciLexerCustom):
                 style = Style.MCQ_CORRECT_ANSWER
             elif token == "! ":
                 style = Style.MCQ_NEUTRALIZED_ANSWER
+            elif token.startswith("OR") and token.endswith("\n"):
+                style = Style.MCQ_OR
             else:
                 # Default style
                 style = Style.DEFAULT
