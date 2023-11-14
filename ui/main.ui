@@ -47,8 +47,14 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <widget class="QMenu" name="menu_Recent_Files">
+     <property name="title">
+      <string>&amp;Recent Files</string>
+     </property>
+     <addaction name="actionNone"/>
+    </widget>
     <addaction name="action_New"/>
-    <addaction name="actionRecent_Files"/>
+    <addaction name="menu_Recent_Files"/>
     <addaction name="action_Open"/>
     <addaction name="action_Save"/>
     <addaction name="actionSave_as"/>
@@ -68,9 +74,23 @@
     </property>
     <addaction name="action_Add_MCQ_Editor_to_start_menu"/>
    </widget>
+   <widget class="QMenu" name="menu_Edit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <addaction name="actionFind"/>
+    <addaction name="actionReplace"/>
+   </widget>
+   <widget class="QMenu" name="menu_propos">
+    <property name="title">
+     <string>&amp;About</string>
+    </property>
+   </widget>
    <addaction name="menuFichier"/>
    <addaction name="menuCompilation"/>
    <addaction name="menu_Tools"/>
+   <addaction name="menu_Edit"/>
+   <addaction name="menu_propos"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="dockWidget">
@@ -194,14 +214,30 @@
     <string>Ctrl+Return</string>
    </property>
   </action>
-  <action name="actionRecent_Files">
-   <property name="text">
-    <string>&amp;Recent Files</string>
-   </property>
-  </action>
   <action name="action_Add_MCQ_Editor_to_start_menu">
    <property name="text">
     <string>&amp;Add shortcut to MCQ Editor in the applications menu</string>
+   </property>
+  </action>
+  <action name="actionFind">
+   <property name="text">
+    <string>&amp;Find</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="actionReplace">
+   <property name="text">
+    <string>&amp;Replace</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R, Ctrl+H</string>
+   </property>
+  </action>
+  <action name="actionNone">
+   <property name="text">
+    <string>EMPTY</string>
    </property>
   </action>
  </widget>

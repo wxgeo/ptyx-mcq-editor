@@ -16,6 +16,7 @@ from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox
 from ptyx.compilation import compile_latex  # , _build_command
 from ptyx.latex_generator import compiler
+from ptyx_mcq_editor.settings import Settings
 
 from ptyx_mcq_editor.lexer import MyLexer
 from ptyx_mcq_editor.tools import install_desktop_shortcut
@@ -74,7 +75,7 @@ class McqEditorMainWindow(QMainWindow):
     def closeEvent(self, event: Optional[QCloseEvent]) -> None:
         assert event is not None
         assert self.ui is not None
-        if self.ui.ask_for_saving_if_needed():
+        if self.ui.request_to_close():
             event.accept()
         else:
             event.ignore()
@@ -84,11 +85,11 @@ class MainWindowContent(Ui_MainWindow):
     def __init__(self, window: McqEditorMainWindow) -> None:
         super().__init__()
         self.current_file_saved = True
-        self.current_file: Optional[Path] = None
         self.tmp_dir = Path(mkdtemp(prefix="mcq-editor-"))
         self.window = window
         self.pdf_viewer = QtPdfWidgets.QPdfView(None)
         self.pdf_doc = QPdfDocument(None)
+        self.settings = Settings.load()
 
         # def __init__(self):
 
@@ -190,6 +191,8 @@ class MainWindowContent(Ui_MainWindow):
         self.action_LaTeX.triggered.connect(self.display_latex)
         self.action_Pdf.triggered.connect(self.display_pdf)
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_menu_entry)
+        self.menuFichier.aboutToShow.connect(self.update_recent_files_menu)
+
 
         # self.mcq_editor.textChanged.connect(self.text_changed)
 
@@ -202,6 +205,27 @@ class MainWindowContent(Ui_MainWindow):
         # -------------------------
         # self.__lyt.addWidget(self.mcq_editor)
         # self.show()
+
+    def request_to_close(self) -> bool:
+        if self.ask_for_saving_if_needed():
+            self.settings.save()
+            shutil.rmtree(self.tmp_dir)
+            return True
+        return False
+
+
+
+
+    def update_recent_files_menu(self) -> None:
+        if not self.settings.recent_files:
+            self.menu_Recent_Files.menuAction().setVisible(False)
+        else:
+            self.menu_Recent_Files.clear()
+            for recent_file in self.settings.recent_files:
+                if recent_file.is_file():
+                    action = self.menu_Recent_Files.addAction(recent_file.name)
+                    action.triggered.connect(partial(self.open_file, path=recent_file))
+            self.menu_Recent_Files.menuAction().setVisible(True)
 
     def _get_latex(self) -> str:
         template = (Path(ptyx_mcq.__file__).parent / "templates/original/new.ptyx").read_text()
@@ -243,7 +267,7 @@ class MainWindowContent(Ui_MainWindow):
     def new_file(self) -> None:
         if self.ask_for_saving_if_needed():
             self.mcq_editor.setText("")
-            self.current_file = None
+            self.settings.current_file = ""
             self.mark_as_saved()
         else:
             print("new_file action canceled.")
@@ -251,12 +275,15 @@ class MainWindowContent(Ui_MainWindow):
     def open_file(self, *, path: str | Path | None = None) -> None:
         if self.ask_for_saving_if_needed():
             if path is None:
-                directory: Path = Path.cwd() if self.current_file is None else self.current_file.parent
                 path, _ = QFileDialog.getOpenFileName(
-                    self.window, "Open MCQ file", str(directory), ";;".join(FILES_FILTER), FILES_FILTER[0]
+                    self.window,
+                    "Open MCQ file",
+                    str(self.settings.current_dir),
+                    ";;".join(FILES_FILTER),
+                    FILES_FILTER[0],
                 )
             if path:
-                self.current_file = Path(path)
+                self.settings.current_file = path
                 self.current_file_saved = True
                 with open(path, encoding="utf8") as f:
                     self.mcq_editor.setText(f.read())
@@ -268,12 +295,15 @@ class MainWindowContent(Ui_MainWindow):
 
     def save_file_as(self, *, path: str | Path | None = None) -> None:
         if path is None:
-            path = Path.cwd() if self.current_file is None else self.current_file
             path, _ = QFileDialog.getSaveFileName(
-                self.window, "Save as...", str(path), ";;".join(FILES_FILTER), FILES_FILTER[0]
+                self.window,
+                "Save as...",
+                str(self.settings.current_file),
+                ";;".join(FILES_FILTER),
+                FILES_FILTER[0],
             )
         if path:
-            self.current_file = Path(path)
+            self.settings.current_file = path
             with open(path, "w", encoding="utf8") as f:
                 f.write(self.mcq_editor.text())
             self.mark_as_saved()
@@ -281,7 +311,7 @@ class MainWindowContent(Ui_MainWindow):
             print("save_file action canceled.")
 
     def save_file(self) -> None:
-        self.save_file_as(path=self.current_file)
+        self.save_file_as(path=self.settings.current_file)
 
     def ask_for_saving_if_needed(self) -> bool:
         """Ask user what to do if file is not saved.
@@ -318,12 +348,12 @@ class MainWindowContent(Ui_MainWindow):
         self.current_file_saved = True
         self.update_title()
 
-    def _get_current_file_name(self) -> str:
-        return self.current_file.name if self.current_file is not None else "<New File>"
+    def get_current_file_name(self):
+        return self.settings.current_file.name if self.settings.current_file.is_file() else ""
 
     def update_title(self) -> None:
         self.window.setWindowTitle(
-            f"MCQ Editor - {self._get_current_file_name()}" + ("" if self.current_file_saved else " *")
+            f"MCQ Editor - {self.get_current_file_name()}" + ("" if self.current_file_saved else " *")
         )
 
 
@@ -340,19 +370,17 @@ def my_excepthook(
 
 
 def main() -> None:
-    # Don't close pyQt application on failure.
     try:
         app = QApplication(sys.argv)
         main_window = McqEditorMainWindow()
+        # Don't close pyQt application on failure.
         sys.excepthook = partial(my_excepthook, window=main_window)
         ui = MainWindowContent(main_window)
         ui.setupUi(main_window)
         main_window.show()
         return_code = app.exec()
-        shutil.rmtree(ui.tmp_dir)
     except BaseException as e:
         raise e
-
     sys.exit(return_code)
 
 

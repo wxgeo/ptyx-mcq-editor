@@ -5,6 +5,7 @@ from pathlib import Path
 SHELL_COMMAND = "mcq-editor"
 DESKTOP_FILE_NAME = "ptyx-mcq-editor.desktop"
 
+# TODO: use platformdirs instead.
 
 def install_desktop_shortcut() -> CompletedProcess[str]:
     desktop_file = Path(__file__).resolve().parent.parent / "ressources" / DESKTOP_FILE_NAME
