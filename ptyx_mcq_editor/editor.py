@@ -193,7 +193,6 @@ class MainWindowContent(Ui_MainWindow):
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_menu_entry)
         self.menuFichier.aboutToShow.connect(self.update_recent_files_menu)
 
-
         # self.mcq_editor.textChanged.connect(self.text_changed)
 
         self.mcq_editor.SCN_SAVEPOINTREACHED.connect(self._on_text_saved)
@@ -212,9 +211,6 @@ class MainWindowContent(Ui_MainWindow):
             shutil.rmtree(self.tmp_dir)
             return True
         return False
-
-
-
 
     def update_recent_files_menu(self) -> None:
         if not self.settings.recent_files:
@@ -267,7 +263,7 @@ class MainWindowContent(Ui_MainWindow):
     def new_file(self) -> None:
         if self.ask_for_saving_if_needed():
             self.mcq_editor.setText("")
-            self.settings.current_file = ""
+            self.settings.current_file = Path()
             self.mark_as_saved()
         else:
             print("new_file action canceled.")
@@ -283,7 +279,7 @@ class MainWindowContent(Ui_MainWindow):
                     FILES_FILTER[0],
                 )
             if path:
-                self.settings.current_file = path
+                self.settings.current_file = path  # type: ignore
                 self.current_file_saved = True
                 with open(path, encoding="utf8") as f:
                     self.mcq_editor.setText(f.read())
@@ -303,7 +299,7 @@ class MainWindowContent(Ui_MainWindow):
                 FILES_FILTER[0],
             )
         if path:
-            self.settings.current_file = path
+            self.settings.current_file = path  # type: ignore
             with open(path, "w", encoding="utf8") as f:
                 f.write(self.mcq_editor.text())
             self.mark_as_saved()

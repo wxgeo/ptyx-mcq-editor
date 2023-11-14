@@ -126,7 +126,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
-        self.action_Quitter.triggered.connect(MainWindow.close) # type: ignore
+        self.action_Quitter.triggered.connect(MainWindow.close)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -139,8 +139,12 @@ class Ui_MainWindow(object):
         self.menu_Edit.setTitle(_translate("MainWindow", "&Edit"))
         self.menu_propos.setTitle(_translate("MainWindow", "&About"))
         self.dockWidget.setWindowTitle(_translate("MainWindow", "Output"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.latex_tab), _translate("MainWindow", "LaTeX Code"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.pdf_tab), _translate("MainWindow", "Pdf Rendering"))
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.latex_tab), _translate("MainWindow", "LaTeX Code")
+        )
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.pdf_tab), _translate("MainWindow", "Pdf Rendering")
+        )
         self.action_New.setText(_translate("MainWindow", "&New"))
         self.action_New.setShortcut(_translate("MainWindow", "Ctrl+N"))
         self.action_Open.setText(_translate("MainWindow", "&Open"))
@@ -154,17 +158,22 @@ class Ui_MainWindow(object):
         self.action_LaTeX.setShortcut(_translate("MainWindow", "Ctrl+Shift+Return"))
         self.action_Pdf.setText(_translate("MainWindow", "&Pdf"))
         self.action_Pdf.setShortcut(_translate("MainWindow", "Ctrl+Return"))
-        self.action_Add_MCQ_Editor_to_start_menu.setText(_translate("MainWindow", "&Add shortcut to MCQ Editor in the applications menu"))
+        self.action_Add_MCQ_Editor_to_start_menu.setText(
+            _translate("MainWindow", "&Add shortcut to MCQ Editor in the applications menu")
+        )
         self.actionFind.setText(_translate("MainWindow", "&Find"))
         self.actionFind.setShortcut(_translate("MainWindow", "Ctrl+F"))
         self.actionReplace.setText(_translate("MainWindow", "&Replace"))
         self.actionReplace.setShortcut(_translate("MainWindow", "Ctrl+R, Ctrl+H"))
         self.actionNone.setText(_translate("MainWindow", "EMPTY"))
+
+
 from PyQt6 import Qsci
 
 
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
