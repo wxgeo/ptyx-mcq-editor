@@ -11,15 +11,16 @@ from typing import Optional, Type
 import ptyx_mcq
 from PyQt6 import Qsci, QtPdfWidgets
 from PyQt6.Qsci import QsciScintilla
-from PyQt6.QtGui import QFont, QColor, QDragEnterEvent, QDropEvent, QCloseEvent
+from PyQt6.QtGui import QFont, QColor, QDragEnterEvent, QDropEvent, QCloseEvent, QIcon, QPixmap
 from PyQt6.QtPdf import QPdfDocument
-from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox
+from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox, QDialog
 from ptyx.compilation import compile_latex  # , _build_command
 from ptyx.latex_generator import compiler
 from ptyx_mcq_editor.settings import Settings
 
 from ptyx_mcq_editor.lexer import MyLexer
 from ptyx_mcq_editor.tools import install_desktop_shortcut
+from ptyx_mcq_editor.ui import find_and_replace
 from ptyx_mcq_editor.ui.main import Ui_MainWindow
 
 TEST = r"""
@@ -43,6 +44,7 @@ $\dfrac{#a}{#b}-\dfrac{#c}{#d}+\dfrac12$~?
 
 FILES_FILTER = ("Mcq Exercises Files (*.ex)", "All Files (*.*)")
 
+ICON_PATH = Path(__file__).parent.parent / "ressources/mcq-editor-icon.svg"
 
 class McqEditorMainWindow(QMainWindow):
     def __init__(self) -> None:
@@ -191,6 +193,8 @@ class MainWindowContent(Ui_MainWindow):
         self.action_LaTeX.triggered.connect(self.display_latex)
         self.action_Pdf.triggered.connect(self.display_pdf)
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_menu_entry)
+        self.actionFind.triggered.connect(partial(self.find_and_replace, replace=False))
+        self.actionReplace.triggered.connect(partial(self.find_and_replace, replace=True))
         self.menuFichier.aboutToShow.connect(self.update_recent_files_menu)
 
         # self.mcq_editor.textChanged.connect(self.text_changed)
@@ -198,6 +202,9 @@ class MainWindowContent(Ui_MainWindow):
         self.mcq_editor.SCN_SAVEPOINTREACHED.connect(self._on_text_saved)
         self.mcq_editor.SCN_SAVEPOINTLEFT.connect(self._on_text_changed)
 
+        if not ICON_PATH.is_file():
+            print(f"File not found: {ICON_PATH}")
+        self.window.setWindowIcon(QIcon(QPixmap(str(ICON_PATH))))
         self.update_title()
 
         # ! Add editor to layout !
@@ -305,6 +312,17 @@ class MainWindowContent(Ui_MainWindow):
             self.mark_as_saved()
         else:
             print("save_file action canceled.")
+
+    def find_and_replace(self, replace=True):
+        print(replace)
+        dialog = QDialog(self.window)
+        ui = find_and_replace.Ui_Dialog()
+        ui.setupUi(dialog)
+        if not replace:
+            ui.replace_all_button.setVisible(False)
+            ui.replace_button.setVisible(False)
+            
+        dialog.show()
 
     def save_file(self) -> None:
         self.save_file_as(path=self.settings.current_file)

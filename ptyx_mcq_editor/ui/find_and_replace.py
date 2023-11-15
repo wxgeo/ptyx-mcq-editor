@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(638, 284)
+        Dialog.resize(771, 213)
         self.horizontalLayout = QtWidgets.QHBoxLayout(Dialog)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.verticalLayout = QtWidgets.QVBoxLayout()
@@ -32,14 +32,30 @@ class Ui_Dialog(object):
         self.lineEdit.setObjectName("lineEdit")
         self.texts_fields.setWidget(1, QtWidgets.QFormLayout.ItemRole.FieldRole, self.lineEdit)
         self.verticalLayout.addLayout(self.texts_fields)
+        self.options = QtWidgets.QGroupBox(parent=Dialog)
+        self.options.setObjectName("options")
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.options)
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.checkBox = QtWidgets.QCheckBox(parent=self.options)
+        self.checkBox.setObjectName("checkBox")
+        self.horizontalLayout_2.addWidget(self.checkBox)
+        self.regexCheckBox = QtWidgets.QCheckBox(parent=self.options)
+        self.regexCheckBox.setObjectName("regexCheckBox")
+        self.horizontalLayout_2.addWidget(self.regexCheckBox)
+        self.wholeCheckBox = QtWidgets.QCheckBox(parent=self.options)
+        self.wholeCheckBox.setObjectName("wholeCheckBox")
+        self.horizontalLayout_2.addWidget(self.wholeCheckBox)
+        self.caseCheckBox = QtWidgets.QCheckBox(parent=self.options)
+        self.caseCheckBox.setObjectName("caseCheckBox")
+        self.horizontalLayout_2.addWidget(self.caseCheckBox)
+        self.verticalLayout.addWidget(self.options)
         self.information_label = QtWidgets.QLabel(parent=Dialog)
+        self.information_label.setText("")
         self.information_label.setObjectName("information_label")
         self.verticalLayout.addWidget(self.information_label)
         self.buttons_field = QtWidgets.QHBoxLayout()
         self.buttons_field.setObjectName("buttons_field")
-        spacerItem = QtWidgets.QSpacerItem(
-            40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum
-        )
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.buttons_field.addItem(spacerItem)
         self.replace_all_button = QtWidgets.QPushButton(parent=Dialog)
         self.replace_all_button.setObjectName("replace_all_button")
@@ -66,23 +82,8 @@ class Ui_Dialog(object):
         self.downRadioButton.setObjectName("downRadioButton")
         self.verticalLayout_3.addWidget(self.downRadioButton)
         self.verticalLayout_2.addWidget(self.direction)
-        self.options = QtWidgets.QGroupBox(parent=Dialog)
-        self.options.setObjectName("options")
-        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.options)
-        self.verticalLayout_4.setObjectName("verticalLayout_4")
-        self.caseCheckBox = QtWidgets.QCheckBox(parent=self.options)
-        self.caseCheckBox.setObjectName("caseCheckBox")
-        self.verticalLayout_4.addWidget(self.caseCheckBox)
-        self.wholeCheckBox = QtWidgets.QCheckBox(parent=self.options)
-        self.wholeCheckBox.setObjectName("wholeCheckBox")
-        self.verticalLayout_4.addWidget(self.wholeCheckBox)
-        self.regexCheckBox = QtWidgets.QCheckBox(parent=self.options)
-        self.regexCheckBox.setObjectName("regexCheckBox")
-        self.verticalLayout_4.addWidget(self.regexCheckBox)
-        self.checkBox = QtWidgets.QCheckBox(parent=self.options)
-        self.checkBox.setObjectName("checkBox")
-        self.verticalLayout_4.addWidget(self.checkBox)
-        self.verticalLayout_2.addWidget(self.options)
+        spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        self.verticalLayout_2.addItem(spacerItem1)
         self.horizontalLayout.addLayout(self.verticalLayout_2)
         self.findLabel.setBuddy(self.findLineEdit)
         self.label.setBuddy(self.lineEdit)
@@ -105,36 +106,29 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Find and replace"))
         self.findLabel.setText(_translate("Dialog", "Fi&nd"))
         self.label.setText(_translate("Dialog", "Re&place with"))
-        self.information_label.setText(_translate("Dialog", "Information"))
+        self.options.setTitle(_translate("Dialog", "&Options"))
+        self.checkBox.setText(_translate("Dialog", "&Selection only"))
+        self.regexCheckBox.setToolTip(_translate("Dialog", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
+"p, li { white-space: pre-wrap; }\n"
+"</style></head><body style=\" font-family:\'Sans\'; font-size:10pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">whether the text to search should be interpreted as a regular expression.</p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">You may want to take a look at the syntax of regular expressions:</p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><a href=\"http://doc.trolltech.com/qregexp.html\"><span style=\" text-decoration: underline; color:#0000ff;\">http://doc.trolltech.com/qregexp.html</span></a></p></body></html>"))
+        self.regexCheckBox.setText(_translate("Dialog", "R&egular Expression"))
+        self.wholeCheckBox.setText(_translate("Dialog", "&Whole words only"))
+        self.caseCheckBox.setText(_translate("Dialog", "&Case sensitive"))
         self.replace_all_button.setText(_translate("Dialog", "Replace &All"))
         self.replace_button.setText(_translate("Dialog", "&Replace"))
         self.find_button.setText(_translate("Dialog", "&Find"))
         self.direction.setTitle(_translate("Dialog", "D&irection"))
         self.upRadioButton.setText(_translate("Dialog", "&Up"))
         self.downRadioButton.setText(_translate("Dialog", "&Down"))
-        self.options.setTitle(_translate("Dialog", "&Options"))
-        self.caseCheckBox.setText(_translate("Dialog", "&Case sensitive"))
-        self.wholeCheckBox.setText(_translate("Dialog", "&Whole words only"))
-        self.regexCheckBox.setToolTip(
-            _translate(
-                "Dialog",
-                '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">\n'
-                '<html><head><meta name="qrichtext" content="1" /><style type="text/css">\n'
-                "p, li { white-space: pre-wrap; }\n"
-                "</style></head><body style=\" font-family:'Sans'; font-size:10pt; font-weight:400; font-style:normal;\">\n"
-                '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">whether the text to search should be interpreted as a regular expression.</p>\n'
-                '<p style="-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"></p>\n'
-                '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">You may want to take a look at the syntax of regular expressions:</p>\n'
-                '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><a href="http://doc.trolltech.com/qregexp.html"><span style=" text-decoration: underline; color:#0000ff;">http://doc.trolltech.com/qregexp.html</span></a></p></body></html>',
-            )
-        )
-        self.regexCheckBox.setText(_translate("Dialog", "R&egular Expression"))
-        self.checkBox.setText(_translate("Dialog", "&Selection only"))
 
 
 if __name__ == "__main__":
     import sys
-
     app = QtWidgets.QApplication(sys.argv)
     Dialog = QtWidgets.QDialog()
     ui = Ui_Dialog()

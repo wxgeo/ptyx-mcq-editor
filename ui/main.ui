@@ -232,7 +232,7 @@
     <string>&amp;Replace</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+R, Ctrl+H</string>
+    <string>Ctrl+H</string>
    </property>
   </action>
   <action name="actionNone">
