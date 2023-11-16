@@ -14,8 +14,6 @@ class Ui_MainWindow(object):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1047, 726)
         MainWindow.setAcceptDrops(False)
-        icon = QtGui.QIcon.fromTheme("applications-utilities")
-        MainWindow.setWindowIcon(icon)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.main_grid = QtWidgets.QGridLayout(self.centralwidget)

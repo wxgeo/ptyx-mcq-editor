@@ -16,10 +16,6 @@
   <property name="windowTitle">
    <string>MCQ Editor</string>
   </property>
-  <property name="windowIcon">
-   <iconset theme="applications-utilities">
-    <normaloff>.</normaloff>.</iconset>
-  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="main_grid">
     <item row="0" column="0">

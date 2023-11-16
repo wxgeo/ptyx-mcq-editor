@@ -1,7 +1,8 @@
 #!/usr/bin/python3
-import sys
 import re
 import shutil
+import sys
+from enum import Enum, auto
 from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
@@ -11,17 +12,18 @@ from typing import Optional, Type
 import ptyx_mcq
 from PyQt6 import Qsci, QtPdfWidgets
 from PyQt6.Qsci import QsciScintilla
-from PyQt6.QtGui import QFont, QColor, QDragEnterEvent, QDropEvent, QCloseEvent, QIcon, QPixmap
+from PyQt6.QtGui import QFont, QColor, QDragEnterEvent, QDropEvent, QCloseEvent, QIcon
 from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox, QDialog
 from ptyx.compilation import compile_latex  # , _build_command
 from ptyx.latex_generator import compiler
-from ptyx_mcq_editor.settings import Settings
 
+from ptyx_mcq_editor.find_and_replace import replace_text
 from ptyx_mcq_editor.lexer import MyLexer
+from ptyx_mcq_editor.settings import Settings
 from ptyx_mcq_editor.tools import install_desktop_shortcut
-from ptyx_mcq_editor.ui import find_and_replace
-from ptyx_mcq_editor.ui.main import Ui_MainWindow
+from ptyx_mcq_editor.ui import find_and_replace_ui
+from ptyx_mcq_editor.ui.main_ui import Ui_MainWindow
 
 TEST = r"""
 * Combien fait
@@ -44,11 +46,35 @@ $\dfrac{#a}{#b}-\dfrac{#c}{#d}+\dfrac12$~?
 
 FILES_FILTER = ("Mcq Exercises Files (*.ex)", "All Files (*.*)")
 
-ICON_PATH = Path(__file__).parent.parent / "ressources/mcq-editor-icon.svg"
+ICON_PATH = Path(__file__).parent.parent / "ressources/mcq-editor.svg"
+
+
+class ReplaceMode(Enum):
+    FIND_ONLY = auto()
+    REPLACE = auto()
+    REPLACE_ALL = auto()
+
+
+class FindAndReplaceDialog(QDialog):
+    def __init__(self, parent: "McqEditorMainWindow", replace=False) -> None:
+        super().__init__(parent=parent)
+        self.replace = replace
+        self.ui = find_and_replace_ui.Ui_Dialog()
+        self.ui.setupUi(self)
+        func = parent.ui.find_and_replace
+        self.ui.replace_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.REPLACE))
+        self.ui.replace_all_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.REPLACE_ALL))
+        self.ui.find_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.FIND_ONLY))
+        if not replace:
+            self.ui.replace_all_button.setVisible(False)
+            self.ui.replace_button.setVisible(False)
+            self.ui.replace_field.setVisible(False)
+
 
 class McqEditorMainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
+        self.setWindowIcon(QIcon(str(ICON_PATH)))
         self.ui: Optional[MainWindowContent] = None
 
     def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
@@ -193,8 +219,8 @@ class MainWindowContent(Ui_MainWindow):
         self.action_LaTeX.triggered.connect(self.display_latex)
         self.action_Pdf.triggered.connect(self.display_pdf)
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_menu_entry)
-        self.actionFind.triggered.connect(partial(self.find_and_replace, replace=False))
-        self.actionReplace.triggered.connect(partial(self.find_and_replace, replace=True))
+        self.actionFind.triggered.connect(partial(self.show_find_and_replace_dialog, replace=False))
+        self.actionReplace.triggered.connect(partial(self.show_find_and_replace_dialog, replace=True))
         self.menuFichier.aboutToShow.connect(self.update_recent_files_menu)
 
         # self.mcq_editor.textChanged.connect(self.text_changed)
@@ -204,7 +230,6 @@ class MainWindowContent(Ui_MainWindow):
 
         if not ICON_PATH.is_file():
             print(f"File not found: {ICON_PATH}")
-        self.window.setWindowIcon(QIcon(QPixmap(str(ICON_PATH))))
         self.update_title()
 
         # ! Add editor to layout !
@@ -313,16 +338,49 @@ class MainWindowContent(Ui_MainWindow):
         else:
             print("save_file action canceled.")
 
-    def find_and_replace(self, replace=True):
-        print(replace)
-        dialog = QDialog(self.window)
-        ui = find_and_replace.Ui_Dialog()
-        ui.setupUi(dialog)
-        if not replace:
-            ui.replace_all_button.setVisible(False)
-            ui.replace_button.setVisible(False)
-            
+    def show_find_and_replace_dialog(self, replace=True):
+        dialog = FindAndReplaceDialog(self.window, replace=replace)
         dialog.show()
+
+    # https://stackoverflow.com/questions/54305745/how-to-unselect-unhighlight-selected-and-highlighted-text-in-qscintilla-editor
+    def find_and_replace(self, dialog: FindAndReplaceDialog, mode: ReplaceMode):
+        find: str = dialog.ui.find_field.text()
+        is_regex = dialog.ui.regexCheckBox.isChecked()
+        caseless = not dialog.ui.caseCheckBox.isChecked()
+        selection_only = dialog.ui.selectionOnlyCheckBox.isChecked()
+        whole_words = dialog.ui.wholeCheckBox.isChecked()
+        current_text = self.mcq_editor.text()
+        _from: int = 0
+        _to: int = len(current_text)
+        if selection_only:
+            # int lineFrom, int indexFrom, int lineTo, int indexTo
+            _, _from, _, _to = self.mcq_editor.getSelection()
+            if _from == -1:
+                # No selection.
+                assert _to == -1
+                _from = 0
+                _to = len(current_text)
+            else:
+                assert _to >= 0
+
+        before = current_text[:_from]
+        to_parse = current_text[_from:_to]
+        print(f"{to_parse=}")
+        after = current_text[_to:]
+
+        if mode == ReplaceMode.REPLACE_ALL:
+            replace: str = dialog.ui.replace_field.text()
+            assert dialog.replace
+            self.mcq_editor.setText(before +
+                replace_text(
+                    to_parse,
+                    find,
+                    replace,
+                    is_regex=is_regex,
+                    whole_words=whole_words,
+                    caseless=caseless,
+                ) + after
+            )
 
     def save_file(self) -> None:
         self.save_file_as(path=self.settings.current_file)
@@ -386,6 +444,7 @@ def my_excepthook(
 def main() -> None:
     try:
         app = QApplication(sys.argv)
+        app.setWindowIcon(QIcon(str(ICON_PATH)))
         main_window = McqEditorMainWindow()
         # Don't close pyQt application on failure.
         sys.excepthook = partial(my_excepthook, window=main_window)

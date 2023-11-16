@@ -24,12 +24,12 @@
           <string>Fi&amp;nd</string>
          </property>
          <property name="buddy">
-          <cstring>findLineEdit</cstring>
+          <cstring>find_field</cstring>
          </property>
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QLineEdit" name="findLineEdit"/>
+        <widget class="QLineEdit" name="find_field"/>
        </item>
        <item row="1" column="0">
         <widget class="QLabel" name="label">
@@ -37,12 +37,12 @@
           <string>Re&amp;place with</string>
          </property>
          <property name="buddy">
-          <cstring>lineEdit</cstring>
+          <cstring>replace_field</cstring>
          </property>
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QLineEdit" name="lineEdit"/>
+        <widget class="QLineEdit" name="replace_field"/>
        </item>
       </layout>
      </item>
@@ -53,7 +53,7 @@
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
-         <widget class="QCheckBox" name="checkBox">
+         <widget class="QCheckBox" name="selectionOnlyCheckBox">
           <property name="text">
            <string>&amp;Selection only</string>
           </property>
@@ -186,14 +186,14 @@ p, li { white-space: pre-wrap; }
   </layout>
  </widget>
  <tabstops>
-  <tabstop>findLineEdit</tabstop>
-  <tabstop>lineEdit</tabstop>
+  <tabstop>find_field</tabstop>
+  <tabstop>replace_field</tabstop>
   <tabstop>upRadioButton</tabstop>
   <tabstop>downRadioButton</tabstop>
   <tabstop>caseCheckBox</tabstop>
   <tabstop>wholeCheckBox</tabstop>
   <tabstop>regexCheckBox</tabstop>
-  <tabstop>checkBox</tabstop>
+  <tabstop>selectionOnlyCheckBox</tabstop>
   <tabstop>find_button</tabstop>
   <tabstop>replace_button</tabstop>
   <tabstop>replace_all_button</tabstop>

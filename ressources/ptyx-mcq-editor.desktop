@@ -3,7 +3,7 @@
 Version=1.5
 Type=Application
 Name=MCQ Editor
-# Icon=
+Icon=mcq-editor.svg
 # %f indicates that the program can handle only one filename argument.
 Exec="mcq-editor" %f
 # TODO: Once multiple files opening will be implemented, replace %f with %F:
