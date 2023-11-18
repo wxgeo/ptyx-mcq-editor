@@ -39,6 +39,8 @@ class Ui_MainWindow(object):
         self.menu_Edit.setObjectName("menu_Edit")
         self.menu_propos = QtWidgets.QMenu(parent=self.menubar)
         self.menu_propos.setObjectName("menu_propos")
+        self.menuDebug = QtWidgets.QMenu(parent=self.menubar)
+        self.menuDebug.setObjectName("menuDebug")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -103,6 +105,8 @@ class Ui_MainWindow(object):
         self.actionReplace.setObjectName("actionReplace")
         self.actionNone = QtGui.QAction(parent=MainWindow)
         self.actionNone.setObjectName("actionNone")
+        self.action_Send_Qscintilla_Command = QtGui.QAction(parent=MainWindow)
+        self.action_Send_Qscintilla_Command.setObjectName("action_Send_Qscintilla_Command")
         self.menu_Recent_Files.addAction(self.actionNone)
         self.menuFichier.addAction(self.action_New)
         self.menuFichier.addAction(self.menu_Recent_Files.menuAction())
@@ -116,15 +120,17 @@ class Ui_MainWindow(object):
         self.menu_Tools.addAction(self.action_Add_MCQ_Editor_to_start_menu)
         self.menu_Edit.addAction(self.actionFind)
         self.menu_Edit.addAction(self.actionReplace)
+        self.menuDebug.addAction(self.action_Send_Qscintilla_Command)
         self.menubar.addAction(self.menuFichier.menuAction())
         self.menubar.addAction(self.menuCompilation.menuAction())
         self.menubar.addAction(self.menu_Tools.menuAction())
         self.menubar.addAction(self.menu_Edit.menuAction())
+        self.menubar.addAction(self.menuDebug.menuAction())
         self.menubar.addAction(self.menu_propos.menuAction())
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
-        self.action_Quitter.triggered.connect(MainWindow.close) # type: ignore
+        self.action_Quitter.triggered.connect(MainWindow.close)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -136,9 +142,14 @@ class Ui_MainWindow(object):
         self.menu_Tools.setTitle(_translate("MainWindow", "&Tools"))
         self.menu_Edit.setTitle(_translate("MainWindow", "&Edit"))
         self.menu_propos.setTitle(_translate("MainWindow", "&About"))
+        self.menuDebug.setTitle(_translate("MainWindow", "&Debug"))
         self.dockWidget.setWindowTitle(_translate("MainWindow", "Output"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.latex_tab), _translate("MainWindow", "LaTeX Code"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.pdf_tab), _translate("MainWindow", "Pdf Rendering"))
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.latex_tab), _translate("MainWindow", "LaTeX Code")
+        )
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.pdf_tab), _translate("MainWindow", "Pdf Rendering")
+        )
         self.action_New.setText(_translate("MainWindow", "&New"))
         self.action_New.setShortcut(_translate("MainWindow", "Ctrl+N"))
         self.action_Open.setText(_translate("MainWindow", "&Open"))
@@ -152,17 +163,23 @@ class Ui_MainWindow(object):
         self.action_LaTeX.setShortcut(_translate("MainWindow", "Ctrl+Shift+Return"))
         self.action_Pdf.setText(_translate("MainWindow", "&Pdf"))
         self.action_Pdf.setShortcut(_translate("MainWindow", "Ctrl+Return"))
-        self.action_Add_MCQ_Editor_to_start_menu.setText(_translate("MainWindow", "&Add shortcut to MCQ Editor in the applications menu"))
+        self.action_Add_MCQ_Editor_to_start_menu.setText(
+            _translate("MainWindow", "&Add shortcut to MCQ Editor in the applications menu")
+        )
         self.actionFind.setText(_translate("MainWindow", "&Find"))
         self.actionFind.setShortcut(_translate("MainWindow", "Ctrl+F"))
         self.actionReplace.setText(_translate("MainWindow", "&Replace"))
         self.actionReplace.setShortcut(_translate("MainWindow", "Ctrl+H"))
         self.actionNone.setText(_translate("MainWindow", "EMPTY"))
+        self.action_Send_Qscintilla_Command.setText(_translate("MainWindow", "&Send Qscintilla Command"))
+
+
 from PyQt6 import Qsci
 
 
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()

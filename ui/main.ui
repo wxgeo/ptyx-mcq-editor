@@ -82,10 +82,17 @@
      <string>&amp;About</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menuDebug">
+    <property name="title">
+     <string>&amp;Debug</string>
+    </property>
+    <addaction name="action_Send_Qscintilla_Command"/>
+   </widget>
    <addaction name="menuFichier"/>
    <addaction name="menuCompilation"/>
    <addaction name="menu_Tools"/>
    <addaction name="menu_Edit"/>
+   <addaction name="menuDebug"/>
    <addaction name="menu_propos"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -234,6 +241,11 @@
   <action name="actionNone">
    <property name="text">
     <string>EMPTY</string>
+   </property>
+  </action>
+  <action name="action_Send_Qscintilla_Command">
+   <property name="text">
+    <string>&amp;Send Qscintilla Command</string>
    </property>
   </action>
  </widget>

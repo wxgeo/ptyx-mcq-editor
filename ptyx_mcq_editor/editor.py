@@ -22,7 +22,7 @@ from ptyx_mcq_editor.find_and_replace import replace_text
 from ptyx_mcq_editor.lexer import MyLexer
 from ptyx_mcq_editor.settings import Settings
 from ptyx_mcq_editor.tools import install_desktop_shortcut
-from ptyx_mcq_editor.ui import find_and_replace_ui
+from ptyx_mcq_editor.ui import find_and_replace_ui, dbg_send_scintilla_messages_ui
 from ptyx_mcq_editor.ui.main_ui import Ui_MainWindow
 
 TEST = r"""
@@ -222,6 +222,7 @@ class MainWindowContent(Ui_MainWindow):
         self.actionFind.triggered.connect(partial(self.show_find_and_replace_dialog, replace=False))
         self.actionReplace.triggered.connect(partial(self.show_find_and_replace_dialog, replace=True))
         self.menuFichier.aboutToShow.connect(self.update_recent_files_menu)
+        self.action_Send_Qscintilla_Command.triggered.connect(self.dbg_send_scintilla_command)
 
         # self.mcq_editor.textChanged.connect(self.text_changed)
 
@@ -371,15 +372,17 @@ class MainWindowContent(Ui_MainWindow):
         if mode == ReplaceMode.REPLACE_ALL:
             replace: str = dialog.ui.replace_field.text()
             assert dialog.replace
-            self.mcq_editor.setText(before +
-                replace_text(
+            self.mcq_editor.setText(
+                before
+                + replace_text(
                     to_parse,
                     find,
                     replace,
                     is_regex=is_regex,
                     whole_words=whole_words,
                     caseless=caseless,
-                ) + after
+                )
+                + after
             )
 
     def save_file(self) -> None:
@@ -427,6 +430,28 @@ class MainWindowContent(Ui_MainWindow):
         self.window.setWindowTitle(
             f"MCQ Editor - {self.get_current_file_name()}" + ("" if self.current_file_saved else " *")
         )
+
+    def dbg_send_scintilla_command(self) -> None:
+        dialog = QDialog(self.window)
+        ui = dbg_send_scintilla_messages_ui.Ui_Dialog()
+        ui.setupUi(dialog)
+
+        def send_command_and_display_return() -> None:
+            editor = self.mcq_editor
+            message_name = "SCI_" + ui.message_name.text()
+            msg = getattr(editor, message_name, None)
+            args = [eval(arg) for arg in ui.message_args.text().split(",") if arg.strip()]
+            if msg is None:
+                ui.return_label.setText(f"Invalid message name: {message_name}.")
+            else:
+                try:
+                    val = editor.SendScintilla(msg, *args)
+                    ui.return_label.setText(f"Return: {val!r}")
+                except Exception as e:
+                    ui.return_label.setText(f"Return: {e!r}")
+
+        ui.sendButton.pressed.connect(send_command_and_display_return)
+        dialog.show()
 
 
 def my_excepthook(
