@@ -19,7 +19,6 @@ from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox,
 from ptyx.compilation import compile_latex  # , _build_command
 from ptyx.latex_generator import compiler
 
-from ptyx_mcq_editor.find_and_replace import replace_text
 from ptyx_mcq_editor.lexer import MyLexer
 from ptyx_mcq_editor.settings import Settings
 from ptyx_mcq_editor.signal_wake_up import SignalWakeupHandler
@@ -256,10 +255,11 @@ class MainWindowContent(Ui_MainWindow):
         self.mcq_editor.SCN_SAVEPOINTREACHED.connect(self._on_text_saved)
         self.mcq_editor.SCN_SAVEPOINTLEFT.connect(self._on_text_changed)
 
-        # ! Add editor to layout !
-        # -------------------------
-        # self.__lyt.addWidget(self.mcq_editor)
-        # self.show()
+        # Marker use to highlight all search results
+        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETSTYLE, MARKER_ID, QsciScintilla.INDIC_FULLBOX)
+        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, MARKER_ID, 100)
+        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, MARKER_ID, 200)
+        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETFORE, MARKER_ID, QColor("#67d0eb"))
 
     def request_to_close(self) -> bool:
         if self.ask_for_saving_if_needed():
@@ -416,28 +416,30 @@ class MainWindowContent(Ui_MainWindow):
         to_find = self.find_field.text()
         if not to_find:
             return
+        text = self.mcq_editor.text()
+        if not self.caseCheckBox.isChecked():
+            to_find = to_find.lower()
+            text = text.lower()
         # Scintilla positions correspond to a number of bytes, not a number of characters.
         to_find_as_bytes = to_find.encode("utf8")
-        text_as_bytes = self.mcq_editor.text().encode("utf8")
-        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETSTYLE, MARKER_ID, QsciScintilla.INDIC_FULLBOX)
-        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, MARKER_ID, 100)
-        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, MARKER_ID, 200)
-        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETFORE, MARKER_ID, QColor("#67d0eb"))
+        text_as_bytes = text.encode("utf8")
+        flags = 0
+        if self.caseCheckBox.isChecked():
+            flags |= re.IGNORECASE
+        if not self.regexCheckBox.isChecked():
+            to_find_as_bytes = re.escape(to_find_as_bytes)
+        if self.wholeCheckBox.isChecked():
+            to_find_as_bytes = rb"\b" + to_find_as_bytes + rb"\b"
+
         start = 0
         end = len(text_as_bytes)
         if self.selectionOnlyCheckBox.isChecked():
             start, end = self.selection_range()
 
-        end = text_as_bytes.rfind(to_find_as_bytes, start, end)
-        current = start - 1
-
-        if end != -1:
-            # line, index = self.mcq_editor.getCursorPosition()
-            while current != end:
-                current = text_as_bytes.find(to_find_as_bytes, current + 1)
-                self.mcq_editor.SendScintilla(
-                    QsciScintilla.SCI_INDICATORFILLRANGE, current, len(to_find_as_bytes)
-                )
+        for match in re.finditer(to_find_as_bytes, text_as_bytes[start:end], flags=flags):
+            self.mcq_editor.SendScintilla(
+                QsciScintilla.SCI_INDICATORFILLRANGE, start + match.start(), match.end() - match.start()
+            )
 
         # https://stackoverflow.com/questions/54305745/how-to-unselect-unhighlight-selected-and-highlighted-text-in-qscintilla-editor
 
@@ -479,40 +481,40 @@ class MainWindowContent(Ui_MainWindow):
                 )
             )
 
-        return
-        _from: int = 0
-        _to: int = len(current_text)
-        if selection_only:
-            # int lineFrom, int indexFrom, int lineTo, int indexTo
-            _, _from, _, _to = self.mcq_editor.getSelection()
-            if _from == -1:
-                # No selection.
-                assert _to == -1
-                _from = 0
-                _to = len(current_text)
-            else:
-                assert _to >= 0
-
-        before = current_text[:_from]
-        to_parse = current_text[_from:_to]
-        print(f"{to_parse=}")
-        after = current_text[_to:]
-
-        if mode == ReplaceMode.REPLACE_ALL:
-            replace: str = dialog.ui.replace_field.text()
-            assert dialog.replace
-            self.mcq_editor.setText(
-                before
-                + replace_text(
-                    to_parse,
-                    to_find,
-                    replace,
-                    is_regex=is_regex,
-                    whole_words=whole_words,
-                    caseless=caseless,
-                )
-                + after
-            )
+        # return
+        # _from: int = 0
+        # _to: int = len(current_text)
+        # if selection_only:
+        #     # int lineFrom, int indexFrom, int lineTo, int indexTo
+        #     _, _from, _, _to = self.mcq_editor.getSelection()
+        #     if _from == -1:
+        #         # No selection.
+        #         assert _to == -1
+        #         _from = 0
+        #         _to = len(current_text)
+        #     else:
+        #         assert _to >= 0
+        #
+        # before = current_text[:_from]
+        # to_parse = current_text[_from:_to]
+        # print(f"{to_parse=}")
+        # after = current_text[_to:]
+        #
+        # if mode == ReplaceMode.REPLACE_ALL:
+        #     replace: str = dialog.ui.replace_field.text()
+        #     assert dialog.replace
+        #     self.mcq_editor.setText(
+        #         before
+        #         + replace_text(
+        #             to_parse,
+        #             to_find,
+        #             replace,
+        #             is_regex=is_regex,
+        #             whole_words=whole_words,
+        #             caseless=caseless,
+        #         )
+        #         + after
+        #     )
 
     def save_file(self) -> None:
         self.save_file_as(path=self.settings.current_file)

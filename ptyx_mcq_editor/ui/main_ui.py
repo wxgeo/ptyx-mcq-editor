@@ -101,6 +101,7 @@ class Ui_MainWindow(object):
         self.gridLayout = QtWidgets.QGridLayout(self.options)
         self.gridLayout.setObjectName("gridLayout")
         self.caseCheckBox = QtWidgets.QCheckBox(parent=self.options)
+        self.caseCheckBox.setChecked(True)
         self.caseCheckBox.setObjectName("caseCheckBox")
         self.gridLayout.addWidget(self.caseCheckBox, 0, 0, 1, 1)
         self.selectionOnlyCheckBox = QtWidgets.QCheckBox(parent=self.options)

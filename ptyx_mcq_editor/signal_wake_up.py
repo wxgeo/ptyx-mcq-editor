@@ -1,5 +1,8 @@
-import sys, signal, socket
+import signal
+import socket
+
 from PyQt6 import QtCore, QtNetwork
+
 
 # https://stackoverflow.com/questions/4938723/what-is-the-correct-way-to-make-my-pyqt-application-quit-when-killed-from-the-co
 
