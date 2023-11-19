@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1417, 862)
+        MainWindow.resize(1142, 862)
         MainWindow.setAcceptDrops(False)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -25,7 +25,7 @@ class Ui_MainWindow(object):
         self.main_grid.addWidget(self.mcq_editor, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1417, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1142, 23))
         self.menubar.setObjectName("menubar")
         self.menuFichier = QtWidgets.QMenu(parent=self.menubar)
         self.menuFichier.setObjectName("menuFichier")
@@ -114,21 +114,7 @@ class Ui_MainWindow(object):
         self.regexCheckBox.setObjectName("regexCheckBox")
         self.gridLayout.addWidget(self.regexCheckBox, 3, 1, 1, 1)
         self.horizontalLayout.addWidget(self.options)
-        self.direction = QtWidgets.QGroupBox(parent=self.dockWidgetContents_2)
-        self.direction.setObjectName("direction")
-        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.direction)
-        self.verticalLayout_3.setObjectName("verticalLayout_3")
-        self.upRadioButton = QtWidgets.QRadioButton(parent=self.direction)
-        self.upRadioButton.setObjectName("upRadioButton")
-        self.verticalLayout_3.addWidget(self.upRadioButton)
-        self.downRadioButton = QtWidgets.QRadioButton(parent=self.direction)
-        self.downRadioButton.setChecked(True)
-        self.downRadioButton.setObjectName("downRadioButton")
-        self.verticalLayout_3.addWidget(self.downRadioButton)
-        self.horizontalLayout.addWidget(self.direction)
-        spacerItem = QtWidgets.QSpacerItem(
-            40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum
-        )
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.verticalLayout_2.addLayout(self.horizontalLayout)
         self.buttons_field = QtWidgets.QHBoxLayout()
@@ -137,21 +123,23 @@ class Ui_MainWindow(object):
         self.replace_all_button.setObjectName("replace_all_button")
         self.buttons_field.addWidget(self.replace_all_button)
         self.replace_button = QtWidgets.QPushButton(parent=self.dockWidgetContents_2)
+        self.replace_button.setAutoDefault(True)
         self.replace_button.setObjectName("replace_button")
         self.buttons_field.addWidget(self.replace_button)
-        spacerItem1 = QtWidgets.QSpacerItem(
-            40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum
-        )
+        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.buttons_field.addItem(spacerItem1)
-        self.find_button = QtWidgets.QPushButton(parent=self.dockWidgetContents_2)
-        self.find_button.setAutoDefault(True)
-        self.find_button.setDefault(False)
-        self.find_button.setObjectName("find_button")
-        self.buttons_field.addWidget(self.find_button)
+        self.previous_button = QtWidgets.QPushButton(parent=self.dockWidgetContents_2)
+        self.previous_button.setCheckable(False)
+        self.previous_button.setAutoDefault(True)
+        self.previous_button.setObjectName("previous_button")
+        self.buttons_field.addWidget(self.previous_button)
+        self.next_button = QtWidgets.QPushButton(parent=self.dockWidgetContents_2)
+        self.next_button.setAutoDefault(True)
+        self.next_button.setDefault(False)
+        self.next_button.setObjectName("next_button")
+        self.buttons_field.addWidget(self.next_button)
         self.verticalLayout_2.addLayout(self.buttons_field)
-        spacerItem2 = QtWidgets.QSpacerItem(
-            20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding
-        )
+        spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.verticalLayout_2.addItem(spacerItem2)
         self.find_and_replace_dock.setWidget(self.dockWidgetContents_2)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.find_and_replace_dock)
@@ -214,7 +202,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
-        self.action_Quitter.triggered.connect(MainWindow.close)  # type: ignore
+        self.action_Quitter.triggered.connect(MainWindow.close) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -228,12 +216,8 @@ class Ui_MainWindow(object):
         self.menu_propos.setTitle(_translate("MainWindow", "&About"))
         self.menuDebug.setTitle(_translate("MainWindow", "&Debug"))
         self.dockWidget.setWindowTitle(_translate("MainWindow", "Output"))
-        self.tabWidget.setTabText(
-            self.tabWidget.indexOf(self.latex_tab), _translate("MainWindow", "LaTeX Code")
-        )
-        self.tabWidget.setTabText(
-            self.tabWidget.indexOf(self.pdf_tab), _translate("MainWindow", "Pdf Rendering")
-        )
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.latex_tab), _translate("MainWindow", "LaTeX Code"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.pdf_tab), _translate("MainWindow", "Pdf Rendering"))
         self.find_and_replace_dock.setWindowTitle(_translate("MainWindow", "Find and replace"))
         self.findLabel.setText(_translate("MainWindow", "Fi&nd"))
         self.replace_label.setText(_translate("MainWindow", "Re&place with"))
@@ -241,28 +225,22 @@ class Ui_MainWindow(object):
         self.caseCheckBox.setText(_translate("MainWindow", "&Case sensitive"))
         self.selectionOnlyCheckBox.setText(_translate("MainWindow", "&Selection only"))
         self.wholeCheckBox.setText(_translate("MainWindow", "&Whole words only"))
-        self.regexCheckBox.setToolTip(
-            _translate(
-                "MainWindow",
-                '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">\n'
-                '<html><head><meta name="qrichtext" content="1" /><style type="text/css">\n'
-                "p, li { white-space: pre-wrap; }\n"
-                "</style></head><body style=\" font-family:'Sans'; font-size:10pt; font-weight:400; font-style:normal;\">\n"
-                '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">whether the text to search should be interpreted as a regular expression.</p>\n'
-                '<p style="-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"></p>\n'
-                '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">You may want to take a look at the syntax of regular expressions:</p>\n'
-                '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><a href="http://doc.trolltech.com/qregexp.html"><span style=" text-decoration: underline; color:#0000ff;">http://doc.trolltech.com/qregexp.html</span></a></p></body></html>',
-            )
-        )
+        self.regexCheckBox.setToolTip(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
+"p, li { white-space: pre-wrap; }\n"
+"</style></head><body style=\" font-family:\'Sans\'; font-size:10pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">whether the text to search should be interpreted as a regular expression.</p>\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"></p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">You may want to take a look at the syntax of regular expressions:</p>\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><a href=\"http://doc.trolltech.com/qregexp.html\"><span style=\" text-decoration: underline; color:#0000ff;\">http://doc.trolltech.com/qregexp.html</span></a></p></body></html>"))
         self.regexCheckBox.setText(_translate("MainWindow", "R&egular Expression"))
-        self.direction.setTitle(_translate("MainWindow", "D&irection"))
-        self.upRadioButton.setText(_translate("MainWindow", "&Up"))
-        self.downRadioButton.setText(_translate("MainWindow", "&Down"))
         self.replace_all_button.setText(_translate("MainWindow", "Replace &All"))
         self.replace_button.setText(_translate("MainWindow", "&Replace"))
-        self.find_button.setToolTip(_translate("MainWindow", "Find next occurence (F3)"))
-        self.find_button.setText(_translate("MainWindow", "&Find"))
-        self.find_button.setShortcut(_translate("MainWindow", "F3"))
+        self.previous_button.setText(_translate("MainWindow", "Pre&vious"))
+        self.previous_button.setShortcut(_translate("MainWindow", "Shift+F3"))
+        self.next_button.setToolTip(_translate("MainWindow", "Find next occurence (F3)"))
+        self.next_button.setText(_translate("MainWindow", "&Next"))
+        self.next_button.setShortcut(_translate("MainWindow", "F3"))
         self.action_New.setText(_translate("MainWindow", "&New"))
         self.action_New.setShortcut(_translate("MainWindow", "Ctrl+N"))
         self.action_Open.setText(_translate("MainWindow", "&Open"))
@@ -276,23 +254,18 @@ class Ui_MainWindow(object):
         self.action_LaTeX.setShortcut(_translate("MainWindow", "Ctrl+Shift+Return"))
         self.action_Pdf.setText(_translate("MainWindow", "&Pdf"))
         self.action_Pdf.setShortcut(_translate("MainWindow", "Ctrl+Return"))
-        self.action_Add_MCQ_Editor_to_start_menu.setText(
-            _translate("MainWindow", "&Add shortcut to MCQ Editor in the applications menu")
-        )
+        self.action_Add_MCQ_Editor_to_start_menu.setText(_translate("MainWindow", "&Add shortcut to MCQ Editor in the applications menu"))
         self.actionFind.setText(_translate("MainWindow", "&Find"))
         self.actionFind.setShortcut(_translate("MainWindow", "Ctrl+F"))
         self.actionReplace.setText(_translate("MainWindow", "&Replace"))
         self.actionReplace.setShortcut(_translate("MainWindow", "Ctrl+H"))
         self.actionNone.setText(_translate("MainWindow", "EMPTY"))
         self.action_Send_Qscintilla_Command.setText(_translate("MainWindow", "&Send Qscintilla Command"))
-
-
 from PyQt6 import Qsci
 
 
 if __name__ == "__main__":
     import sys
-
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()

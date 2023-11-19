@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1417</width>
+    <width>1142</width>
     <height>862</height>
    </rect>
   </property>
@@ -35,7 +35,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1417</width>
+     <width>1142</width>
      <height>23</height>
     </rect>
    </property>
@@ -236,32 +236,6 @@ p, li { white-space: pre-wrap; }
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="direction">
-         <property name="title">
-          <string>D&amp;irection</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <item>
-           <widget class="QRadioButton" name="upRadioButton">
-            <property name="text">
-             <string>&amp;Up</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="downRadioButton">
-            <property name="text">
-             <string>&amp;Down</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
         <spacer name="horizontalSpacer_2">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -290,6 +264,9 @@ p, li { white-space: pre-wrap; }
          <property name="text">
           <string>&amp;Replace</string>
          </property>
+         <property name="autoDefault">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
        <item>
@@ -306,12 +283,28 @@ p, li { white-space: pre-wrap; }
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="find_button">
+        <widget class="QPushButton" name="previous_button">
+         <property name="text">
+          <string>Pre&amp;vious</string>
+         </property>
+         <property name="shortcut">
+          <string>Shift+F3</string>
+         </property>
+         <property name="checkable">
+          <bool>false</bool>
+         </property>
+         <property name="autoDefault">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="next_button">
          <property name="toolTip">
           <string>Find next occurence (F3)</string>
          </property>
          <property name="text">
-          <string>&amp;Find</string>
+          <string>&amp;Next</string>
          </property>
          <property name="shortcut">
           <string>F3</string>

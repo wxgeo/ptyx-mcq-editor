@@ -52,8 +52,9 @@ ICON_PATH = Path(__file__).parent.parent / "ressources/mcq-editor.svg"
 MARKER_ID = 0
 
 
-class ReplaceMode(Enum):
-    FIND_ONLY = auto()
+class SearchAction(Enum):
+    FIND_NEXT = auto()
+    FIND_PREVIOUS = auto()
     REPLACE = auto()
     REPLACE_ALL = auto()
 
@@ -65,9 +66,9 @@ class ReplaceMode(Enum):
 #         self.ui = find_and_replace_ui.Ui_Dialog()
 #         self.ui.setupUi(self)
 #         func = parent.ui.find_and_replace
-#         self.ui.replace_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.REPLACE))
-#         self.ui.replace_all_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.REPLACE_ALL))
-#         self.ui.find_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.FIND_ONLY))
+#         self.ui.replace_button.pressed.connect(partial(func, dialog=self, mode=SearchAction.REPLACE))
+#         self.ui.replace_all_button.pressed.connect(partial(func, dialog=self, mode=SearchAction.REPLACE_ALL))
+#         self.ui.find_button.pressed.connect(partial(func, dialog=self, mode=SearchAction.FIND_ONLY))
 #         if not replace:
 #             self.ui.replace_all_button.setVisible(False)
 #             self.ui.replace_button.setVisible(False)
@@ -123,6 +124,7 @@ class MainWindowContent(Ui_MainWindow):
         self.pdf_doc = QPdfDocument(None)
         self.settings = Settings.load()
         self.new_search = True
+        self.last_search_action: Optional[SearchAction] = None
 
         # def __init__(self):
 
@@ -241,15 +243,17 @@ class MainWindowContent(Ui_MainWindow):
 
         # Find and search dock
         func = self.find_and_replace
-        self.replace_button.pressed.connect(partial(func, mode=ReplaceMode.REPLACE))
-        self.replace_all_button.pressed.connect(partial(func, mode=ReplaceMode.REPLACE_ALL))
-        self.find_button.pressed.connect(partial(func, mode=ReplaceMode.FIND_ONLY))
-        self.find_field.returnPressed.connect(partial(func, mode=ReplaceMode.FIND_ONLY))
+        self.replace_button.pressed.connect(partial(func, action=SearchAction.REPLACE))
+        self.replace_all_button.pressed.connect(partial(func, action=SearchAction.REPLACE_ALL))
+        self.next_button.pressed.connect(partial(func, action=SearchAction.FIND_NEXT))
+        self.previous_button.pressed.connect(partial(func, action=SearchAction.FIND_PREVIOUS))
+        self.find_field.returnPressed.connect(partial(func, action=SearchAction.FIND_NEXT))
         self.find_field.textChanged.connect(self.search_changed)
         for box in [self.wholeCheckBox, self.regexCheckBox, self.caseCheckBox, self.selectionOnlyCheckBox]:
             box.stateChanged.connect(self.search_changed)
-        self.upRadioButton.toggled.connect(self.search_changed)
         self.mcq_editor.selectionChanged.connect(self.highlight_all_find_results)
+        # If the cursor position change, we must start a new search from this new cursor position.
+        self.mcq_editor.cursorPositionChanged.connect(self.reset_search)
 
         # Save states
         self.mcq_editor.SCN_SAVEPOINTREACHED.connect(self._on_text_saved)
@@ -392,8 +396,29 @@ class MainWindowContent(Ui_MainWindow):
             0, 0, last_line, len(self.mcq_editor.text(last_line)) - 1, MARKER_ID
         )
 
+    def reset_search(self):
+        # During a search, when `findNext()` is called, the cursor is automatically
+        # moved to the next occurrence, so the signal `cursorPositionChanged`
+        # is emitted. However, the search must not be reset, since the cursor was not
+        # manually moved (if the search is reset, replacement will not occur).
+        # If the mcq_editor has not the focus, it means
+        # cursor hasn't been moved manually.
+        # This is not perfect though, since if mcq_editor has focus,
+        # the cursor may have been moved programmatically yet (e.g. using F3 or SHIFT+F3).
+        # One (dirty) solution is to force `mcq_editor` to lose
+        # its focus (see `find_and_replace()` comment).
+        # Maybe there is a cleaner and more reliable way to do this ?
+        # I tried to disconnect signal when entering `find_and_replace()`,
+        # and restoring it after, but it doesn't work. The `cursorPositionChanged` signal is maybe
+        # emitted only after leaving `find_and_replace()` ?
+        if self.mcq_editor.hasFocus():
+            self.new_search = True
+            print("New search")
+        else:
+            print("New search blocked")
+
     def search_changed(self):
-        print("New search")
+        print("New search and highlight")
         self.new_search = True
         self.highlight_all_find_results()
 
@@ -449,38 +474,46 @@ class MainWindowContent(Ui_MainWindow):
         self.replace_button.setVisible(display)
         self.replace_all_button.setVisible(display)
 
-    def find_and_replace(self, mode: ReplaceMode):
+    def find_and_replace(self, action: SearchAction):
+        # Because of `reset_search()` method hack (see comment there),
+        # it is important for `mcq_editor` to lose its focus.
+        self.find_field.setFocus()
+        if action in (action.FIND_NEXT, action.FIND_PREVIOUS) and action != self.last_search_action:
+            self.new_search = True
+            self.last_search_action = action
         if not self.new_search:
+            if action == SearchAction.REPLACE:
+                self.mcq_editor.replace(self.replace_field.text())
             if not self.mcq_editor.findNext():
+                # Restart search from the beginning of the text.
                 self.new_search = True
-            return
-        self.new_search = False
-        to_find: str = self.find_field.text()
-        is_regex = self.regexCheckBox.isChecked()
-        case_sensitive = self.caseCheckBox.isChecked()
-        selection_only = self.selectionOnlyCheckBox.isChecked()
-        whole_words = self.wholeCheckBox.isChecked()
-        current_text = self.mcq_editor.text()
-        forward = not self.upRadioButton.isChecked()
-        print(f"{forward=}")
-
-        # https://brdocumentation.github.io/qscintilla/classQsciScintilla.html#a04780d47f799c56b6af0a10b91875045
-        if selection_only:
-            print(repr(to_find))
-            print(
-                "sel",
-                self.mcq_editor.findFirstInSelection(
-                    to_find, is_regex, case_sensitive, whole_words, forward=forward
-                ),
-            )
         else:
-            print(repr(to_find))
-            print(
-                self.mcq_editor.findFirst(
-                    to_find, is_regex, case_sensitive, whole_words, True, forward=forward
-                )
-            )
+            to_find: str = self.find_field.text()
+            is_regex = self.regexCheckBox.isChecked()
+            case_sensitive = self.caseCheckBox.isChecked()
+            selection_only = self.selectionOnlyCheckBox.isChecked()
+            whole_words = self.wholeCheckBox.isChecked()
+            # current_text = self.mcq_editor.text()
+            forward = action != SearchAction.FIND_PREVIOUS
+            print(f"{forward=}")
 
+            # https://brdocumentation.github.io/qscintilla/classQsciScintilla.html#a04780d47f799c56b6af0a10b91875045
+            if selection_only:
+                print(repr(to_find))
+                print(
+                    "sel",
+                    self.mcq_editor.findFirstInSelection(
+                        to_find, is_regex, case_sensitive, whole_words, forward=forward
+                    ),
+                )
+            else:
+                print(repr(to_find))
+                print(
+                    self.mcq_editor.findFirst(
+                        to_find, is_regex, case_sensitive, whole_words, True, forward=forward
+                    )
+                )
+            self.new_search = False
         # return
         # _from: int = 0
         # _to: int = len(current_text)
@@ -500,7 +533,7 @@ class MainWindowContent(Ui_MainWindow):
         # print(f"{to_parse=}")
         # after = current_text[_to:]
         #
-        # if mode == ReplaceMode.REPLACE_ALL:
+        # if mode == SearchAction.REPLACE_ALL:
         #     replace: str = dialog.ui.replace_field.text()
         #     assert dialog.replace
         #     self.mcq_editor.setText(
