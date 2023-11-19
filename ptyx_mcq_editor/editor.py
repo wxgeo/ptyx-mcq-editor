@@ -56,7 +56,6 @@ class SearchAction(Enum):
     FIND_NEXT = auto()
     FIND_PREVIOUS = auto()
     REPLACE = auto()
-    REPLACE_ALL = auto()
 
 
 # class FindAndReplaceDialog(QDialog):
@@ -243,8 +242,8 @@ class MainWindowContent(Ui_MainWindow):
 
         # Find and search dock
         func = self.find_and_replace
+        self.replace_all_button.pressed.connect(self.replace_all)
         self.replace_button.pressed.connect(partial(func, action=SearchAction.REPLACE))
-        self.replace_all_button.pressed.connect(partial(func, action=SearchAction.REPLACE_ALL))
         self.next_button.pressed.connect(partial(func, action=SearchAction.FIND_NEXT))
         self.previous_button.pressed.connect(partial(func, action=SearchAction.FIND_PREVIOUS))
         self.find_field.returnPressed.connect(partial(func, action=SearchAction.FIND_NEXT))
@@ -474,7 +473,15 @@ class MainWindowContent(Ui_MainWindow):
         self.replace_button.setVisible(display)
         self.replace_all_button.setVisible(display)
 
-    def find_and_replace(self, action: SearchAction):
+    def replace_all(self):
+        self.mcq_editor.setCursorPosition(0, 0)
+        self.mcq_editor.SendScintilla(QsciScintilla.SCI_BEGINUNDOACTION)
+        while self.find_and_replace(action=SearchAction.REPLACE):
+            pass
+        self.mcq_editor.SendScintilla(QsciScintilla.SCI_ENDUNDOACTION)
+        self.mcq_editor.setFocus()
+
+    def find_and_replace(self, action: SearchAction) -> bool:
         # Because of `reset_search()` method hack (see comment there),
         # it is important for `mcq_editor` to lose its focus.
         self.find_field.setFocus()
@@ -484,10 +491,13 @@ class MainWindowContent(Ui_MainWindow):
         if not self.new_search:
             if action == SearchAction.REPLACE:
                 self.mcq_editor.replace(self.replace_field.text())
-            if not self.mcq_editor.findNext():
+
+            if not (next_find := self.mcq_editor.findNext()):
                 # Restart search from the beginning of the text.
                 self.new_search = True
+            return next_find
         else:
+            self.new_search = False
             to_find: str = self.find_field.text()
             is_regex = self.regexCheckBox.isChecked()
             case_sensitive = self.caseCheckBox.isChecked()
@@ -499,55 +509,13 @@ class MainWindowContent(Ui_MainWindow):
 
             # https://brdocumentation.github.io/qscintilla/classQsciScintilla.html#a04780d47f799c56b6af0a10b91875045
             if selection_only:
-                print(repr(to_find))
-                print(
-                    "sel",
-                    self.mcq_editor.findFirstInSelection(
-                        to_find, is_regex, case_sensitive, whole_words, forward=forward
-                    ),
+                return self.mcq_editor.findFirstInSelection(
+                    to_find, is_regex, case_sensitive, whole_words, forward=forward
                 )
             else:
-                print(repr(to_find))
-                print(
-                    self.mcq_editor.findFirst(
-                        to_find, is_regex, case_sensitive, whole_words, True, forward=forward
-                    )
+                return self.mcq_editor.findFirst(
+                    to_find, is_regex, case_sensitive, whole_words, True, forward=forward
                 )
-            self.new_search = False
-        # return
-        # _from: int = 0
-        # _to: int = len(current_text)
-        # if selection_only:
-        #     # int lineFrom, int indexFrom, int lineTo, int indexTo
-        #     _, _from, _, _to = self.mcq_editor.getSelection()
-        #     if _from == -1:
-        #         # No selection.
-        #         assert _to == -1
-        #         _from = 0
-        #         _to = len(current_text)
-        #     else:
-        #         assert _to >= 0
-        #
-        # before = current_text[:_from]
-        # to_parse = current_text[_from:_to]
-        # print(f"{to_parse=}")
-        # after = current_text[_to:]
-        #
-        # if mode == SearchAction.REPLACE_ALL:
-        #     replace: str = dialog.ui.replace_field.text()
-        #     assert dialog.replace
-        #     self.mcq_editor.setText(
-        #         before
-        #         + replace_text(
-        #             to_parse,
-        #             to_find,
-        #             replace,
-        #             is_regex=is_regex,
-        #             whole_words=whole_words,
-        #             caseless=caseless,
-        #         )
-        #         + after
-        #     )
 
     def save_file(self) -> None:
         self.save_file_as(path=self.settings.current_file)
