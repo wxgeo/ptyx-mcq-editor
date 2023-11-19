@@ -250,6 +250,7 @@ class MainWindowContent(Ui_MainWindow):
         for box in [self.wholeCheckBox, self.regexCheckBox, self.caseCheckBox, self.selectionOnlyCheckBox]:
             box.stateChanged.connect(self.search_changed)
         self.upRadioButton.toggled.connect(self.search_changed)
+        self.mcq_editor.selectionChanged.connect(self.highlight_all_find_results)
 
         # Save states
         self.mcq_editor.SCN_SAVEPOINTREACHED.connect(self._on_text_saved)
@@ -373,8 +374,17 @@ class MainWindowContent(Ui_MainWindow):
             self.find_and_replace_dock.setVisible(True)
             selected_text = self.mcq_editor.selectedText()
             if selected_text:
-                self.find_field.setText(selected_text)
+                if "\n" in selected_text:
+                    # The user probably wants to search only in the selection
+                    self.selectionOnlyCheckBox.setChecked(True)
+                else:
+                    # The selection is probably used to highlight the word to search.
+                    self.find_field.setText(selected_text)
+            else:
+                self.selectionOnlyCheckBox.setChecked(False)
             self.find_field.setFocus()
+            if self.find_field.text():
+                self.highlight_all_find_results()
 
     def clear_indicators(self):
         last_line = self.mcq_editor.lines() - 1
@@ -395,12 +405,14 @@ class MainWindowContent(Ui_MainWindow):
         line_from, index_from, line_to, index_to = self.mcq_editor.getSelection()
         return (
             self.mcq_editor.positionFromLineIndex(line_from, index_from),
-            self.mcq_editor.positionFromLineIndex(line_to, index_from),
+            self.mcq_editor.positionFromLineIndex(line_to, index_to),
         )
 
     def highlight_all_find_results(self):
         """Highlight all search results."""
         self.clear_indicators()
+        if self.find_and_replace_dock.isHidden():
+            return
         to_find = self.find_field.text()
         if not to_find:
             return
@@ -437,7 +449,8 @@ class MainWindowContent(Ui_MainWindow):
 
     def find_and_replace(self, mode: ReplaceMode):
         if not self.new_search:
-            self.mcq_editor.findNext()
+            if not self.mcq_editor.findNext():
+                self.new_search = True
             return
         self.new_search = False
         to_find: str = self.find_field.text()
