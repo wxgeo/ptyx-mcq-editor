@@ -123,6 +123,7 @@ class MainWindowContent(Ui_MainWindow):
         self.pdf_viewer = QtPdfWidgets.QPdfView(None)
         self.pdf_doc = QPdfDocument(None)
         self.settings = Settings.load()
+        self.new_search = True
 
         # def __init__(self):
 
@@ -147,6 +148,7 @@ class MainWindowContent(Ui_MainWindow):
 
     def setupUi(self, window: McqEditorMainWindow) -> None:
         super().setupUi(window)
+        window.ui = self
         # 3. Place a button
         # ------------------
         # self.__btn = QPushButton("Compile")
@@ -218,8 +220,13 @@ class MainWindowContent(Ui_MainWindow):
 
         print("created temporary directory", self.tmp_dir)
 
-        window.ui = self
+        if not ICON_PATH.is_file():
+            print(f"File not found: {ICON_PATH}")
+        self.update_title()
 
+        # -------------------
+        #   Connect signals
+        # -------------------
         # Menu
         self.action_New.triggered.connect(self.new_file)
         self.action_Open.triggered.connect(self.open_file)
@@ -238,14 +245,15 @@ class MainWindowContent(Ui_MainWindow):
         self.replace_button.pressed.connect(partial(func, mode=ReplaceMode.REPLACE))
         self.replace_all_button.pressed.connect(partial(func, mode=ReplaceMode.REPLACE_ALL))
         self.find_button.pressed.connect(partial(func, mode=ReplaceMode.FIND_ONLY))
-        self.find_field.textChanged.connect(self.highlight_all_find_results)
+        self.find_field.returnPressed.connect(partial(func, mode=ReplaceMode.FIND_ONLY))
+        self.find_field.textChanged.connect(self.search_changed)
+        for box in [self.wholeCheckBox, self.regexCheckBox, self.caseCheckBox, self.selectionOnlyCheckBox]:
+            box.stateChanged.connect(self.search_changed)
+        self.upRadioButton.toggled.connect(self.search_changed)
 
+        # Save states
         self.mcq_editor.SCN_SAVEPOINTREACHED.connect(self._on_text_saved)
         self.mcq_editor.SCN_SAVEPOINTLEFT.connect(self._on_text_changed)
-
-        if not ICON_PATH.is_file():
-            print(f"File not found: {ICON_PATH}")
-        self.update_title()
 
         # ! Add editor to layout !
         # -------------------------
@@ -367,6 +375,11 @@ class MainWindowContent(Ui_MainWindow):
             0, 0, last_line, len(self.mcq_editor.text(last_line)) - 1, MARKER_ID
         )
 
+    def search_changed(self):
+        print("New search")
+        self.new_search = True
+        self.highlight_all_find_results()
+
     def highlight_all_find_results(self):
         """Highlight all search results."""
         self.clear_indicators()
@@ -400,6 +413,10 @@ class MainWindowContent(Ui_MainWindow):
         self.replace_all_button.setVisible(display)
 
     def find_and_replace(self, mode: ReplaceMode):
+        if not self.new_search:
+            self.mcq_editor.findNext()
+            return
+        self.new_search = False
         to_find: str = self.find_field.text()
         is_regex = self.regexCheckBox.isChecked()
         case_sensitive = self.caseCheckBox.isChecked()
@@ -422,7 +439,7 @@ class MainWindowContent(Ui_MainWindow):
             print(repr(to_find))
             print(
                 self.mcq_editor.findFirst(
-                    to_find, is_regex, case_sensitive, whole_words, False, forward=forward
+                    to_find, is_regex, case_sensitive, whole_words, True, forward=forward
                 )
             )
 

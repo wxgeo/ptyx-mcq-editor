@@ -307,6 +307,15 @@ p, li { white-space: pre-wrap; }
          <property name="text">
           <string>&amp;Find</string>
          </property>
+         <property name="shortcut">
+          <string>F3</string>
+         </property>
+         <property name="autoDefault">
+          <bool>true</bool>
+         </property>
+         <property name="default">
+          <bool>false</bool>
+         </property>
         </widget>
        </item>
       </layout>

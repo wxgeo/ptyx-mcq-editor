@@ -9,14 +9,14 @@ SHELL_COMMAND = "mcq-editor"
 RESSOURCES_PATH = Path(__file__).resolve().parent.parent / "ressources"
 DESKTOP_FILE_NAME = "ptyx-mcq-editor.desktop"
 ICON_NAME = "mcq-editor.svg"
-ICON_DIR = "~/.local/share/icons/hicolor/scalable/apps/"
+ICON_DIR = Path("~/.local/share/icons/hicolor/scalable/apps/").expanduser()
 
 # TODO: use platformdirs instead?
 
 
 def install_desktop_shortcut() -> CompletedProcess[str]:
     icon_file = RESSOURCES_PATH / ICON_NAME
-    Path(ICON_DIR).mkdir(parents=True, exist_ok=True)
+    ICON_DIR.mkdir(parents=True, exist_ok=True)
     shutil.copy(icon_file, ICON_DIR)
 
     desktop_file = RESSOURCES_PATH / DESKTOP_FILE_NAME
