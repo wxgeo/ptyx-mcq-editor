@@ -235,8 +235,8 @@ class MainWindowContent(Ui_MainWindow):
         self.action_LaTeX.triggered.connect(self.display_latex)
         self.action_Pdf.triggered.connect(self.display_pdf)
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_menu_entry)
-        self.actionFind.triggered.connect(partial(self.show_find_and_replace_dialog, replace=False))
-        self.actionReplace.triggered.connect(partial(self.show_find_and_replace_dialog, replace=True))
+        self.actionFind.triggered.connect(partial(self.toggle_find_and_replace_dialog, replace=False))
+        self.actionReplace.triggered.connect(partial(self.toggle_find_and_replace_dialog, replace=True))
         self.menuFichier.aboutToShow.connect(self.update_recent_files_menu)
         self.action_Send_Qscintilla_Command.triggered.connect(self.dbg_send_scintilla_command)
 
@@ -361,13 +361,20 @@ class MainWindowContent(Ui_MainWindow):
         else:
             print("save_file action canceled.")
 
-    def show_find_and_replace_dialog(self, replace=True):
-        self.display_replace_widgets(replace)
-        self.find_and_replace_dock.setVisible(True)
-        selected_text = self.mcq_editor.selectedText()
-        if selected_text:
-            self.find_field.setText(selected_text)
-        self.find_field.setFocus()
+    def toggle_find_and_replace_dialog(self, replace=True):
+        if (replace and self.replace_field.isVisible()) or (
+            not replace and self.find_field.isVisible() and not self.replace_field.isVisible()
+        ):
+            # Typing Ctrl+F once open the dock, typing Ctrl+F again close it.
+            # Same thing for Ctrl+H.
+            self.find_and_replace_dock.setVisible(False)
+        else:
+            self.display_replace_widgets(replace)
+            self.find_and_replace_dock.setVisible(True)
+            selected_text = self.mcq_editor.selectedText()
+            if selected_text:
+                self.find_field.setText(selected_text)
+            self.find_field.setFocus()
 
     def clear_indicators(self):
         last_line = self.mcq_editor.lines() - 1
@@ -379,6 +386,17 @@ class MainWindowContent(Ui_MainWindow):
         print("New search")
         self.new_search = True
         self.highlight_all_find_results()
+
+    def selection_range(self) -> tuple[int, int]:
+        """Return start and end position of the selection.
+
+        Those positions correspond to the number of bytes, and not the number of unicode characters.
+        """
+        line_from, index_from, line_to, index_to = self.mcq_editor.getSelection()
+        return (
+            self.mcq_editor.positionFromLineIndex(line_from, index_from),
+            self.mcq_editor.positionFromLineIndex(line_to, index_from),
+        )
 
     def highlight_all_find_results(self):
         """Highlight all search results."""
@@ -393,15 +411,20 @@ class MainWindowContent(Ui_MainWindow):
         self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, MARKER_ID, 100)
         self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, MARKER_ID, 200)
         self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETFORE, MARKER_ID, QColor("#67d0eb"))
-        end = text_as_bytes.rfind(to_find_as_bytes)
-        cur = -1
+        start = 0
+        end = len(text_as_bytes)
+        if self.selectionOnlyCheckBox.isChecked():
+            start, end = self.selection_range()
+
+        end = text_as_bytes.rfind(to_find_as_bytes, start, end)
+        current = start - 1
 
         if end != -1:
             # line, index = self.mcq_editor.getCursorPosition()
-            while cur != end:
-                cur = text_as_bytes.find(to_find_as_bytes, cur + 1)
+            while current != end:
+                current = text_as_bytes.find(to_find_as_bytes, current + 1)
                 self.mcq_editor.SendScintilla(
-                    QsciScintilla.SCI_INDICATORFILLRANGE, cur, len(to_find_as_bytes)
+                    QsciScintilla.SCI_INDICATORFILLRANGE, current, len(to_find_as_bytes)
                 )
 
         # https://stackoverflow.com/questions/54305745/how-to-unselect-unhighlight-selected-and-highlighted-text-in-qscintilla-editor

@@ -304,6 +304,9 @@ p, li { white-space: pre-wrap; }
        </item>
        <item>
         <widget class="QPushButton" name="find_button">
+         <property name="toolTip">
+          <string>Find next occurence (F3)</string>
+         </property>
          <property name="text">
           <string>&amp;Find</string>
          </property>
