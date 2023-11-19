@@ -144,7 +144,7 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="find_replace_dock">
+  <widget class="QDockWidget" name="find_and_replace_dock">
    <property name="windowTitle">
     <string>Find and replace</string>
    </property>

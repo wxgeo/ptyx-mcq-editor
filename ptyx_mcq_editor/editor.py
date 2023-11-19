@@ -24,7 +24,7 @@ from ptyx_mcq_editor.lexer import MyLexer
 from ptyx_mcq_editor.settings import Settings
 from ptyx_mcq_editor.signal_wake_up import SignalWakeupHandler
 from ptyx_mcq_editor.tools import install_desktop_shortcut
-from ptyx_mcq_editor.ui import find_and_replace_ui, dbg_send_scintilla_messages_ui
+from ptyx_mcq_editor.ui import dbg_send_scintilla_messages_ui
 from ptyx_mcq_editor.ui.main_ui import Ui_MainWindow
 
 TEST = r"""
@@ -59,21 +59,21 @@ class ReplaceMode(Enum):
     REPLACE_ALL = auto()
 
 
-class FindAndReplaceDialog(QDialog):
-    def __init__(self, parent: "McqEditorMainWindow", replace=False) -> None:
-        super().__init__(parent=parent)
-        self.replace = replace
-        self.ui = find_and_replace_ui.Ui_Dialog()
-        self.ui.setupUi(self)
-        func = parent.ui.find_and_replace
-        self.ui.replace_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.REPLACE))
-        self.ui.replace_all_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.REPLACE_ALL))
-        self.ui.find_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.FIND_ONLY))
-        if not replace:
-            self.ui.replace_all_button.setVisible(False)
-            self.ui.replace_button.setVisible(False)
-            self.ui.replace_field.setVisible(False)
-            self.ui.replace_label.setVisible(False)
+# class FindAndReplaceDialog(QDialog):
+#     def __init__(self, parent: "McqEditorMainWindow", replace=False) -> None:
+#         super().__init__(parent=parent)
+#         self.replace = replace
+#         self.ui = find_and_replace_ui.Ui_Dialog()
+#         self.ui.setupUi(self)
+#         func = parent.ui.find_and_replace
+#         self.ui.replace_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.REPLACE))
+#         self.ui.replace_all_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.REPLACE_ALL))
+#         self.ui.find_button.pressed.connect(partial(func, dialog=self, mode=ReplaceMode.FIND_ONLY))
+#         if not replace:
+#             self.ui.replace_all_button.setVisible(False)
+#             self.ui.replace_button.setVisible(False)
+#             self.ui.replace_field.setVisible(False)
+#             self.ui.replace_label.setVisible(False)
 
 
 class McqEditorMainWindow(QMainWindow):
@@ -214,10 +214,13 @@ class MainWindowContent(Ui_MainWindow):
         self.pdf_viewer.setObjectName("pdf_viewer")
         self.pdf_tab_grid.addWidget(self.pdf_viewer, 0, 0, 1, 1)
 
+        self.find_and_replace_dock.setVisible(False)
+
         print("created temporary directory", self.tmp_dir)
 
         window.ui = self
 
+        # Menu
         self.action_New.triggered.connect(self.new_file)
         self.action_Open.triggered.connect(self.open_file)
         self.action_Save.triggered.connect(self.save_file)
@@ -230,7 +233,12 @@ class MainWindowContent(Ui_MainWindow):
         self.menuFichier.aboutToShow.connect(self.update_recent_files_menu)
         self.action_Send_Qscintilla_Command.triggered.connect(self.dbg_send_scintilla_command)
 
-        # self.mcq_editor.textChanged.connect(self.text_changed)
+        # Find and search dock
+        func = self.find_and_replace
+        self.replace_button.pressed.connect(partial(func, mode=ReplaceMode.REPLACE))
+        self.replace_all_button.pressed.connect(partial(func, mode=ReplaceMode.REPLACE_ALL))
+        self.find_button.pressed.connect(partial(func, mode=ReplaceMode.FIND_ONLY))
+        self.find_field.textChanged.connect(self.highlight_all_find_results)
 
         self.mcq_editor.SCN_SAVEPOINTREACHED.connect(self._on_text_saved)
         self.mcq_editor.SCN_SAVEPOINTLEFT.connect(self._on_text_changed)
@@ -346,8 +354,12 @@ class MainWindowContent(Ui_MainWindow):
             print("save_file action canceled.")
 
     def show_find_and_replace_dialog(self, replace=True):
-        dialog = FindAndReplaceDialog(self.window, replace=replace)
-        dialog.show()
+        self.display_replace_widgets(replace)
+        self.find_and_replace_dock.setVisible(True)
+        selected_text = self.mcq_editor.selectedText()
+        if selected_text:
+            self.find_field.setText(selected_text)
+        self.find_field.setFocus()
 
     def clear_indicators(self):
         last_line = self.mcq_editor.lines() - 1
@@ -355,16 +367,19 @@ class MainWindowContent(Ui_MainWindow):
             0, 0, last_line, len(self.mcq_editor.text(last_line)) - 1, MARKER_ID
         )
 
-    def highlight_all(self, to_find: str):
+    def highlight_all_find_results(self):
         """Highlight all search results."""
         self.clear_indicators()
+        to_find = self.find_field.text()
         if not to_find:
             return
         # Scintilla positions correspond to a number of bytes, not a number of characters.
         to_find_as_bytes = to_find.encode("utf8")
         text_as_bytes = self.mcq_editor.text().encode("utf8")
         self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETSTYLE, MARKER_ID, QsciScintilla.INDIC_FULLBOX)
-        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETFORE, MARKER_ID, QColor("darkBlue"))
+        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, MARKER_ID, 100)
+        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, MARKER_ID, 200)
+        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETFORE, MARKER_ID, QColor("#67d0eb"))
         end = text_as_bytes.rfind(to_find_as_bytes)
         cur = -1
 
@@ -378,17 +393,21 @@ class MainWindowContent(Ui_MainWindow):
 
         # https://stackoverflow.com/questions/54305745/how-to-unselect-unhighlight-selected-and-highlighted-text-in-qscintilla-editor
 
-    def find_and_replace(self, dialog: FindAndReplaceDialog, mode: ReplaceMode):
-        to_find: str = dialog.ui.find_field.text()
-        is_regex = dialog.ui.regexCheckBox.isChecked()
-        case_sensitive = dialog.ui.caseCheckBox.isChecked()
-        selection_only = dialog.ui.selectionOnlyCheckBox.isChecked()
-        whole_words = dialog.ui.wholeCheckBox.isChecked()
-        current_text = self.mcq_editor.text()
-        forward = not dialog.ui.upRadioButton.isChecked()
-        print(f"{forward=}")
+    def display_replace_widgets(self, display: bool):
+        self.replace_label.setVisible(display)
+        self.replace_field.setVisible(display)
+        self.replace_button.setVisible(display)
+        self.replace_all_button.setVisible(display)
 
-        self.highlight_all(to_find)
+    def find_and_replace(self, mode: ReplaceMode):
+        to_find: str = self.find_field.text()
+        is_regex = self.regexCheckBox.isChecked()
+        case_sensitive = self.caseCheckBox.isChecked()
+        selection_only = self.selectionOnlyCheckBox.isChecked()
+        whole_words = self.wholeCheckBox.isChecked()
+        current_text = self.mcq_editor.text()
+        forward = not self.upRadioButton.isChecked()
+        print(f"{forward=}")
 
         # https://brdocumentation.github.io/qscintilla/classQsciScintilla.html#a04780d47f799c56b6af0a10b91875045
         if selection_only:
