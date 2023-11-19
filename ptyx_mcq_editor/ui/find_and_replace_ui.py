@@ -25,9 +25,9 @@ class Ui_Dialog(object):
         self.find_field = QtWidgets.QLineEdit(parent=Dialog)
         self.find_field.setObjectName("find_field")
         self.texts_fields.setWidget(0, QtWidgets.QFormLayout.ItemRole.FieldRole, self.find_field)
-        self.label = QtWidgets.QLabel(parent=Dialog)
-        self.label.setObjectName("label")
-        self.texts_fields.setWidget(1, QtWidgets.QFormLayout.ItemRole.LabelRole, self.label)
+        self.replace_label = QtWidgets.QLabel(parent=Dialog)
+        self.replace_label.setObjectName("replace_label")
+        self.texts_fields.setWidget(1, QtWidgets.QFormLayout.ItemRole.LabelRole, self.replace_label)
         self.replace_field = QtWidgets.QLineEdit(parent=Dialog)
         self.replace_field.setObjectName("replace_field")
         self.texts_fields.setWidget(1, QtWidgets.QFormLayout.ItemRole.FieldRole, self.replace_field)
@@ -90,7 +90,7 @@ class Ui_Dialog(object):
         self.verticalLayout_2.addItem(spacerItem1)
         self.horizontalLayout.addLayout(self.verticalLayout_2)
         self.findLabel.setBuddy(self.find_field)
-        self.label.setBuddy(self.replace_field)
+        self.replace_label.setBuddy(self.replace_field)
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -109,7 +109,7 @@ class Ui_Dialog(object):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Find and replace"))
         self.findLabel.setText(_translate("Dialog", "Fi&nd"))
-        self.label.setText(_translate("Dialog", "Re&place with"))
+        self.replace_label.setText(_translate("Dialog", "Re&place with"))
         self.options.setTitle(_translate("Dialog", "&Options"))
         self.selectionOnlyCheckBox.setText(_translate("Dialog", "&Selection only"))
         self.regexCheckBox.setToolTip(

@@ -32,7 +32,7 @@
         <widget class="QLineEdit" name="find_field"/>
        </item>
        <item row="1" column="0">
-        <widget class="QLabel" name="label">
+        <widget class="QLabel" name="replace_label">
          <property name="text">
           <string>Re&amp;place with</string>
          </property>

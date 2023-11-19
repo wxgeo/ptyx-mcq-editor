@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import re
 import shutil
+import signal
 import sys
 from enum import Enum, auto
 from functools import partial
@@ -12,6 +13,7 @@ from typing import Optional, Type
 import ptyx_mcq
 from PyQt6 import Qsci, QtPdfWidgets
 from PyQt6.Qsci import QsciScintilla
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QColor, QDragEnterEvent, QDropEvent, QCloseEvent, QIcon
 from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox, QDialog
@@ -24,6 +26,7 @@ from ptyx_mcq_editor.settings import Settings
 from ptyx_mcq_editor.tools import install_desktop_shortcut
 from ptyx_mcq_editor.ui import find_and_replace_ui, dbg_send_scintilla_messages_ui
 from ptyx_mcq_editor.ui.main_ui import Ui_MainWindow
+from ptyx_mcq_editor.signal_wake_up import SignalWakeupHandler
 
 TEST = r"""
 * Combien fait
@@ -43,10 +46,12 @@ $\dfrac{#a}{#b}-\dfrac{#c}{#d}+\dfrac12$~?
 
 - aucune de ces réponses n'est correcte
 """
+DEBUG = True
 
 FILES_FILTER = ("Mcq Exercises Files (*.ex)", "All Files (*.*)")
 
 ICON_PATH = Path(__file__).parent.parent / "ressources/mcq-editor.svg"
+MARKER_ID = 0
 
 
 class ReplaceMode(Enum):
@@ -69,6 +74,7 @@ class FindAndReplaceDialog(QDialog):
             self.ui.replace_all_button.setVisible(False)
             self.ui.replace_button.setVisible(False)
             self.ui.replace_field.setVisible(False)
+            self.ui.replace_label.setVisible(False)
 
 
 class McqEditorMainWindow(QMainWindow):
@@ -158,7 +164,8 @@ class MainWindowContent(Ui_MainWindow):
         # ! Make instance of QSciScintilla class!
         # ----------------------------------------
         # self.mcq_editor = QsciScintilla()
-        # self.mcq_editor.setText(TEST)  # 'TEST' is a string containing some pTyX-MCQ-code
+        if DEBUG:
+            self.mcq_editor.setText(TEST)  # 'TEST' is a string containing some pTyX-MCQ-code
         self.mcq_editor.setLexer(None)  # We install lexer later
         self.mcq_editor.setUtf8(True)  # Set encoding to UTF-8
         font = QFont()
@@ -343,14 +350,63 @@ class MainWindowContent(Ui_MainWindow):
         dialog = FindAndReplaceDialog(self.window, replace=replace)
         dialog.show()
 
-    # https://stackoverflow.com/questions/54305745/how-to-unselect-unhighlight-selected-and-highlighted-text-in-qscintilla-editor
+    def clear_indicators(self):
+        last_line = self.mcq_editor.lines() - 1
+        self.mcq_editor.clearIndicatorRange(
+            0, 0, last_line, len(self.mcq_editor.text(last_line)) - 1, MARKER_ID
+        )
+
+    def highlight_all(self, to_find: str):
+        self.clear_indicators()
+        if not to_find:
+            return
+        to_find_as_bytes = to_find.encode("utf8")
+        text_as_bytes = self.mcq_editor.text().encode("utf8")
+        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETSTYLE, MARKER_ID, QsciScintilla.INDIC_FULLBOX)
+        self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETFORE, MARKER_ID, QColor("darkBlue"))
+        end = text_as_bytes.rfind(to_find_as_bytes)
+        cur = -1
+
+        if end != -1:
+            line, index = self.mcq_editor.getCursorPosition()
+            while cur != end:
+                cur = text_as_bytes.find(to_find_as_bytes, cur + 1)
+                self.mcq_editor.SendScintilla(
+                    QsciScintilla.SCI_INDICATORFILLRANGE, cur, len(to_find_as_bytes)
+                )
+
+        # https://stackoverflow.com/questions/54305745/how-to-unselect-unhighlight-selected-and-highlighted-text-in-qscintilla-editor
+
     def find_and_replace(self, dialog: FindAndReplaceDialog, mode: ReplaceMode):
-        find: str = dialog.ui.find_field.text()
+        to_find: str = dialog.ui.find_field.text()
         is_regex = dialog.ui.regexCheckBox.isChecked()
-        caseless = not dialog.ui.caseCheckBox.isChecked()
+        case_sensitive = dialog.ui.caseCheckBox.isChecked()
         selection_only = dialog.ui.selectionOnlyCheckBox.isChecked()
         whole_words = dialog.ui.wholeCheckBox.isChecked()
         current_text = self.mcq_editor.text()
+        forward = not dialog.ui.upRadioButton.isChecked()
+        print(f"{forward=}")
+
+        self.highlight_all(to_find)
+
+        # https://brdocumentation.github.io/qscintilla/classQsciScintilla.html#a04780d47f799c56b6af0a10b91875045
+        if selection_only:
+            print(repr(to_find))
+            print(
+                "sel",
+                self.mcq_editor.findFirstInSelection(
+                    to_find, is_regex, case_sensitive, whole_words, forward=forward
+                ),
+            )
+        else:
+            print(repr(to_find))
+            print(
+                self.mcq_editor.findFirst(
+                    to_find, is_regex, case_sensitive, whole_words, False, forward=forward
+                )
+            )
+
+        return
         _from: int = 0
         _to: int = len(current_text)
         if selection_only:
@@ -376,7 +432,7 @@ class MainWindowContent(Ui_MainWindow):
                 before
                 + replace_text(
                     to_parse,
-                    find,
+                    to_find,
                     replace,
                     is_regex=is_regex,
                     whole_words=whole_words,
@@ -470,11 +526,16 @@ def main() -> None:
     try:
         app = QApplication(sys.argv)
         app.setWindowIcon(QIcon(str(ICON_PATH)))
+        # Used to handle Ctrl+C
+        # https://stackoverflow.com/questions/4938723/what-is-the-correct-way-to-make-my-pyqt-application-quit-when-killed-from-the-co
+        SignalWakeupHandler(app)
         main_window = McqEditorMainWindow()
         # Don't close pyQt application on failure.
         sys.excepthook = partial(my_excepthook, window=main_window)
         ui = MainWindowContent(main_window)
         ui.setupUi(main_window)
+        # Used to handle Ctrl+C
+        signal.signal(signal.SIGINT, lambda sig, _: app.quit())
         main_window.show()
         return_code = app.exec()
     except BaseException as e:
