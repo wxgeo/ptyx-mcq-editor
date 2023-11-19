@@ -13,7 +13,6 @@ from typing import Optional, Type
 import ptyx_mcq
 from PyQt6 import Qsci, QtPdfWidgets
 from PyQt6.Qsci import QsciScintilla
-from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QColor, QDragEnterEvent, QDropEvent, QCloseEvent, QIcon
 from PyQt6.QtPdf import QPdfDocument
 from PyQt6.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox, QDialog
@@ -23,10 +22,10 @@ from ptyx.latex_generator import compiler
 from ptyx_mcq_editor.find_and_replace import replace_text
 from ptyx_mcq_editor.lexer import MyLexer
 from ptyx_mcq_editor.settings import Settings
+from ptyx_mcq_editor.signal_wake_up import SignalWakeupHandler
 from ptyx_mcq_editor.tools import install_desktop_shortcut
 from ptyx_mcq_editor.ui import find_and_replace_ui, dbg_send_scintilla_messages_ui
 from ptyx_mcq_editor.ui.main_ui import Ui_MainWindow
-from ptyx_mcq_editor.signal_wake_up import SignalWakeupHandler
 
 TEST = r"""
 * Combien fait
@@ -357,9 +356,11 @@ class MainWindowContent(Ui_MainWindow):
         )
 
     def highlight_all(self, to_find: str):
+        """Highlight all search results."""
         self.clear_indicators()
         if not to_find:
             return
+        # Scintilla positions correspond to a number of bytes, not a number of characters.
         to_find_as_bytes = to_find.encode("utf8")
         text_as_bytes = self.mcq_editor.text().encode("utf8")
         self.mcq_editor.SendScintilla(QsciScintilla.SCI_INDICSETSTYLE, MARKER_ID, QsciScintilla.INDIC_FULLBOX)
@@ -368,7 +369,7 @@ class MainWindowContent(Ui_MainWindow):
         cur = -1
 
         if end != -1:
-            line, index = self.mcq_editor.getCursorPosition()
+            # line, index = self.mcq_editor.getCursorPosition()
             while cur != end:
                 cur = text_as_bytes.find(to_find_as_bytes, cur + 1)
                 self.mcq_editor.SendScintilla(
