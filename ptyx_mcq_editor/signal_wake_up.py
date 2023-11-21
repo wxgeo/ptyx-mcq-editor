@@ -26,7 +26,7 @@ class SignalWakeupHandler(QtNetwork.QUdpSocket):
 
     def __del__(self):
         # Restore any old handler on deletion
-        if self.old_fd is not None and signal and signal.set_wakeup_fd:
+        if self.old_fd is not None and signal and signal.set_wakeup_fd:  # type: ignore
             signal.set_wakeup_fd(self.old_fd)
 
     def _readSignal(self):

@@ -8,13 +8,12 @@ packages = [{include = "ptyx_mcq_editor"}]
 include = ["ressources"]
 
 [tool.poetry.scripts]
-mcq-editor = "ptyx_mcq_editor.editor:main"
+mcq-editor = "ptyx_mcq_editor.main:main"
 
 [tool.poetry.dependencies]
 python = "^3.10"
 pyqt6-qscintilla = "^2.14.1"
-ptyx-mcq = "^25.0.0"
-ptyx = "^25.0.1"
+ptyx-mcq = "^26.0.0"
 platformdirs = "^3.2.0"
 
 [tool.poetry.group.dev.dependencies]

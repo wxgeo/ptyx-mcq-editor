@@ -236,7 +236,7 @@ class MyLexer(QsciLexerCustom):
             if token in REVERSED_QUOTES:
                 style = REVERSED_QUOTES[token]
                 mode = Mode.PYTHON_STRING
-            elif iskeyword(token):
+            elif iskeyword(token) or token in ("let", "case", "match"):
                 style = Style.PYTHON_KEYWORD
             elif token in ALL_BUILTINS:
                 style = Style.PYTHON_BUILTIN
