@@ -59,6 +59,10 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.pdf_viewer = QtPdfWidgets.QPdfView(None)
         self.pdf_doc = QPdfDocument(None)
         self.settings = Settings.load()
+        if self.settings.current_file.is_file():
+            self.open_file(path=self.settings.current_file)
+        else:
+            self.settings.current_file = ""
         # -----------------
         # Customize display
         # -----------------
