@@ -134,6 +134,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget):
 
     def highlight_all_find_results(self):
         """Highlight all search results."""
+        self.find_field.setStyleSheet("")
         self.clear_indicators()
         if self.isHidden():
             return
@@ -141,14 +142,14 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget):
         if not to_find:
             return
         text = self.mcq_editor.text()
-        if not self.caseCheckBox.isChecked():
-            to_find = to_find.lower()
-            text = text.lower()
+        # if not self.caseCheckBox.isChecked():
+        #     to_find = to_find.lower()
+        #     text = text.lower()
         # Scintilla positions correspond to a number of bytes, not a number of characters.
         to_find_as_bytes = to_find.encode("utf8")
         text_as_bytes = text.encode("utf8")
         flags = 0
-        if self.caseCheckBox.isChecked():
+        if not self.caseCheckBox.isChecked():
             flags |= re.IGNORECASE
         if not self.regexCheckBox.isChecked():
             to_find_as_bytes = re.escape(to_find_as_bytes)
@@ -159,11 +160,13 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget):
         end = len(text_as_bytes)
         if self.selectionOnlyCheckBox.isChecked():
             start, end = self.selection_range()
-
-        for match in re.finditer(to_find_as_bytes, text_as_bytes[start:end], flags=flags):
-            self.mcq_editor.SendScintilla(
-                QsciScintilla.SCI_INDICATORFILLRANGE, start + match.start(), match.end() - match.start()
-            )
+        try:
+            for match in re.finditer(to_find_as_bytes, text_as_bytes[start:end], flags=flags):
+                self.mcq_editor.SendScintilla(
+                    QsciScintilla.SCI_INDICATORFILLRANGE, start + match.start(), match.end() - match.start()
+                )
+        except re.error:
+            self.find_field.setStyleSheet("background-color: #ffe2db")
 
         # https://stackoverflow.com/questions/54305745/how-to-unselect-unhighlight-selected-and-highlighted-text-in-qscintilla-editor
 
