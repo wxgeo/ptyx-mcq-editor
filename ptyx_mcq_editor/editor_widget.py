@@ -1,14 +1,25 @@
+from typing import TYPE_CHECKING
+from functools import partial
+
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QFont, QColor
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget, QDialog
+from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
+
 from ptyx_mcq_editor.lexer import MyLexer
+from ptyx_mcq_editor.ui import dbg_send_scintilla_messages_ui
+
+if TYPE_CHECKING:
+    from ptyx_mcq_editor.main_window import McqEditorMainWindow
 
 SEARCH_MARKER_ID = 0
 
 
-class EditorWidget(QsciScintilla):
+class EditorWidget(QsciScintilla, EnhancedWidget):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
+        self.main_window: McqEditorMainWindow = self.get_main_window()
+
         # self.setLexer(None)  # We install lexer later
         self.setUtf8(True)  # Set encoding to UTF-8
         font = QFont()
@@ -55,3 +66,54 @@ class EditorWidget(QsciScintilla):
         self.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, SEARCH_MARKER_ID, 100)
         self.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, SEARCH_MARKER_ID, 200)
         self.SendScintilla(QsciScintilla.SCI_INDICSETFORE, SEARCH_MARKER_ID, QColor("#67d0eb"))
+
+        self.selectionChanged.connect(self.main_window.search_dock.highlight_all_find_results)
+        # If the cursor position change, we must start a new search from this new cursor position.
+        self.cursorPositionChanged.connect(self.main_window.search_dock.reset_search)
+
+        # Save states
+        self.SCN_SAVEPOINTREACHED.connect(partial(self._saved_state_changed, is_saved=True))
+        self.SCN_SAVEPOINTLEFT.connect(partial(self._saved_state_changed, is_saved=False))
+
+    def _saved_state_changed(self, is_saved: bool):
+        """Set saved state and update main window title accordingly.
+
+        It is a slot used internally for SCN_SAVEPOINTREACHED and SCN_SAVEPOINTLEFT signals.
+
+        This should never be used directly.
+        Set `is_saved` attribute to `True` or `False` instead.
+        """
+        self._is_saved = is_saved
+        self.main_window.update_title()
+
+    @property
+    def is_saved(self):
+        return self._is_saved
+
+    @is_saved.setter
+    def is_saved(self, is_saved: bool):
+        # Tell Scintilla that the current editor's state is its new saved state.
+        # More information on Scintilla messages: http://www.scintilla.org/ScintillaDoc.html
+        self.SendScintilla(QsciScintilla.SCI_SETSAVEPOINT)
+
+    def dbg_send_scintilla_command(self) -> None:
+        dialog = QDialog(self)
+        ui = dbg_send_scintilla_messages_ui.Ui_Dialog()
+        ui.setupUi(dialog)
+
+        def send_command_and_display_return() -> None:
+            editor = self
+            message_name = "SCI_" + ui.message_name.text()
+            msg = getattr(editor, message_name, None)
+            args = [eval(arg) for arg in ui.message_args.text().split(",") if arg.strip()]
+            if msg is None:
+                ui.return_label.setText(f"Invalid message name: {message_name}.")
+            else:
+                try:
+                    val = editor.SendScintilla(msg, *args)
+                    ui.return_label.setText(f"Return: {val!r}")
+                except Exception as e:
+                    ui.return_label.setText(f"Return: {e!r}")
+
+        ui.sendButton.pressed.connect(send_command_and_display_return)
+        dialog.show()

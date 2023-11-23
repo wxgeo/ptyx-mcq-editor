@@ -11,15 +11,17 @@ from PyQt6 import Qsci, QtPdfWidgets
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QDragEnterEvent, QDropEvent, QCloseEvent, QIcon
 from PyQt6.QtPdf import QPdfDocument
-from PyQt6.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QDialog
+from PyQt6.QtWidgets import QMainWindow, QFileDialog, QMessageBox
 from ptyx.compilation import compile_latex_to_pdf  # , _build_command
 from ptyx.latex_generator import Compiler
+from ptyx_mcq_editor.editor_tab import EditorTab
+
+from ptyx_mcq_editor.files_book import FilesBook
 
 from ptyx_mcq_editor.editor_widget import EditorWidget
 from ptyx_mcq_editor.find_and_replace import SearchAction
-from ptyx_mcq_editor.settings import Settings
+from ptyx_mcq_editor.settings import Settings, Side
 from ptyx_mcq_editor.tools import install_desktop_shortcut
-from ptyx_mcq_editor.ui import dbg_send_scintilla_messages_ui
 from ptyx_mcq_editor.ui.main_ui import Ui_MainWindow
 
 TEST = r"""
@@ -51,18 +53,18 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self) -> None:
         super().__init__(parent=None)
         self.setupUi(self)
+        self.books = {Side.LEFT: self.left_tab_widget, Side.RIGHT: self.right_tab_widget}
+        for side, book in self.books.items():
+            book.side = side
+
         # -----------------
         # Internal settings
         # -----------------
-        self.current_file_saved = True
+        # self.current_file_saved = True
         self.tmp_dir = Path(mkdtemp(prefix="mcq-editor-"))
         self.pdf_viewer = QtPdfWidgets.QPdfView(None)
         self.pdf_doc = QPdfDocument(None)
-        self.settings = Settings.load()
-        if self.settings.current_file.is_file():
-            self.open_file(path=self.settings.current_file)
-        else:
-            self.settings.current_file = ""
+        self.settings = Settings.load_settings()
         # -----------------
         # Customize display
         # -----------------
@@ -128,67 +130,34 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.find_field.textChanged.connect(self.search_dock.search_changed)
         for box in [self.wholeCheckBox, self.regexCheckBox, self.caseCheckBox, self.selectionOnlyCheckBox]:
             box.stateChanged.connect(self.search_dock.search_changed)
-        self.mcq_editor.selectionChanged.connect(self.search_dock.highlight_all_find_results)
-        # If the cursor position change, we must start a new search from this new cursor position.
-        self.mcq_editor.cursorPositionChanged.connect(self.search_dock.reset_search)
-
-        # Save states
-        self.mcq_editor.SCN_SAVEPOINTREACHED.connect(self._on_text_saved)
-        self.mcq_editor.SCN_SAVEPOINTLEFT.connect(self._on_text_changed)
 
     @property
     def current_mcq_editor(self) -> EditorWidget:
-        return self.mcq_editor
-
-    def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
-        assert event is not None
-        mime_data = event.mimeData()
-        assert mime_data is not None
-        if mime_data.hasUrls():
-            if any(url.path().endswith(".ex") for url in mime_data.urls()):
-                event.accept()
-            else:
-                event.ignore()
-        else:
-            event.ignore()
-
-    def dropEvent(self, event: Optional[QDropEvent]) -> None:
-        assert event is not None
-        mime_data = event.mimeData()
-        assert mime_data is not None
-        assert mime_data.hasUrls()
-        # TODO: for now, only one file can be opened at a time.
-        for url in mime_data.urls():
-            if url.path().endswith(".ex"):
-                self.open_file(path=url.toLocalFile())
-
-    def closeEvent(self, event: Optional[QCloseEvent]) -> None:
-        assert event is not None
-        assert self is not None
-        if self.request_to_close():
-            event.accept()
-        else:
-            event.ignore()
+        side = self.settings.current_side
+        current_book = self.books[side]
+        current_tab = current_book.currentWidget()
+        assert isinstance(current_tab, EditorTab)
+        return current_tab.editor
 
     def hide_right_view(self):
         self.right_tab_widget.hide()
 
     def request_to_close(self) -> bool:
-        if self.ask_for_saving_if_needed():
-            self.settings.save()
+        if all(book.ask_for_saving_if_needed() for book in self.books.values()):
+            self.settings.save_settings()
             shutil.rmtree(self.tmp_dir)
             return True
         return False
 
     def update_recent_files_menu(self) -> None:
-        if not self.settings.recent_files:
+        recent_files = tuple(self.settings.recent_files)
+        if not recent_files:
             self.menu_Recent_Files.menuAction().setVisible(False)
         else:
             self.menu_Recent_Files.clear()
-            for recent_file in self.settings.recent_files:
-                if recent_file.is_file():
-                    action = self.menu_Recent_Files.addAction(recent_file.name)
-                    action.triggered.connect(partial(self.open_file, path=recent_file))
+            for recent_file in recent_files:
+                action = self.menu_Recent_Files.addAction(recent_file.name)
+                action.triggered.connect(partial(self.open_file, path=recent_file))
             self.menu_Recent_Files.menuAction().setVisible(True)
 
     def _get_latex(self) -> str:
@@ -223,122 +192,16 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
     def add_menu_entry(self) -> None:
         completed_process = install_desktop_shortcut()
         if completed_process.returncode == 0:
+            # noinspection PyTypeChecker
             QMessageBox.information(
                 self, "Shortcut installed", "This application was successfully added to start menu."
             )
         else:
+            # noinspection PyTypeChecker
             QMessageBox.critical(self, "Unable to install shortcut", completed_process.stdout)
 
-    def new_file(self) -> None:
-        if self.ask_for_saving_if_needed():
-            self.mcq_editor.setText("")
-            self.settings.current_file = Path()
-            self.mark_as_saved()
-        else:
-            print("new_file action canceled.")
-
-    def open_file(self, *, path: str | Path | None = None) -> None:
-        if self.ask_for_saving_if_needed():
-            if path is None:
-                path, _ = QFileDialog.getOpenFileName(
-                    self,
-                    "Open MCQ file",
-                    str(self.settings.current_dir),
-                    ";;".join(FILES_FILTER),
-                    FILES_FILTER[0],
-                )
-            if path:
-                self.settings.current_file = path  # type: ignore
-                self.current_file_saved = True
-                with open(path, encoding="utf8") as f:
-                    self.mcq_editor.setText(f.read())
-                self.mark_as_saved()
-            else:
-                print("open_file action canceled.")
-        else:
-            print("open_file action canceled.")
-
-    def save_file_as(self, *, path: str | Path | None = None) -> None:
-        if path is None:
-            path, _ = QFileDialog.getSaveFileName(
-                self,
-                "Save as...",
-                str(self.settings.current_file),
-                ";;".join(FILES_FILTER),
-                FILES_FILTER[0],
-            )
-        if path:
-            self.settings.current_file = path  # type: ignore
-            with open(path, "w", encoding="utf8") as f:
-                f.write(self.mcq_editor.text())
-            self.mark_as_saved()
-        else:
-            print("save_file action canceled.")
-
-    def save_file(self) -> None:
-        self.save_file_as(path=self.settings.current_file)
-
-    def ask_for_saving_if_needed(self) -> bool:
-        """Ask user what to do if file is not saved.
-
-        Return `False` if user discard operation, else `True`."""
-        if self.current_file_saved:
-            return True
-        dialog = QMessageBox(self)
-        dialog.setWindowTitle("Unsaved document")
-        dialog.setText("Save the document before closing it ?")
-        dialog.setIcon(QMessageBox.Icon.Question)
-        dialog.setStandardButtons(
-            QMessageBox.StandardButton.Save
-            | QMessageBox.StandardButton.Discard
-            | QMessageBox.StandardButton.Abort
-        )
-        dialog.setDefaultButton(QMessageBox.StandardButton.Save)
-        dialog.exec()
-        result = dialog.result()
-        if result == QMessageBox.StandardButton.Save:
-            self.save_file()
-        return result != QMessageBox.StandardButton.Abort
-
-    def mark_as_saved(self) -> None:
-        # Tell Scintilla that the current editor's state is its new saved state.
-        # More information on Scintilla messages: http://www.scintilla.org/ScintillaDoc.html
-        self.mcq_editor.SendScintilla(QsciScintilla.SCI_SETSAVEPOINT)
-
-    def _on_text_changed(self) -> None:
-        self.current_file_saved = False
-        self.update_title()
-
-    def _on_text_saved(self) -> None:
-        self.current_file_saved = True
-        self.update_title()
-
-    def get_current_file_name(self):
-        return self.settings.current_file.name if self.settings.current_file.is_file() else ""
-
     def update_title(self) -> None:
-        self.setWindowTitle(
-            f"MCQ Editor - {self.get_current_file_name()}" + ("" if self.current_file_saved else " *")
-        )
+        self.setWindowTitle(f"MCQ Editor - {self.settings.current_doc_title}")
 
-    def dbg_send_scintilla_command(self) -> None:
-        dialog = QDialog(self)
-        ui = dbg_send_scintilla_messages_ui.Ui_Dialog()
-        ui.setupUi(dialog)
-
-        def send_command_and_display_return() -> None:
-            editor = self.mcq_editor
-            message_name = "SCI_" + ui.message_name.text()
-            msg = getattr(editor, message_name, None)
-            args = [eval(arg) for arg in ui.message_args.text().split(",") if arg.strip()]
-            if msg is None:
-                ui.return_label.setText(f"Invalid message name: {message_name}.")
-            else:
-                try:
-                    val = editor.SendScintilla(msg, *args)
-                    ui.return_label.setText(f"Return: {val!r}")
-                except Exception as e:
-                    ui.return_label.setText(f"Return: {e!r}")
-
-        ui.sendButton.pressed.connect(send_command_and_display_return)
-        dialog.show()
+    def dbg_send_scintilla_command(self):
+        self.current_mcq_editor.dbg_send_scintilla_command()
