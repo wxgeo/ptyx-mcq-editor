@@ -10,8 +10,8 @@ class EnhancedWidget(QWidget):
     def get_main_window(self) -> "McqEditorMainWindow":
         from ptyx_mcq_editor.main_window import McqEditorMainWindow
 
-        widget = self
+        widget: QWidget = self
         while widget.parent() is not None:
-            widget = widget.parent()
+            widget = widget.parent()  # type: ignore
         assert isinstance(widget, McqEditorMainWindow), widget
         return widget

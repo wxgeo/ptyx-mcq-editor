@@ -1,11 +1,14 @@
 import re
 from enum import Enum, auto
+from functools import partial
 from typing import TYPE_CHECKING
 
 from PyQt6 import QtWidgets
 from PyQt6.Qsci import QsciScintilla
+from PyQt6.QtWidgets import QCheckBox, QPushButton, QLabel, QLineEdit
+from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
-from ptyx_mcq_editor.editor_widget import SEARCH_MARKER_ID
+from ptyx_mcq_editor.editor.editor_widget import SEARCH_MARKER_ID, EditorWidget
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.main_window import McqEditorMainWindow
@@ -17,55 +20,74 @@ class SearchAction(Enum):
     REPLACE = auto()
 
 
-class FindAndReplaceWidget(QtWidgets.QDockWidget):
-    def __init__(self, parent):
+class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
+    def __init__(self, parent) -> None:
         super().__init__(parent)
         self.new_search = True
         self.last_search_action: SearchAction | None = None
         # Set later by main_window:
-        self.main_window: McqEditorMainWindow = None  # type: ignore
+        self.main_window: McqEditorMainWindow = self.get_main_window()
+
+    def connect_signals(self):
+        func = self.find_and_replace
+        self.replace_all_button.pressed.connect(self.replace_all)
+        self.replace_button.pressed.connect(partial(func, action=SearchAction.REPLACE))
+        self.next_button.pressed.connect(partial(func, action=SearchAction.FIND_NEXT))
+        self.previous_button.pressed.connect(partial(func, action=SearchAction.FIND_PREVIOUS))
+        self.find_field.returnPressed.connect(partial(func, action=SearchAction.FIND_NEXT))
+        self.find_field.textChanged.connect(self.search_changed)
+        for box in [self.wholeCheckBox, self.regexCheckBox, self.caseCheckBox, self.selectionOnlyCheckBox]:
+            box.stateChanged.connect(self.search_changed)
 
     @property
-    def mcq_editor(self):
+    def mcq_editor(self) -> EditorWidget:
         return self.main_window.current_mcq_editor
 
     @property
-    def find_field(self):
+    def find_field(self) -> QLineEdit:
         return self.main_window.find_field
 
     @property
-    def replace_field(self):
+    def replace_field(self) -> QLineEdit:
         return self.main_window.replace_field
 
     @property
-    def replace_label(self):
+    def replace_label(self) -> QLabel:
         return self.main_window.replace_label
 
     @property
-    def replace_button(self):
+    def replace_button(self) -> QPushButton:
         return self.main_window.replace_button
 
     @property
-    def replace_all_button(self):
+    def replace_all_button(self) -> QPushButton:
         return self.main_window.replace_all_button
 
     @property
-    def regexCheckBox(self):
+    def next_button(self) -> QPushButton:
+        return self.main_window.next_button
+
+    @property
+    def previous_button(self) -> QPushButton:
+        return self.main_window.previous_button
+
+    @property
+    def regexCheckBox(self) -> QCheckBox:
         return self.main_window.regexCheckBox
 
     @property
-    def caseCheckBox(self):
+    def caseCheckBox(self) -> QCheckBox:
         return self.main_window.caseCheckBox
 
     @property
-    def selectionOnlyCheckBox(self):
+    def selectionOnlyCheckBox(self) -> QCheckBox:
         return self.main_window.selectionOnlyCheckBox
 
     @property
-    def wholeCheckBox(self):
+    def wholeCheckBox(self) -> QCheckBox:
         return self.main_window.wholeCheckBox
 
-    def toggle_find_and_replace_dialog(self, replace=True):
+    def toggle_find_and_replace_dialog(self, replace=True) -> None:
         if (replace and self.replace_field.isVisible()) or (
             not replace and self.find_field.isVisible() and not self.replace_field.isVisible()
         ):
@@ -89,13 +111,13 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget):
             if self.find_field.text():
                 self.highlight_all_find_results()
 
-    def clear_indicators(self):
+    def clear_indicators(self) -> None:
         last_line = self.mcq_editor.lines() - 1
         self.mcq_editor.clearIndicatorRange(
             0, 0, last_line, len(self.mcq_editor.text(last_line)) - 1, SEARCH_MARKER_ID
         )
 
-    def reset_search(self):
+    def reset_search(self) -> None:
         # During a search, when `findNext()` is called, the cursor is automatically
         # moved to the next occurrence, so the signal `cursorPositionChanged`
         # is emitted. However, the search must not be reset, since the cursor was not
@@ -116,7 +138,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget):
         else:
             print("New search blocked")
 
-    def search_changed(self):
+    def search_changed(self) -> None:
         print("New search and highlight")
         self.new_search = True
         self.highlight_all_find_results()
@@ -132,7 +154,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget):
             self.mcq_editor.positionFromLineIndex(line_to, index_to),
         )
 
-    def highlight_all_find_results(self):
+    def highlight_all_find_results(self) -> None:
         """Highlight all search results."""
         self.find_field.setStyleSheet("")
         self.clear_indicators()
@@ -170,13 +192,13 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget):
 
         # https://stackoverflow.com/questions/54305745/how-to-unselect-unhighlight-selected-and-highlighted-text-in-qscintilla-editor
 
-    def display_replace_widgets(self, display: bool):
+    def display_replace_widgets(self, display: bool) -> None:
         self.replace_label.setVisible(display)
         self.replace_field.setVisible(display)
         self.replace_button.setVisible(display)
         self.replace_all_button.setVisible(display)
 
-    def replace_all(self):
+    def replace_all(self) -> None:
         self.mcq_editor.setCursorPosition(0, 0)
         self.mcq_editor.SendScintilla(QsciScintilla.SCI_BEGINUNDOACTION)
         while self.find_and_replace(action=SearchAction.REPLACE):

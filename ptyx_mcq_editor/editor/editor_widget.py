@@ -6,8 +6,8 @@ from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtWidgets import QWidget, QDialog
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
-from ptyx_mcq_editor.lexer import MyLexer
-from ptyx_mcq_editor.ui import dbg_send_scintilla_messages_ui
+from ptyx_mcq_editor.editor.lexer import MyLexer
+from ptyx_mcq_editor.generated_ui import dbg_send_scintilla_messages_ui
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.main_window import McqEditorMainWindow
@@ -71,30 +71,21 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         # If the cursor position change, we must start a new search from this new cursor position.
         self.cursorPositionChanged.connect(self.main_window.search_dock.reset_search)
 
+        handler = self.main_window.file_events_handler
         # Save states
-        self.SCN_SAVEPOINTREACHED.connect(partial(self._saved_state_changed, is_saved=True))
-        self.SCN_SAVEPOINTLEFT.connect(partial(self._saved_state_changed, is_saved=False))
+        self.SCN_SAVEPOINTREACHED.connect(partial(handler.change_doc_state, doc=self, is_saved=True))
+        self.SCN_SAVEPOINTLEFT.connect(partial(handler.change_doc_state, doc=self, is_saved=False))
 
-    def _saved_state_changed(self, is_saved: bool):
-        """Set saved state and update main window title accordingly.
-
-        It is a slot used internally for SCN_SAVEPOINTREACHED and SCN_SAVEPOINTLEFT signals.
-
-        This should never be used directly.
-        Set `is_saved` attribute to `True` or `False` instead.
-        """
-        self._is_saved = is_saved
-        self.main_window.update_title()
-
-    @property
-    def is_saved(self):
-        return self._is_saved
-
-    @is_saved.setter
-    def is_saved(self, is_saved: bool):
-        # Tell Scintilla that the current editor's state is its new saved state.
-        # More information on Scintilla messages: http://www.scintilla.org/ScintillaDoc.html
-        self.SendScintilla(QsciScintilla.SCI_SETSAVEPOINT)
+    # def _saved_state_changed(self, is_saved: bool):
+    #     """Set saved state and update main window title accordingly.
+    #
+    #     It is a slot used internally for SCN_SAVEPOINTREACHED and SCN_SAVEPOINTLEFT signals.
+    #
+    #     This should never be used directly.
+    #     Set `is_saved` attribute to `True` or `False` instead.
+    #     """
+    #     self._is_saved = is_saved
+    #     self.main_window.update_title()
 
     def dbg_send_scintilla_command(self) -> None:
         dialog = QDialog(self)

@@ -40,7 +40,7 @@ warn_redundant_casts = true
 # enable_error_code = true
 warn_unused_ignores = true
 # Warning: exclude strings are handled as regex by mypy!
-exclude = ["ptyx_mcq_editor/ui/"]
+exclude = ["ptyx_mcq_editor/generated_ui/"]
 
 [build-system]
 requires = ["poetry-core"]

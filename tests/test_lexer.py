@@ -1,4 +1,4 @@
-from ptyx_mcq_editor.lexer import get_all_tags
+from ptyx_mcq_editor.editor.lexer import get_all_tags
 
 
 def test_get_all_tags():
