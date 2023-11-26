@@ -256,6 +256,7 @@ class Ui_MainWindow(object):
         self.actionNone.setText(_translate("MainWindow", "EMPTY"))
         self.action_Send_Qscintilla_Command.setText(_translate("MainWindow", "&Send Qscintilla Command"))
         self.action_Close.setText(_translate("MainWindow", "&Close"))
+        self.action_Close.setShortcut(_translate("MainWindow", "Ctrl+W"))
 from ptyx_mcq_editor.compilation.tab_widget import CompilationTabs
 from ptyx_mcq_editor.files_book import FilesBook
 from ptyx_mcq_editor.find_and_replace import FindAndReplaceWidget

@@ -9,7 +9,7 @@ from ptyx.latex_generator import Compiler
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
 if TYPE_CHECKING:
-    from ptyx_mcq_editor.main_window import McqEditorMainWindow
+    pass
 
 
 class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):

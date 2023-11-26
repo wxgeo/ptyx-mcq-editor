@@ -1,13 +1,14 @@
+from functools import partial
 from pathlib import Path
 
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import QObject, pyqtSignal, Qt
-from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog
+from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QDialogButtonBox
 from ptyx_mcq_editor.editor.editor_tab import EditorTab
 
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 
-from ptyx_mcq_editor.generated_ui.ask_for_saving_ui import Ui_Dialog as AskForSavingDialogUi
+from ptyx_mcq_editor.generated_ui import ask_for_saving_ui
 
 from ptyx_mcq_editor.settings import Document, Settings, Side, DocumentHasNoPath, SamePath
 from typing import TYPE_CHECKING, Final, Sequence
@@ -21,6 +22,26 @@ Discard = QMessageBox.StandardButton.Discard
 Save = QMessageBox.StandardButton.Save
 
 FILES_FILTER = ("Mcq Exercises Files (*.ex)", "pTyX Files (*.ptyx)", "All Files (*.*)")
+
+
+class AskForSavingDialog(QDialog, ask_for_saving_ui.Ui_Dialog):
+    CANCEL = 0
+    SAVE = 1
+    DISCARD = 2
+
+    def __init__(self, parent: "McqEditorMainWindow", unsaved_filenames: list[str]) -> None:
+        super().__init__(parent=parent)
+        self.setupUi(self)
+        self.unsaved_filenames = unsaved_filenames
+        self.listWidget.addItems(unsaved_filenames)
+        for i in range(self.listWidget.count()):
+            item = self.listWidget.item(i)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Checked)
+
+        self.buttonBox.button(QDialogButtonBox.StandardButton.Discard).clicked.connect(
+            partial(self.done, self.DISCARD)
+        )
 
 
 class FileEventsHandler(QObject):
@@ -52,7 +73,7 @@ class FileEventsHandler(QObject):
             self.book(side).new_tab(self.settings.new_doc(side))
         except Exception as e:
             # TODO: Display a message
-            raise
+            raise e
         self.main_window.update_ui()
         return True
 
@@ -81,12 +102,13 @@ class FileEventsHandler(QObject):
             return False
         return self.save_doc_as(side, index, doc.path)
 
-    def select_doc(self, side: Side, index: int) -> None:
+    def on_tab_selection(self, side: Side, index: int) -> None:
         self.settings.docs(side).current_index = index
         self.main_window.update_ui()
 
     def change_doc_state(self, doc: Document, is_saved: bool) -> None:
         doc.is_saved = is_saved
+        print(f"doc state changed: {doc}")
         self.main_window.update_ui()
 
     def save_doc_as(self, side: Side = None, index: int = None, path: Path = None) -> bool:
@@ -103,6 +125,8 @@ class FileEventsHandler(QObject):
             tab = self.book(side).widget(index)
             # This should hold for tab too.
             assert isinstance(tab, EditorTab)
+            # Select tab, so that the user sees what he is about to save.
+            self.book(side).setCurrentIndex(index)
             saved = canceled = False
             while not saved and not canceled:
                 assert isinstance(tab.editor, EditorWidget)
@@ -229,26 +253,27 @@ class FileEventsHandler(QObject):
 
         Return True if we can quit program, or False is user canceled action.
         """
-        unsaved: list[str] = [
-            doc.title for side in Side for doc in self.settings.docs(side) if not doc.is_saved
-        ]
-        if len(unsaved) == 0:
+        unsaved_docs: dict[tuple[Side, int], str] = {
+            (side, index): doc.title
+            for side in Side
+            for (index, doc) in enumerate(self.settings.docs(side))
+            if not doc.is_saved
+        }
+        if len(unsaved_docs) == 0:
             return True
-        dialog = QDialog(self.main_window)
-        ui = AskForSavingDialogUi()
-        ui.setupUi(dialog)
-        ui.listWidget.addItems(unsaved)
-        for i in range(ui.listWidget.count()):
-            item = ui.listWidget.item(i)
-            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            item.setCheckState(Qt.CheckState.Checked)
-        dialog.exec()
-        result = dialog.result()
-        if result == QMessageBox.StandardButton.Save:
+        dialog = AskForSavingDialog(self.main_window, list(unsaved_docs.values()))
+        result = dialog.exec()
+        if result == AskForSavingDialog.SAVE:
+            for i, (side, index) in enumerate(unsaved_docs):
+                if dialog.listWidget.item(i).checkState() == Qt.CheckState.Checked:
+                    print(i, "selected")
+                    if not self.save_doc(side, index):
+                        return False
+
             print("Not Implemented.")
-            return False
-        elif result == QMessageBox.StandardButton.Discard:
+            return True
+        elif result == AskForSavingDialog.DISCARD:
             return True
         else:
-            assert result == QMessageBox.StandardButton.Abort, repr(result)
+            assert result == AskForSavingDialog.CANCEL, repr(result)
             return False

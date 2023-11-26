@@ -22,6 +22,7 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         pdf_file = main_window.tmp_dir / "tmp.pdf"
         # print(_build_command(latex_file, pdf_file))
         compilation_info = compile_latex_to_pdf(latex_file, dest=main_window.tmp_dir)
+        print(compilation_info)
         self.pdf_viewer.load(pdf_file)
         self.setCurrentIndex(self.indexOf(self.pdf_viewer))
 

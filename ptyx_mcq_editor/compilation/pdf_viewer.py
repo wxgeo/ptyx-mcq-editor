@@ -3,12 +3,11 @@ from typing import TYPE_CHECKING
 
 from PyQt6 import QtPdfWidgets
 from PyQt6.QtPdf import QPdfDocument
-from ptyx.compilation import compile_latex_to_pdf
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
 if TYPE_CHECKING:
-    from ptyx_mcq_editor.main_window import McqEditorMainWindow
+    pass
 
 
 class PdfViewer(QtPdfWidgets.QPdfView, EnhancedWidget):

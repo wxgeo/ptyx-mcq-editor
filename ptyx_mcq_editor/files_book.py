@@ -31,7 +31,7 @@ class FilesBook(QtWidgets.QTabWidget, EnhancedWidget):
 
         handler = self.main_window.file_events_handler
         self.tabCloseRequested.connect(partial(handler.close_doc, side))
-        self.currentChanged.connect(partial(handler.select_doc, side))
+        self.currentChanged.connect(partial(handler.on_tab_selection, side))
 
         # TODO: For drag-and-dropping a tab from one widget to another one:
         #  https://forum.qt.io/topic/67542/drag-tabs-between-qtabwidgets/5

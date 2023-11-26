@@ -56,6 +56,9 @@ class Document:
         self._path = path
         self.__class__.all_docs[self.doc_id] = self
 
+    def __str__(self):
+        return f"<Document {self.doc_id}: {self.path} (saved: {self.is_saved})>"
+
     @property
     def path(self) -> Path | None:
         return self._path
@@ -75,7 +78,7 @@ class Document:
     @property
     def title(self) -> str:
         name = self.path.name if self.path is not None else f"New document {self.doc_id}"
-        return name if self.is_saved else name + " *"
+        return name if self.is_saved else "* " + name
 
     def write(self, content: str, path: Path = None) -> None:
         """Write provided document content on given path.

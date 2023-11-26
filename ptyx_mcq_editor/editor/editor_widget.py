@@ -3,7 +3,9 @@ from functools import partial
 
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QFont, QColor
-from PyQt6.QtWidgets import QWidget, QDialog
+from PyQt6.QtWidgets import QDialog
+
+
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
 from ptyx_mcq_editor.editor.lexer import MyLexer
@@ -11,12 +13,13 @@ from ptyx_mcq_editor.generated_ui import dbg_send_scintilla_messages_ui
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.main_window import McqEditorMainWindow
+    from ptyx_mcq_editor.editor.editor_tab import EditorTab
 
 SEARCH_MARKER_ID = 0
 
 
 class EditorWidget(QsciScintilla, EnhancedWidget):
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: "EditorTab"):
         super().__init__(parent)
         self.main_window: McqEditorMainWindow = self.get_main_window()
 
@@ -73,8 +76,9 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
         handler = self.main_window.file_events_handler
         # Save states
-        self.SCN_SAVEPOINTREACHED.connect(partial(handler.change_doc_state, doc=self, is_saved=True))
-        self.SCN_SAVEPOINTLEFT.connect(partial(handler.change_doc_state, doc=self, is_saved=False))
+        self.SCN_SAVEPOINTREACHED.connect(partial(handler.change_doc_state, doc=parent.doc, is_saved=True))
+        self.SCN_SAVEPOINTLEFT.connect(partial(handler.change_doc_state, doc=parent.doc, is_saved=False))
+        self.SCN_SAVEPOINTLEFT.connect(partial(handler.change_doc_state, doc=parent.doc, is_saved=False))
 
     # def _saved_state_changed(self, is_saved: bool):
     #     """Set saved state and update main window title accordingly.

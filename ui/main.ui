@@ -432,6 +432,9 @@ p, li { white-space: pre-wrap; }
    <property name="text">
     <string>&amp;Close</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
   </action>
  </widget>
  <customwidgets>

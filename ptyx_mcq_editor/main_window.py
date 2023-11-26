@@ -191,7 +191,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
     def update_ui(self) -> None:
         # Update window and tab titles
         doc: Document | None = self.settings.docs().current_doc
-        window_title = f"MCQ Editor"
+        window_title = "MCQ Editor"
         if doc is not None:
             window_title = f"{window_title} - {doc.title}"
             current_side = self.settings.current_side
