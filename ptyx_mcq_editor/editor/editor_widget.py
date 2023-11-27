@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING
-from functools import partial
 
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QFont, QColor

@@ -1,4 +1,3 @@
-from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -28,8 +27,8 @@ class FilesBook(QtWidgets.QTabWidget, EnhancedWidget):
         self.side = side
 
         handler = self.main_window.file_events_handler
-        self.tabCloseRequested.connect(partial(handler.close_doc, side))
-        self.currentChanged.connect(partial(handler.on_tab_selected, side))
+        self.tabCloseRequested.connect(lambda index: handler.close_doc(side=side, index=index))
+        self.currentChanged.connect(lambda index: handler.on_tab_selected(side=side, index=index))
 
         # TODO: For drag-and-dropping a tab from one widget to another one:
         #  https://forum.qt.io/topic/67542/drag-tabs-between-qtabwidgets/5

@@ -1,4 +1,4 @@
-from functools import partial, wraps
+from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Sequence, Callable
 
@@ -38,7 +38,8 @@ def update_ui(f: Callable[..., bool]) -> Callable[..., bool]:
     def wrapper(self: "FileEventsHandler", *args, **kw) -> bool:
         current_freeze_value = self.freeze_update_ui
         self.freeze_update_ui = True
-        self.main_window.setUpdatesEnabled(False)
+        if not param.DEBUG:
+            self.main_window.setUpdatesEnabled(False)
         try:
             if param.DEBUG:
                 _args = [repr(arg) for arg in args] + [f"{key}={val!r}" for (key, val) in kw.items()]
@@ -73,7 +74,7 @@ class AskForSavingDialog(QDialog, ask_for_saving_ui.Ui_Dialog):
             item.setCheckState(Qt.CheckState.Checked)
 
         self.buttonBox.button(QDialogButtonBox.StandardButton.Discard).clicked.connect(
-            partial(self.done, self.DISCARD)
+            lambda: self.done(self.DISCARD)
         )
 
 
@@ -238,17 +239,17 @@ class FileEventsHandler(QObject):
 
         if side is None:
             side = self.settings.current_side
-        changed = False
         for path in paths:
             try:
                 doc = self.settings.docs(side).add_doc(path=path)
-                changed = True
                 # noinspection PyProtectedMember
                 assert doc._is_saved
                 assert doc.is_saved
             except SamePath:
                 print(f"Skipping '{path}': already opened.")
-        return changed
+                # No new file will be opened, however the selected doc may have changed.
+                # So, we must return `True` in that case too to update UI.
+        return True
 
     @update_ui
     def save_doc(self, side: Side = None, index: int = None) -> bool:
@@ -297,6 +298,7 @@ class FileEventsHandler(QObject):
                     except (IOError, DocumentHasNoPath, SamePath) as e:
                         # TODO: Custom message
                         print(e)
+                        path = None
         return saved
 
     @staticmethod

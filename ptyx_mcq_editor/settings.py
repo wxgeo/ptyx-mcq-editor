@@ -96,7 +96,7 @@ class Document:
             path = self._path
         else:
             # Two opened documents can't have the same path.
-            if any(path == doc.path for doc in self.__class__.all_docs.values()):
+            if any(path == doc.path for doc in self.__class__.all_docs.values() if doc is not self):
                 raise SamePath("Can't save the document with the same path as an already opened one.")
             self._path = path
         if path is None:
@@ -186,6 +186,8 @@ class DocumentsCollection:
             self._documents.append(doc)
         elif path is not None:
             if path in self.paths:
+                if select:
+                    self._current_index = self.index(path)
                 raise SamePath("I can't open the same file twice.")
             self._documents.append(doc := Document(path))
         if select:

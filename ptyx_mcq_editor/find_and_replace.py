@@ -1,6 +1,5 @@
 import re
 from enum import Enum, auto
-from functools import partial
 from typing import TYPE_CHECKING
 
 from PyQt6 import QtWidgets
@@ -27,12 +26,11 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
         self.last_search_action: SearchAction | None = None
 
     def connect_signals(self):
-        func = self.find_and_replace
         self.replace_all_button.pressed.connect(self.replace_all)
-        self.replace_button.pressed.connect(partial(func, action=SearchAction.REPLACE))
-        self.next_button.pressed.connect(partial(func, action=SearchAction.FIND_NEXT))
-        self.previous_button.pressed.connect(partial(func, action=SearchAction.FIND_PREVIOUS))
-        self.find_field.returnPressed.connect(partial(func, action=SearchAction.FIND_NEXT))
+        self.replace_button.pressed.connect(lambda: self.find_and_replace(action=SearchAction.REPLACE))
+        self.next_button.pressed.connect(lambda: self.find_and_replace(action=SearchAction.FIND_NEXT))
+        self.previous_button.pressed.connect(lambda: self.find_and_replace(action=SearchAction.FIND_PREVIOUS))
+        self.find_field.returnPressed.connect(lambda: self.find_and_replace(action=SearchAction.FIND_NEXT))
         self.find_field.textChanged.connect(self.search_changed)
         for box in [self.wholeCheckBox, self.regexCheckBox, self.caseCheckBox, self.selectionOnlyCheckBox]:
             box.stateChanged.connect(self.search_changed)

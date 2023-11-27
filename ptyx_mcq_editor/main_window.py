@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 import shutil
-from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
 
@@ -138,6 +137,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
             return True
         return False
 
+    # noinspection PyDefaultArgument
     def update_recent_files_menu(self) -> None:
         recent_files = tuple(self.settings.recent_files)
         if not recent_files:
@@ -146,7 +146,19 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
             self.menu_Recent_Files.clear()
             for recent_file in recent_files:
                 action = self.menu_Recent_Files.addAction(recent_file.name)
-                action.triggered.connect(partial(self.file_events_handler.open_doc, paths=[recent_file]))
+                # This is tricky.
+                # 1. Function provided must not use `recent_file` as unbound variable,
+                # since its value will change later in this loop.
+                # So, we use a default argument as a trick to copy current `recent_file` value
+                # (and not a reference) inside the function.
+                # 2. PyQt pass to given slot a boolean value (what is its meaning ??) if (and only if)
+                # it detects that the function have at least one argument.
+                # So, we have to provide a first dummy argument to the following lambda function.
+                action.triggered.connect(
+                    lambda _, paths=[recent_file]: self.file_events_handler.open_doc(
+                        side=None, paths=list(paths)
+                    )
+                )
             self.menu_Recent_Files.menuAction().setVisible(True)
 
     # def _get_latex(self) -> str:
