@@ -19,7 +19,7 @@ SEARCH_MARKER_ID = 0
 
 
 class EditorWidget(QsciScintilla, EnhancedWidget):
-    def __init__(self, parent: "EditorTab"):
+    def __init__(self, parent: "EditorTab", content=""):
         super().__init__(parent)
 
         # self.setLexer(None)  # We install lexer later
@@ -63,6 +63,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
         self.setLexer(MyLexer(self))
 
+        self.setText(content)
+
         # Marker use to highlight all search results
         self.SendScintilla(QsciScintilla.SCI_INDICSETSTYLE, SEARCH_MARKER_ID, QsciScintilla.INDIC_FULLBOX)
         self.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, SEARCH_MARKER_ID, 100)
@@ -75,8 +77,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
         handler = self.main_window.file_events_handler
         # Save states
-        # self.SCN_SAVEPOINTREACHED.connect(partial(handler.change_doc_state, doc=parent.doc, is_saved=True))
-        # self.SCN_SAVEPOINTLEFT.connect(partial(handler.change_doc_state, doc=parent.doc, is_saved=False))
+        self.SCN_SAVEPOINTREACHED.connect(lambda: handler.change_doc_state(doc=parent.doc, is_saved=True))
+        self.SCN_SAVEPOINTLEFT.connect(lambda: handler.change_doc_state(doc=parent.doc, is_saved=False))
 
     # def _saved_state_changed(self, is_saved: bool):
     #     """Set saved state and update main window title accordingly.

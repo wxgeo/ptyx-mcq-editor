@@ -245,14 +245,6 @@ class Settings:
     _current_side: Side = Side.LEFT
     _current_directory: Path | None = None
 
-    # @property
-    # def left_docs(self):
-    #     return self._left_docs
-    #
-    # @property
-    # def right_docs(self):
-    #     return self._right_docs
-
     @property
     def current_directory(self) -> Path:
         if self.current_doc is None or self.current_doc.path is None:
@@ -341,11 +333,11 @@ class Settings:
     def current_doc(self) -> Document | None:
         return self.docs(self._current_side).current_doc
 
-    @property
-    def current_doc_is_saved(self) -> bool:
-        if self.current_doc is None:
-            return True
-        return self.current_doc.is_saved
+    # @property
+    # def current_doc_is_saved(self) -> bool:
+    #     if self.current_doc is None:
+    #         return True
+    #     return self.current_doc.is_saved
 
     # @property
     # def current_doc_title(self) -> str:

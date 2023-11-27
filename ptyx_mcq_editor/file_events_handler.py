@@ -36,8 +36,9 @@ def update_ui(f: Callable[..., bool]) -> Callable[..., bool]:
 
     @wraps(f)
     def wrapper(self: "FileEventsHandler", *args, **kw) -> bool:
-        previous_freeze_value = self.freeze_update_ui
+        current_freeze_value = self.freeze_update_ui
         self.freeze_update_ui = True
+        self.main_window.setUpdatesEnabled(False)
         try:
             if param.DEBUG:
                 _args = [repr(arg) for arg in args] + [f"{key}={val!r}" for (key, val) in kw.items()]
@@ -46,15 +47,12 @@ def update_ui(f: Callable[..., bool]) -> Callable[..., bool]:
                 print(f.__name__)
             update = f(self, *args, **kw)
             assert isinstance(update, bool), update
-        finally:
-            self.freeze_update_ui = previous_freeze_value
-        if update and not self.freeze_update_ui:
-            self.main_window.setUpdatesEnabled(False)
-            try:
+            if update and not current_freeze_value:
                 self._update_ui()
-            finally:
-                self.main_window.setUpdatesEnabled(True)
-        return update
+            return update
+        finally:
+            self.main_window.setUpdatesEnabled(True)
+            self.freeze_update_ui = current_freeze_value
 
     return wrapper
 
@@ -139,7 +137,7 @@ class FileEventsHandler(QObject):
             else:
                 self.main_window.setWindowTitle(param.WINDOW_TITLE)
 
-            # Update window title
+        # Update window title
         # window_title = "MCQ Editor"
         # if current_index is not None:
         #     doc = self.settings.docs().current_doc

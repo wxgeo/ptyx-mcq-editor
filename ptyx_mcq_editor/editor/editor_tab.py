@@ -9,8 +9,6 @@ class EditorTab(QWidget):
         super().__init__(parent)
         self.doc = doc
         self.inner_layout = QVBoxLayout(self)
-        self.editor = EditorWidget(self)
+        content = self.doc.path.read_text(encoding="utf-8") if doc.path is not None else ""
+        self.editor = EditorWidget(self, content=content)
         self.inner_layout.addWidget(self.editor)
-        path = self.doc.path
-        if path is not None:
-            self.editor.setText(path.read_text(encoding="utf-8"))
