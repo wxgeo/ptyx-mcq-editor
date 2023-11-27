@@ -18,8 +18,10 @@ class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
         self.setLexer(Qsci.QsciLexerTeX(self))
 
     def _get_latex(self) -> str:
+        if self.main_window.current_mcq_editor is None:
+            return ""
         template = (Path(ptyx_mcq.__file__).parent / "templates/original/new.ptyx").read_text()
-        content = self.get_main_window().current_mcq_editor.text()
+        content = self.main_window.current_mcq_editor.text()
         if not content.lstrip().startswith("* "):
             content = "* \n" + content
         # re.sub() doesn't seem to work when "\dfrac" is in the replacement string... using re.split() instead.

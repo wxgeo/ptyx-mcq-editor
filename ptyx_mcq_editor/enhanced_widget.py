@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 
 class EnhancedWidget(QWidget):
-    def get_main_window(self) -> "McqEditorMainWindow":
+    def _get_main_window(self) -> "McqEditorMainWindow":
         from ptyx_mcq_editor.main_window import McqEditorMainWindow
 
         widget: QWidget = self
@@ -15,3 +15,8 @@ class EnhancedWidget(QWidget):
             widget = widget.parent()  # type: ignore
         assert isinstance(widget, McqEditorMainWindow), widget
         return widget
+
+    # TODO: use a cache ?
+    @property
+    def main_window(self):
+        return self._get_main_window()

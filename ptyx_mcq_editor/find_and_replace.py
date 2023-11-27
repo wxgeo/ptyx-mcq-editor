@@ -25,8 +25,6 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
         super().__init__(parent)
         self.new_search = True
         self.last_search_action: SearchAction | None = None
-        # Set later by main_window:
-        self.main_window: McqEditorMainWindow = self.get_main_window()
 
     def connect_signals(self):
         func = self.find_and_replace
@@ -40,7 +38,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
             box.stateChanged.connect(self.search_changed)
 
     @property
-    def mcq_editor(self) -> EditorWidget:
+    def current_mcq_editor(self) -> EditorWidget | None:
         return self.main_window.current_mcq_editor
 
     @property
@@ -97,7 +95,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
         else:
             self.display_replace_widgets(replace)
             self.setVisible(True)
-            selected_text = self.mcq_editor.selectedText()
+            selected_text = self.current_mcq_editor.selectedText()
             if selected_text:
                 if "\n" in selected_text:
                     # The user probably wants to search only in the selection
@@ -112,12 +110,16 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
                 self.highlight_all_find_results()
 
     def clear_indicators(self) -> None:
-        last_line = self.mcq_editor.lines() - 1
-        self.mcq_editor.clearIndicatorRange(
-            0, 0, last_line, len(self.mcq_editor.text(last_line)) - 1, SEARCH_MARKER_ID
+        if self.current_mcq_editor is None:
+            return
+        last_line = self.current_mcq_editor.lines() - 1
+        self.current_mcq_editor.clearIndicatorRange(
+            0, 0, last_line, len(self.current_mcq_editor.text(last_line)) - 1, SEARCH_MARKER_ID
         )
 
     def reset_search(self) -> None:
+        if self.current_mcq_editor is None:
+            return
         # During a search, when `findNext()` is called, the cursor is automatically
         # moved to the next occurrence, so the signal `cursorPositionChanged`
         # is emitted. However, the search must not be reset, since the cursor was not
@@ -132,7 +134,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
         # I tried to disconnect signal when entering `find_and_replace()`,
         # and restoring it after, but it doesn't work. The `cursorPositionChanged` signal is maybe
         # emitted only after leaving `find_and_replace()` ?
-        if self.mcq_editor.hasFocus():
+        if self.current_mcq_editor.hasFocus():
             self.new_search = True
             print("New search")
         else:
@@ -148,14 +150,17 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
 
         Those positions correspond to the number of bytes, and not the number of unicode characters.
         """
-        line_from, index_from, line_to, index_to = self.mcq_editor.getSelection()
+        assert self.current_mcq_editor is not None
+        line_from, index_from, line_to, index_to = self.current_mcq_editor.getSelection()
         return (
-            self.mcq_editor.positionFromLineIndex(line_from, index_from),
-            self.mcq_editor.positionFromLineIndex(line_to, index_to),
+            self.current_mcq_editor.positionFromLineIndex(line_from, index_from),
+            self.current_mcq_editor.positionFromLineIndex(line_to, index_to),
         )
 
     def highlight_all_find_results(self) -> None:
         """Highlight all search results."""
+        if self.current_mcq_editor is None:
+            return
         self.find_field.setStyleSheet("")
         self.clear_indicators()
         if self.isHidden():
@@ -163,7 +168,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
         to_find = self.find_field.text()
         if not to_find:
             return
-        text = self.mcq_editor.text()
+        text = self.current_mcq_editor.text()
         # if not self.caseCheckBox.isChecked():
         #     to_find = to_find.lower()
         #     text = text.lower()
@@ -184,7 +189,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
             start, end = self.selection_range()
         try:
             for match in re.finditer(to_find_as_bytes, text_as_bytes[start:end], flags=flags):
-                self.mcq_editor.SendScintilla(
+                self.current_mcq_editor.SendScintilla(
                     QsciScintilla.SCI_INDICATORFILLRANGE, start + match.start(), match.end() - match.start()
                 )
         except re.error:
@@ -199,12 +204,12 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
         self.replace_all_button.setVisible(display)
 
     def replace_all(self) -> None:
-        self.mcq_editor.setCursorPosition(0, 0)
-        self.mcq_editor.SendScintilla(QsciScintilla.SCI_BEGINUNDOACTION)
+        self.current_mcq_editor.setCursorPosition(0, 0)
+        self.current_mcq_editor.SendScintilla(QsciScintilla.SCI_BEGINUNDOACTION)
         while self.find_and_replace(action=SearchAction.REPLACE):
             pass
-        self.mcq_editor.SendScintilla(QsciScintilla.SCI_ENDUNDOACTION)
-        self.mcq_editor.setFocus()
+        self.current_mcq_editor.SendScintilla(QsciScintilla.SCI_ENDUNDOACTION)
+        self.current_mcq_editor.setFocus()
 
     def find_and_replace(self, action: SearchAction) -> bool:
         # Because of `reset_search()` method hack (see comment there),
@@ -215,9 +220,9 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
             self.last_search_action = action
         if not self.new_search:
             if action == SearchAction.REPLACE:
-                self.mcq_editor.replace(self.replace_field.text())
+                self.current_mcq_editor.replace(self.replace_field.text())
 
-            if not (next_find := self.mcq_editor.findNext()):
+            if not (next_find := self.current_mcq_editor.findNext()):
                 # Restart search from the beginning of the text.
                 self.new_search = True
             return next_find
@@ -228,16 +233,16 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
             case_sensitive = self.caseCheckBox.isChecked()
             selection_only = self.selectionOnlyCheckBox.isChecked()
             whole_words = self.wholeCheckBox.isChecked()
-            # current_text = self.mcq_editor.text()
+            # current_text = self.current_mcq_editor.text()
             forward = action != SearchAction.FIND_PREVIOUS
             print(f"{forward=}")
 
             # https://brdocumentation.github.io/qscintilla/classQsciScintilla.html#a04780d47f799c56b6af0a10b91875045
             if selection_only:
-                return self.mcq_editor.findFirstInSelection(
+                return self.current_mcq_editor.findFirstInSelection(
                     to_find, is_regex, case_sensitive, whole_words, forward=forward
                 )
             else:
-                return self.mcq_editor.findFirst(
+                return self.current_mcq_editor.findFirst(
                     to_find, is_regex, case_sensitive, whole_words, True, forward=forward
                 )

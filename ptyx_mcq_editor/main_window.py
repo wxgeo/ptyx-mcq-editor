@@ -4,8 +4,10 @@ from functools import partial
 from pathlib import Path
 from tempfile import mkdtemp
 
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QCloseEvent, QIcon
 from PyQt6.QtWidgets import QMainWindow, QMessageBox
+from ptyx_mcq_editor.param import ICON_PATH
 
 from ptyx_mcq_editor.file_events_handler import FileEventsHandler
 
@@ -34,16 +36,26 @@ $\dfrac{#a}{#b}-\dfrac{#c}{#d}+\dfrac12$~?
 
 - aucune de ces réponses n'est correcte
 """
-DEBUG = False
 
 
-ICON_PATH = Path(__file__).parent.parent / "ressources/mcq-editor.svg"
+# class FreezeUiUpdates:
+#     def __init__(self, main_window: "McqEditorMainWindow"):
+#         self.main_window = main_window
+#
+#     def __enter__(self):
+#         self.main_window.ui_updates_enabled = False
+#
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         self.main_window.ui_updates_enabled = True
+#         self.main_window.update_ui()
 
 
 class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
+    session_should_be_restored = pyqtSignal(name="session_should_be_restored")
+
     def __init__(self) -> None:
         super().__init__(parent=None)
-        self.settings = Settings.load_settings()
+        self.settings = Settings()
         self.file_events_handler = FileEventsHandler(self)
         self.setupUi(self)
         self.books = {Side.LEFT: self.left_tab_widget, Side.RIGHT: self.right_tab_widget}
@@ -55,6 +67,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         # -----------------
         self.tmp_dir = Path(mkdtemp(prefix="mcq-editor-"))
         print("created temporary directory", self.tmp_dir)
+        # self.ui_updates_enabled = True
 
         # -----------------
         # Customize display
@@ -65,9 +78,6 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
             self.setWindowIcon(QIcon(str(ICON_PATH)))
 
         self.search_dock.setVisible(False)
-        self.search_dock.main_window = self
-
-        self.update_ui()
 
         # TODO: enable right view
         self.hide_right_view()
@@ -78,37 +88,29 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.connect_menu_signals()
         self.search_dock.connect_signals()
 
-        self.restore_previous_session()
+        self.session_should_be_restored.connect(self.file_events_handler.restore_previous_session)
+        self.session_should_be_restored.emit()
 
     def connect_menu_signals(self) -> None:
-        self.action_New.triggered.connect(partial(self.file_events_handler.new_doc, side=None))
-        self.action_Open.triggered.connect(partial(self.file_events_handler.open_doc, side=None))
-        self.action_Save.triggered.connect(partial(self.file_events_handler.save_doc, side=None, index=None))
-        self.action_Close.triggered.connect(
-            partial(self.file_events_handler.close_doc, side=None, index=None)
-        )
+        self.action_New.triggered.connect(lambda: self.file_events_handler.new_doc(side=None))
+        self.action_Open.triggered.connect(lambda: self.file_events_handler.open_doc(side=None))
+        self.action_Save.triggered.connect(lambda: self.file_events_handler.save_doc(side=None, index=None))
+        self.action_Close.triggered.connect(lambda: self.file_events_handler.close_doc(side=None, index=None))
+
         self.actionSave_as.triggered.connect(
-            partial(self.file_events_handler.save_doc_as, side=None, index=None)
+            lambda: self.file_events_handler.save_doc_as(side=None, index=None)
         )
         self.action_LaTeX.triggered.connect(self.compilation_tabs.display_latex)
         self.action_Pdf.triggered.connect(self.compilation_tabs.display_pdf)
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_desktop_menu_entry)
         self.actionFind.triggered.connect(
-            partial(self.search_dock.toggle_find_and_replace_dialog, replace=False)
+            lambda: self.search_dock.toggle_find_and_replace_dialog(replace=False)
         )
         self.actionReplace.triggered.connect(
-            partial(self.search_dock.toggle_find_and_replace_dialog, replace=True)
+            lambda: self.search_dock.toggle_find_and_replace_dialog(replace=True)
         )
         self.menuFichier.aboutToShow.connect(self.update_recent_files_menu)
         self.action_Send_Qscintilla_Command.triggered.connect(self.dbg_send_scintilla_command)
-
-    def restore_previous_session(self) -> None:
-        for side, book in self.books.items():
-            paths = [doc.path for doc in self.settings.docs(side) if doc.path is not None]
-            if paths:
-                self.file_events_handler.open_doc(side=side, paths=paths)
-        if all(len(self.settings.docs(side)) == 0 for side in Side):
-            self.file_events_handler.new_doc(Side.LEFT)
 
     # noinspection PyMethodOverriding
     def closeEvent(self, event: QCloseEvent | None) -> None:
@@ -120,12 +122,11 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
             event.ignore()
 
     @property
-    def current_mcq_editor(self) -> EditorWidget:
+    def current_mcq_editor(self) -> EditorWidget | None:
         side = self.settings.current_side
         current_book = self.books[side]
         current_tab = current_book.currentWidget()
-        assert isinstance(current_tab, EditorTab), current_tab
-        return current_tab.editor
+        return None if current_tab is None else current_tab.editor
 
     def hide_right_view(self) -> None:
         self.right_tab_widget.hide()
@@ -188,28 +189,6 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
             # noinspection PyTypeChecker
             QMessageBox.critical(self, "Unable to install shortcut", completed_process.stdout)
 
-    def update_ui(self) -> None:
-        # Update window and tab titles
-        doc: Document | None = self.settings.docs().current_doc
-        window_title = "MCQ Editor"
-        if doc is not None:
-            window_title = f"{window_title} - {doc.title}"
-            current_side = self.settings.current_side
-            book = self.books[current_side]
-            book.setTabText(self.settings.docs().current_index, doc.title)
-            book.currentWidget().editor.setFocus()
-        self.setWindowTitle(window_title)
-
-        # Verify integrity
-        for side, book in self.books.items():
-            docs = self.settings.docs(side)
-            assert (len_ui := book.count()) == (len_settings := len(docs)), (len_ui, len_settings)
-            assert (ui_index := book.currentIndex()) == (settings_index := docs.current_index) or (
-                ui_index == -1 and settings_index is None
-            ), (ui_index, settings_index)
-            for i, doc in enumerate(docs):
-                assert book.widget(i).doc is doc
-                assert book.tabText(i) == doc.title
-
     def dbg_send_scintilla_command(self):
-        self.current_mcq_editor.dbg_send_scintilla_command()
+        if self.current_mcq_editor is not None:
+            self.current_mcq_editor.dbg_send_scintilla_command()

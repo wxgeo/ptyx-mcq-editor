@@ -59,6 +59,9 @@ class Document:
     def __str__(self):
         return f"<Document {self.doc_id}: {self.path} (saved: {self.is_saved})>"
 
+    def __repr__(self):
+        return str(self)
+
     @property
     def path(self) -> Path | None:
         return self._path
@@ -125,7 +128,7 @@ class DocumentsCollection:
         if self._current_index is None or len(self) == 0:
             return None
         elif self._current_index >= len(self):
-            len(self) - 1
+            return len(self) - 1
         return self._current_index
 
     @current_index.setter
@@ -223,7 +226,7 @@ class DocumentsCollection:
         """Used for saving settings when closing application."""
         return {
             "current_index": self.current_index if self.current_index is not None else -1,
-            "files": self.paths,
+            "files": [str(path) for path in self.paths],
         }
 
 
@@ -236,8 +239,8 @@ class Settings:
     - recent files
     """
 
-    _left_docs: DocumentsCollection
-    _right_docs: DocumentsCollection
+    _left_docs: DocumentsCollection = field(default_factory=lambda: DocumentsCollection(_side=Side.LEFT))
+    _right_docs: DocumentsCollection = field(default_factory=lambda: DocumentsCollection(_side=Side.RIGHT))
     _recent_files: list[Path] = field(default_factory=list)
     _current_side: Side = Side.LEFT
     _current_directory: Path | None = None
@@ -302,7 +305,7 @@ class Settings:
         self._right_docs._side = Side.RIGHT
         self._current_side = ~self._current_side
 
-    def open_doc(self, path: Path, side: Side) -> None:
+    def open_doc(self, path: Path, side: Side):
         if path in self.docs(side).paths:
             # Don't open twice the same document.
             index = self.docs(side).index(path)
@@ -354,7 +357,7 @@ class Settings:
         """Used for saving settings when closing application."""
         return {
             "current_side": self._current_side.name,
-            "recent_files": list(self.recent_files),
+            "recent_files": [str(path) for path in self.recent_files],
             "docs": {"left": self._left_docs.as_dict(), "right": self._right_docs.as_dict()},
             "current_directory": str(self.current_directory),
         }

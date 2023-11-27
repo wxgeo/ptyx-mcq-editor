@@ -11,3 +11,6 @@ class EditorTab(QWidget):
         self.inner_layout = QVBoxLayout(self)
         self.editor = EditorWidget(self)
         self.inner_layout.addWidget(self.editor)
+        path = self.doc.path
+        if path is not None:
+            self.editor.setText(path.read_text(encoding="utf-8"))

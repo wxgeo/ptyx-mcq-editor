@@ -21,7 +21,6 @@ SEARCH_MARKER_ID = 0
 class EditorWidget(QsciScintilla, EnhancedWidget):
     def __init__(self, parent: "EditorTab"):
         super().__init__(parent)
-        self.main_window: McqEditorMainWindow = self.get_main_window()
 
         # self.setLexer(None)  # We install lexer later
         self.setUtf8(True)  # Set encoding to UTF-8
@@ -76,9 +75,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
         handler = self.main_window.file_events_handler
         # Save states
-        self.SCN_SAVEPOINTREACHED.connect(partial(handler.change_doc_state, doc=parent.doc, is_saved=True))
-        self.SCN_SAVEPOINTLEFT.connect(partial(handler.change_doc_state, doc=parent.doc, is_saved=False))
-        self.SCN_SAVEPOINTLEFT.connect(partial(handler.change_doc_state, doc=parent.doc, is_saved=False))
+        # self.SCN_SAVEPOINTREACHED.connect(partial(handler.change_doc_state, doc=parent.doc, is_saved=True))
+        # self.SCN_SAVEPOINTLEFT.connect(partial(handler.change_doc_state, doc=parent.doc, is_saved=False))
 
     # def _saved_state_changed(self, is_saved: bool):
     #     """Set saved state and update main window title accordingly.

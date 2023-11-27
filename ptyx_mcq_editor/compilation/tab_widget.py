@@ -16,7 +16,7 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         self.addTab(self.pdf_viewer, "Pdf Rendering")
 
     def display_pdf(self) -> None:
-        main_window = self.get_main_window()
+        main_window = self.main_window
         latex = self.latex_viewer.load()
         (latex_file := main_window.tmp_dir / "tmp.tex").write_text(latex)
         pdf_file = main_window.tmp_dir / "tmp.pdf"

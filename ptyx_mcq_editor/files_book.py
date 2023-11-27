@@ -19,8 +19,6 @@ class FilesBook(QtWidgets.QTabWidget, EnhancedWidget):
 
     def __init__(self, parent: "McqEditorMainWindow") -> None:
         super().__init__(parent)
-        self.main_window: McqEditorMainWindow = self.get_main_window()
-        self.settings = self.main_window.settings
         self.setDocumentMode(True)
         self.setTabBarAutoHide(True)
         self.setTabsClosable(True)
@@ -31,13 +29,13 @@ class FilesBook(QtWidgets.QTabWidget, EnhancedWidget):
 
         handler = self.main_window.file_events_handler
         self.tabCloseRequested.connect(partial(handler.close_doc, side))
-        self.currentChanged.connect(partial(handler.on_tab_selection, side))
+        self.currentChanged.connect(partial(handler.on_tab_selected, side))
 
         # TODO: For drag-and-dropping a tab from one widget to another one:
         #  https://forum.qt.io/topic/67542/drag-tabs-between-qtabwidgets/5
 
         def move_doc(old_index: int, new_index: int) -> None:
-            handler.move_doc(side, old_index, side, new_index)
+            handler.on_tab_moved(side, old_index, side, new_index)
 
         self.tabBar().tabMoved.connect(move_doc)  # type: ignore
 
@@ -70,7 +68,7 @@ class FilesBook(QtWidgets.QTabWidget, EnhancedWidget):
 
     # def new_file(self) -> None:
     #     if self.ask_for_saving_if_needed():
-    #         self.mcq_editor.setText("")
+    #         self.current_mcq_editor.setText("")
     #         self.settings.current_file = Path()
     #         self.mark_as_saved()
     #     else:
@@ -91,7 +89,7 @@ class FilesBook(QtWidgets.QTabWidget, EnhancedWidget):
     #             self.settings.current_file = path  # type: ignore
     #             self.current_mcq_editor.set_saved_state(True)
     #             with open(path, encoding="utf8") as f:
-    #                 self.mcq_editor.setText(f.read())
+    #                 self.current_mcq_editor.setText(f.read())
     #             self.mark_as_saved()
     #         else:
     #             print("open_file action canceled.")
@@ -102,12 +100,11 @@ class FilesBook(QtWidgets.QTabWidget, EnhancedWidget):
     # def mark_as_saved(self) -> None:
     #     self.current_mcq_editor.is_saved = True
 
-    def new_tab(self, doc: Document, content: str = "") -> None:
-        new_tab = EditorTab(self, doc, content)
-        self.addTab(new_tab, "")
-        self.setCurrentIndex(self.count() - 1)
-        if content:
-            new_tab.editor.setText(content)
+    def new_tab(self, doc: Document, index: int = None) -> None:
+        if index is None:
+            index = self.count()
+        self.insertTab(index, EditorTab(self, doc), doc.title)
+        # self.setCurrentIndex(self.count() - 1)
 
     def close_tab(self, index: int) -> None:
         widget = self.widget(index)
