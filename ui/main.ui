@@ -138,6 +138,18 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
     <layout class="QVBoxLayout" name="verticalLayout_2">
+     <property name="leftMargin">
+      <number>11</number>
+     </property>
+     <property name="topMargin">
+      <number>11</number>
+     </property>
+     <property name="rightMargin">
+      <number>11</number>
+     </property>
+     <property name="bottomMargin">
+      <number>11</number>
+     </property>
      <item>
       <layout class="QFormLayout" name="texts_fields">
        <item row="0" column="0">
@@ -176,6 +188,13 @@
           <string>&amp;Options</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="selectionOnlyCheckBox">
+            <property name="text">
+             <string>&amp;Selection only</string>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="0">
            <widget class="QCheckBox" name="caseCheckBox">
             <property name="text">
@@ -183,13 +202,6 @@
             </property>
             <property name="checked">
              <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QCheckBox" name="selectionOnlyCheckBox">
-            <property name="text">
-             <string>&amp;Selection only</string>
             </property>
            </widget>
           </item>
@@ -217,21 +229,21 @@ p, li { white-space: pre-wrap; }
             </property>
            </widget>
           </item>
+          <item row="0" column="2">
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </item>
