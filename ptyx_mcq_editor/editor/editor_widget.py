@@ -4,14 +4,11 @@ from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtWidgets import QDialog
 
-
-from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
-
 from ptyx_mcq_editor.editor.lexer import MyLexer
+from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 from ptyx_mcq_editor.generated_ui import dbg_send_scintilla_messages_ui
 
 if TYPE_CHECKING:
-    from ptyx_mcq_editor.main_window import McqEditorMainWindow
     from ptyx_mcq_editor.editor.editor_tab import EditorTab
 
 SEARCH_MARKER_ID = 0

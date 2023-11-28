@@ -5,7 +5,7 @@ from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 
 
 class EditorTab(QWidget):
-    def __init__(self, parent: QWidget, doc: Document, content: str = ""):
+    def __init__(self, parent: QWidget, doc: Document):
         super().__init__(parent)
         self.doc = doc
         self.inner_layout = QVBoxLayout(self)

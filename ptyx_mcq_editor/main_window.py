@@ -6,47 +6,13 @@ from tempfile import mkdtemp
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QCloseEvent, QIcon
 from PyQt6.QtWidgets import QMainWindow, QMessageBox
-from ptyx_mcq_editor.param import ICON_PATH
-
-from ptyx_mcq_editor.file_events_handler import FileEventsHandler
-
-from ptyx_mcq_editor.editor.editor_tab import EditorTab
 
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
-from ptyx_mcq_editor.settings import Settings, Side, Document
-from ptyx_mcq_editor.tools import install_desktop_shortcut
+from ptyx_mcq_editor.file_events_handler import FileEventsHandler
 from ptyx_mcq_editor.generated_ui.main_ui import Ui_MainWindow
-
-TEST = r"""
-* Combien fait
-...............
-while True:
-    let a, b, c, d in 2..9
-    if distinct(a/b-c/d+S(1)/2, a/b-c/d-S(1)/2, (a+c+1)/(b+d+2), (a-c+1)/(b+d+2), (a-c+1)/(b-d+2)):
-        break
-...............
-$\dfrac{#a}{#b}-\dfrac{#c}{#d}+\dfrac12$~?
-
-+ $#{a/b-c/d+S(1)/2}$
-- $#{a/b-c/d-S(1)/2}$
-- $#{(a+c+1)/(b+d+2)}$
-- $#{(a-c+1)/(b+d+2)}$
-- $#{(a-c+1)/(b-d+2)}$
-
-- aucune de ces réponses n'est correcte
-"""
-
-
-# class FreezeUiUpdates:
-#     def __init__(self, main_window: "McqEditorMainWindow"):
-#         self.main_window = main_window
-#
-#     def __enter__(self):
-#         self.main_window.ui_updates_enabled = False
-#
-#     def __exit__(self, exc_type, exc_val, exc_tb):
-#         self.main_window.ui_updates_enabled = True
-#         self.main_window.update_ui()
+from ptyx_mcq_editor.param import ICON_PATH
+from ptyx_mcq_editor.settings import Settings, Side
+from ptyx_mcq_editor.tools import install_desktop_shortcut
 
 
 class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
@@ -160,35 +126,6 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
                     )
                 )
             self.menu_Recent_Files.menuAction().setVisible(True)
-
-    # def _get_latex(self) -> str:
-    #     template = (Path(ptyx_mcq.__file__).parent / "templates/original/new.ptyx").read_text()
-    #     content = self.current_mcq_editor.text()
-    #     if not content.lstrip().startswith("* "):
-    #         content = "* \n" + content
-    #     # re.sub() doesn't seem to work when "\dfrac" is in the replacement string... using re.split() instead.
-    #     before, _, after = re.split("(<<<.+>>>)", template, flags=re.MULTILINE | re.DOTALL)
-    #     ptyx_code = f"{before}\n<<<\n{content}\n>>>\n{after}"
-    #     compiler = Compiler()
-    #     latex = compiler.parse(
-    #         code=ptyx_code, MCQ_KEEP_ALL_VERSIONS=True, PTYX_WITH_ANSWERS=True, MCQ_REMOVE_HEADER=True
-    #     )
-    #     return latex
-
-    # def display_latex(self) -> None:
-    #     self.latex_editor.setText(self._get_latex())
-    #     self.tabWidget.setCurrentIndex(0)
-
-    # def display_pdf(self) -> None:
-    #     self.latex_editor.setText(latex := self._get_latex())
-    #     (latex_file := self.tmp_dir / "tmp.tex").write_text(latex)
-    #     pdf_file = self.tmp_dir / "tmp.pdf"
-    #     # print(_build_command(latex_file, pdf_file))
-    #     compilation_info = compile_latex_to_pdf(latex_file, dest=self.tmp_dir)
-    #     self.pdf_doc.setParent(self.pdf_viewer)
-    #     self.pdf_doc.load(str(pdf_file))
-    #     self.pdf_viewer.setDocument(self.pdf_doc)
-    #     self.tabWidget.setCurrentIndex(1)
 
     def add_desktop_menu_entry(self) -> None:
         completed_process = install_desktop_shortcut()

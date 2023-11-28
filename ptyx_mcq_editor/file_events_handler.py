@@ -22,8 +22,6 @@ Save = QMessageBox.StandardButton.Save
 
 FILES_FILTER = ("Mcq Exercises Files (*.ex)", "pTyX Files (*.ptyx)", "All Files (*.*)")
 
-# T = TypeVar("T", bound=Callable[..., bool])
-
 
 def update_ui(f: Callable[..., bool]) -> Callable[..., bool]:
     """Decorator used to indicate that UI must be updated if the operation was successful.
@@ -79,21 +77,27 @@ class AskForSavingDialog(QDialog, ask_for_saving_ui.Ui_Dialog):
 
 
 class FileEventsHandler(QObject):
-    # # noinspection PyArgumentList
-    # new_tab = pyqtSignal(Side, Document)
-    # # noinspection PyArgumentList
-    # close_tab = pyqtSignal(Side, int)
-    # # noinspection PyArgumentList
-    # move_tab = pyqtSignal(Side, int, int)
-
     def __init__(self, main_window: "McqEditorMainWindow"):
         super().__init__(parent=main_window)
         self.main_window: Final = main_window
         self.freeze_update_ui: bool = False  # See update_ui() decorator docstring.
 
+    # ---------------------
+    #      Shortcuts
+    # =====================
+
     @property
     def settings(self):
         return self.main_window.settings
+
+    def book(self, side: Side | None) -> "FilesBook":
+        if side is None:
+            side = self.settings.current_side
+        return self.main_window.books[side]
+
+    # ------------------------------------------
+    #      UI synchronization with settings
+    # ==========================================
 
     def _update_ui(self) -> None:
         """Update window and tab titles according to settings data.
@@ -138,59 +142,9 @@ class FileEventsHandler(QObject):
             else:
                 self.main_window.setWindowTitle(param.WINDOW_TITLE)
 
-        # Update window title
-        # window_title = "MCQ Editor"
-        # if current_index is not None:
-        #     doc = self.settings.docs().current_doc
-        #     assert doc is not None
-        #     window_title = f"{window_title} - {doc.title}"
-        #     current_side = self.settings.current_side
-        #     book = self.book(current_side)
-        #     book.setTabText(current_index, doc.title)
-        #     tab = book.currentWidget()
-        #     assert isinstance(tab, EditorTab)
-        #     tab.editor.setFocus()
-        # self.main_window.setWindowTitle(window_title)
-        #
-        # # Verify integrity
-        # for side, book in self.main_window.books.items():
-        #     docs = self.settings.docs(side)
-        #     assert (len_ui := book.count()) == (len_settings := len(docs)), (len_ui, len_settings)
-        #     assert (ui_index := book.currentIndex()) == (settings_index := docs.current_index) or (
-        #         ui_index == -1 and settings_index is None
-        #     ), (ui_index, settings_index)
-        #     for i, doc in enumerate(docs):
-        #         widget = book.widget(i)
-        #         assert isinstance(widget, EditorTab)
-        #         assert widget.doc is doc
-        #         assert book.tabText(i) == doc.title
-
-    # @property
-    # def settings(self) -> Settings:
-    #     return self.main_window.settings
-    @update_ui
-    def restore_previous_session(self) -> bool:
-        self.main_window.settings = Settings.load_settings()
-        # # with FreezeUiUpdates(self):
-        # for side, book in self.main_window.books.items():
-        #     paths = [doc.path for doc in self.settings.docs(side) if doc.path is not None]
-        #     if paths:
-        #         self.open_doc(side=side, paths=paths)
-        # if all(len(self.settings.docs(side)) == 0 for side in Side):
-        #     self.new_doc(Side.LEFT)
-        # else:
-        #     for side in Side:
-        #         book = self.book(side)
-        #         if book.currentIndex() != self.settings.docs(side).current_index:
-        #             current_index = self.settings.docs(side).current_index
-        #             if current_index is not None:
-        #                 book.setCurrentIndex(current_index)
-        return True
-
-    def book(self, side: Side | None) -> "FilesBook":
-        if side is None:
-            side = self.settings.current_side
-        return self.main_window.books[side]
+    # ----------------------------------------------
+    #      Settings synchronization on events
+    # ==============================================
 
     def on_tab_selected(self, side: Side, index: int) -> None:
         self.settings.docs(side).current_index = index
@@ -215,6 +169,15 @@ class FileEventsHandler(QObject):
             # self.book(new_side).move_tab(old_index, new_index)
             # self.move_tab.emit(new_side, old_index, new_index)
         print("move_doc")
+
+    # -------------------
+    #      Actions
+    # ===================
+
+    @update_ui
+    def restore_previous_session(self) -> bool:
+        self.main_window.settings = Settings.load_settings()
+        return True
 
     @update_ui
     def new_doc(self, side: Side = None) -> bool:
@@ -293,20 +256,16 @@ class FileEventsHandler(QObject):
                 if not canceled:
                     assert path is not None
                     try:
-                        self._write_content(tab.editor, doc, path)
+                        doc.write(tab.editor.text(), path=path)
+                        # Tell Scintilla that the current editor's state is its new saved state.
+                        # More information on Scintilla messages: http://www.scintilla.org/ScintillaDoc.html
+                        tab.editor.SendScintilla(QsciScintilla.SCI_SETSAVEPOINT)
                         saved = True
                     except (IOError, DocumentHasNoPath, SamePath) as e:
                         # TODO: Custom message
                         print(e)
                         path = None
         return saved
-
-    @staticmethod
-    def _write_content(editor: EditorWidget, doc: Document, path: Path):
-        doc.write(editor.text(), path=path)
-        # Tell Scintilla that the current editor's state is its new saved state.
-        # More information on Scintilla messages: http://www.scintilla.org/ScintillaDoc.html
-        editor.SendScintilla(QsciScintilla.SCI_SETSAVEPOINT)
 
     @update_ui
     def close_doc(self, side: Side = None, index: int = None) -> bool:
@@ -338,7 +297,7 @@ class FileEventsHandler(QObject):
 
     # -----------------
     #      Dialogs
-    # -----------------
+    # =================
 
     def save_dialog(self) -> Path | None:
         # noinspection PyTypeChecker

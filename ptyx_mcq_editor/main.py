@@ -18,9 +18,10 @@ def my_excepthook(
     traceback: TracebackType | None,
     window: QMainWindow = None,
 ) -> None:
-    # log the exception here
+    # TODO: Log the exception here?
+    # noinspection PyTypeChecker
     QMessageBox.critical(window, "Something went wrong!", f"{type(value).__name__}: {value}")
-    # then call the default handler
+    # Call the default handler.
     sys.__excepthook__(type_, value, traceback)
 
 

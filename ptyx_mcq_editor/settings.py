@@ -19,12 +19,6 @@ class SamePath(RuntimeError):
     """Error raised when trying to open an already opened document."""
 
 
-# class Display(Flag):
-#     NONE = 0
-#     LEFT = auto()
-#     RIGHT = auto()
-
-
 class Side(Enum):
     """Enum used to indicate the two sides of the editor splitter.
 
