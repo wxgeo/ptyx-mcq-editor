@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Final, Sequence, Callable
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import QObject, Qt
 from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QDialogButtonBox
+from ptyx_mcq.cli import get_template_path
 
 from ptyx_mcq_editor.editor.editor_tab import EditorTab
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
@@ -180,16 +181,28 @@ class FileEventsHandler(QObject):
         return True
 
     @update_ui
-    def new_doc(self, side: Side = None) -> bool:
+    def new_doc(self, side: Side = None, content: str = None) -> bool:
         if side is None:
             side = self.settings.current_side
-        self.settings.new_doc(side)
+        doc = self.settings.new_doc(side)
+        if content:
+            self.book(side).new_tab(doc, content=content)
         # try:
         #     self.book(side).new_tab(self.settings.new_doc(side))
         # except Exception as e:
         #     # TODO: Display a message
         #     raise e
         return True
+
+    @update_ui
+    def new_mcq_ptyx_doc(self, side: Side = None) -> bool:
+        ptyx_paths = list(get_template_path().glob("*.ptyx"))
+        if len(ptyx_paths) == 0:
+            raise FileNotFoundError("No template found.")
+        elif len(ptyx_paths) > 1:
+            raise FileNotFoundError("Bad template: several ptyx files inside.")
+        content = (ptyx_paths[0]).read_text(encoding="utf-8")
+        return self.new_doc(side, content=content)
 
     @update_ui
     def open_doc(self, side: Side = None, paths: Sequence[Path] = ()) -> bool:

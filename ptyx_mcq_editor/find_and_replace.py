@@ -5,12 +5,12 @@ from typing import TYPE_CHECKING
 from PyQt6 import QtWidgets
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtWidgets import QCheckBox, QPushButton, QLabel, QLineEdit
-from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
 from ptyx_mcq_editor.editor.editor_widget import SEARCH_MARKER_ID, EditorWidget
+from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
 if TYPE_CHECKING:
-    from ptyx_mcq_editor.main_window import McqEditorMainWindow
+    pass
 
 
 class SearchAction(Enum):
@@ -93,19 +93,20 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
         else:
             self.display_replace_widgets(replace)
             self.setVisible(True)
-            selected_text = self.current_mcq_editor.selectedText()
-            if selected_text:
-                if "\n" in selected_text:
-                    # The user probably wants to search only in the selection
-                    self.selectionOnlyCheckBox.setChecked(True)
+            if self.current_mcq_editor is not None:
+                selected_text = self.current_mcq_editor.selectedText()
+                if selected_text:
+                    if "\n" in selected_text:
+                        # The user probably wants to search only in the selection
+                        self.selectionOnlyCheckBox.setChecked(True)
+                    else:
+                        # The selection is probably used to highlight the word to search.
+                        self.find_field.setText(selected_text)
                 else:
-                    # The selection is probably used to highlight the word to search.
-                    self.find_field.setText(selected_text)
-            else:
-                self.selectionOnlyCheckBox.setChecked(False)
-            self.find_field.setFocus()
-            if self.find_field.text():
-                self.highlight_all_find_results()
+                    self.selectionOnlyCheckBox.setChecked(False)
+                self.find_field.setFocus()
+                if self.find_field.text():
+                    self.highlight_all_find_results()
 
     def clear_indicators(self) -> None:
         if self.current_mcq_editor is None:
@@ -202,45 +203,49 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
         self.replace_all_button.setVisible(display)
 
     def replace_all(self) -> None:
-        self.current_mcq_editor.setCursorPosition(0, 0)
-        self.current_mcq_editor.SendScintilla(QsciScintilla.SCI_BEGINUNDOACTION)
-        while self.find_and_replace(action=SearchAction.REPLACE):
-            pass
-        self.current_mcq_editor.SendScintilla(QsciScintilla.SCI_ENDUNDOACTION)
-        self.current_mcq_editor.setFocus()
+        if self.current_mcq_editor is not None:
+            self.current_mcq_editor.setCursorPosition(0, 0)
+            self.current_mcq_editor.SendScintilla(QsciScintilla.SCI_BEGINUNDOACTION)
+            while self.find_and_replace(action=SearchAction.REPLACE):
+                pass
+            self.current_mcq_editor.SendScintilla(QsciScintilla.SCI_ENDUNDOACTION)
+            self.current_mcq_editor.setFocus()
 
     def find_and_replace(self, action: SearchAction) -> bool:
         # Because of `reset_search()` method hack (see comment there),
         # it is important for `mcq_editor` to lose its focus.
         self.find_field.setFocus()
-        if action in (action.FIND_NEXT, action.FIND_PREVIOUS) and action != self.last_search_action:
-            self.new_search = True
-            self.last_search_action = action
-        if not self.new_search:
-            if action == SearchAction.REPLACE:
-                self.current_mcq_editor.replace(self.replace_field.text())
-
-            if not (next_find := self.current_mcq_editor.findNext()):
-                # Restart search from the beginning of the text.
-                self.new_search = True
-            return next_find
+        if self.current_mcq_editor is None:
+            return False
         else:
-            self.new_search = False
-            to_find: str = self.find_field.text()
-            is_regex = self.regexCheckBox.isChecked()
-            case_sensitive = self.caseCheckBox.isChecked()
-            selection_only = self.selectionOnlyCheckBox.isChecked()
-            whole_words = self.wholeCheckBox.isChecked()
-            # current_text = self.current_mcq_editor.text()
-            forward = action != SearchAction.FIND_PREVIOUS
-            print(f"{forward=}")
+            if action in (action.FIND_NEXT, action.FIND_PREVIOUS) and action != self.last_search_action:
+                self.new_search = True
+                self.last_search_action = action
+            if not self.new_search:
+                if action == SearchAction.REPLACE:
+                    self.current_mcq_editor.replace(self.replace_field.text())
 
-            # https://brdocumentation.github.io/qscintilla/classQsciScintilla.html#a04780d47f799c56b6af0a10b91875045
-            if selection_only:
-                return self.current_mcq_editor.findFirstInSelection(
-                    to_find, is_regex, case_sensitive, whole_words, forward=forward
-                )
+                if not (next_find := self.current_mcq_editor.findNext()):
+                    # Restart search from the beginning of the text.
+                    self.new_search = True
+                return next_find
             else:
-                return self.current_mcq_editor.findFirst(
-                    to_find, is_regex, case_sensitive, whole_words, True, forward=forward
-                )
+                self.new_search = False
+                to_find: str = self.find_field.text()
+                is_regex = self.regexCheckBox.isChecked()
+                case_sensitive = self.caseCheckBox.isChecked()
+                selection_only = self.selectionOnlyCheckBox.isChecked()
+                whole_words = self.wholeCheckBox.isChecked()
+                # current_text = self.current_mcq_editor.text()
+                forward = action != SearchAction.FIND_PREVIOUS
+                print(f"{forward=}")
+
+                # https://brdocumentation.github.io/qscintilla/classQsciScintilla.html#a04780d47f799c56b6af0a10b91875045
+                if selection_only:
+                    return self.current_mcq_editor.findFirstInSelection(
+                        to_find, is_regex, case_sensitive, whole_words, forward=forward
+                    )
+                else:
+                    return self.current_mcq_editor.findFirst(
+                        to_find, is_regex, case_sensitive, whole_words, True, forward=forward
+                    )

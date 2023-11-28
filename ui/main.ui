@@ -60,7 +60,7 @@
      <property name="title">
       <string>&amp;New</string>
      </property>
-     <addaction name="actionEmpty_file"/>
+     <addaction name="action_Empty_file"/>
      <addaction name="action_Mcq_ptyx_file"/>
     </widget>
     <addaction name="menu_New"/>
@@ -394,7 +394,8 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="action_Pdf">
    <property name="icon">
-    <iconset theme="view-refresh"/>
+    <iconset theme="view-refresh">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Pdf</string>
@@ -410,7 +411,8 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="actionFind">
    <property name="icon">
-    <iconset theme="edit-find"/>
+    <iconset theme="edit-find">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Find</string>
@@ -421,7 +423,8 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="actionReplace">
    <property name="icon">
-    <iconset theme="edit-find-replace"/>
+    <iconset theme="edit-find-replace">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Replace</string>
@@ -452,9 +455,10 @@ p, li { white-space: pre-wrap; }
     <string>Ctrl+W</string>
    </property>
   </action>
-  <action name="actionEmpty_file">
+  <action name="action_Empty_file">
    <property name="icon">
-    <iconset theme="text-x-generic"/>
+    <iconset theme="text-x-generic">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Empty file</string>

@@ -57,7 +57,12 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.session_should_be_restored.emit()
 
     def connect_menu_signals(self) -> None:
-        self.action_New.triggered.connect(lambda: self.file_events_handler.new_doc(side=None))
+        self.action_Empty_file.triggered.connect(
+            lambda: self.file_events_handler.new_doc(side=None, content=None)
+        )
+        self.action_Mcq_ptyx_file.triggered.connect(
+            lambda: self.file_events_handler.new_mcq_ptyx_doc(side=None)
+        )
         self.action_Open.triggered.connect(lambda: self.file_events_handler.open_doc(side=None))
         self.action_Save.triggered.connect(lambda: self.file_events_handler.save_doc(side=None, index=None))
         self.action_Close.triggered.connect(lambda: self.file_events_handler.close_doc(side=None, index=None))

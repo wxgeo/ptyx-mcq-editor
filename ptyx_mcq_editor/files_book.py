@@ -99,10 +99,10 @@ class FilesBook(QtWidgets.QTabWidget, EnhancedWidget):
     # def mark_as_saved(self) -> None:
     #     self.current_mcq_editor.is_saved = True
 
-    def new_tab(self, doc: Document, index: int = None) -> None:
+    def new_tab(self, doc: Document, index: int = None, content: str = None) -> None:
         if index is None:
             index = self.count()
-        self.insertTab(index, EditorTab(self, doc), doc.title)
+        self.insertTab(index, EditorTab(self, doc, content=content), doc.title)
         # self.setCurrentIndex(self.count() - 1)
 
     def close_tab(self, index: int) -> None:
