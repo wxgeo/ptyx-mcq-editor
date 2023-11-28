@@ -56,7 +56,14 @@
      </property>
      <addaction name="actionNone"/>
     </widget>
-    <addaction name="action_New"/>
+    <widget class="QMenu" name="menu_New">
+     <property name="title">
+      <string>&amp;New</string>
+     </property>
+     <addaction name="actionEmpty_file"/>
+     <addaction name="action_Mcq_ptyx_file"/>
+    </widget>
+    <addaction name="menu_New"/>
     <addaction name="menu_Recent_Files"/>
     <addaction name="action_Open"/>
     <addaction name="action_Save"/>
@@ -97,9 +104,9 @@
     <addaction name="action_Send_Qscintilla_Command"/>
    </widget>
    <addaction name="menuFichier"/>
+   <addaction name="menu_Edit"/>
    <addaction name="menuCompilation"/>
    <addaction name="menu_Tools"/>
-   <addaction name="menu_Edit"/>
    <addaction name="menuDebug"/>
    <addaction name="menu_propos"/>
   </widget>
@@ -332,18 +339,6 @@ p, li { white-space: pre-wrap; }
     </layout>
    </widget>
   </widget>
-  <action name="action_New">
-   <property name="icon">
-    <iconset theme="document-new">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;New</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+N</string>
-   </property>
-  </action>
   <action name="action_Open">
    <property name="icon">
     <iconset theme="document-open">
@@ -398,6 +393,9 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
   <action name="action_Pdf">
+   <property name="icon">
+    <iconset theme="view-refresh"/>
+   </property>
    <property name="text">
     <string>&amp;Pdf</string>
    </property>
@@ -411,6 +409,9 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
   <action name="actionFind">
+   <property name="icon">
+    <iconset theme="edit-find"/>
+   </property>
    <property name="text">
     <string>&amp;Find</string>
    </property>
@@ -419,6 +420,9 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
   <action name="actionReplace">
+   <property name="icon">
+    <iconset theme="edit-find-replace"/>
+   </property>
    <property name="text">
     <string>&amp;Replace</string>
    </property>
@@ -446,6 +450,25 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="shortcut">
     <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="actionEmpty_file">
+   <property name="icon">
+    <iconset theme="text-x-generic"/>
+   </property>
+   <property name="text">
+    <string>&amp;Empty file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="action_Mcq_ptyx_file">
+   <property name="text">
+    <string>&amp;Mcq ptyx file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+N</string>
    </property>
   </action>
  </widget>
