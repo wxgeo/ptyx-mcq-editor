@@ -108,6 +108,7 @@ class FileEventsHandler(QObject):
             docs = self.settings.docs(side)
             tabs = self.book(side)
             tab_bar = tabs.tabBar()
+            print(f"Before: {side}: {docs.current_index=}, {len(docs)=}")
             assert tab_bar is not None
             # Synchronize tabs with docs, starting from the first doc.
             # 1. For each document, if `i` is its position:
@@ -137,10 +138,14 @@ class FileEventsHandler(QObject):
             # Update current index.
             if len(docs) > 0:
                 current_index = docs.current_index
+                if param.DEBUG:
+                    print(f"{side}: {docs.current_index=}")
                 assert current_index is not None
                 tabs.setCurrentIndex(current_index)
                 self.main_window.setWindowTitle(f"{param.WINDOW_TITLE} - {docs.current_doc.title}")
             else:
+                if param.DEBUG:
+                    print(f"{side}: no document to select.")
                 self.main_window.setWindowTitle(param.WINDOW_TITLE)
 
     # ----------------------------------------------
@@ -148,12 +153,17 @@ class FileEventsHandler(QObject):
     # ==============================================
 
     def on_tab_selected(self, side: Side, index: int) -> None:
-        self.settings.docs(side).current_index = index
-        self._update_ui()
+        if not self.freeze_update_ui:
+            if param.DEBUG:
+                print("tab_selected")
+            self.settings.docs(side).current_index = index
+            self._update_ui()
 
     def on_tab_moved(
         self, old_side: Side, old_index: int, new_side: Side = None, new_index: int = None
     ) -> None:
+        if param.DEBUG:
+            print("tab_moved")
         if new_side is None:
             new_side = old_side
         if new_index is None:
@@ -166,10 +176,6 @@ class FileEventsHandler(QObject):
             # Warning: no need to manually move tab, Qt will automatically do this.
             assert isinstance(tab := self.book(new_side).widget(new_index), EditorTab)
             assert self.settings.docs(new_side).doc(new_index) is tab.doc
-
-            # self.book(new_side).move_tab(old_index, new_index)
-            # self.move_tab.emit(new_side, old_index, new_index)
-        print("move_doc")
 
     # -------------------
     #      Actions

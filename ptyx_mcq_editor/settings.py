@@ -384,10 +384,10 @@ class Settings:
         cls,
     ) -> "Settings":
         try:
-            settings = tomllib.loads(CONFIG_PATH.read_text("utf8"))
+            settings_dict = tomllib.loads(CONFIG_PATH.read_text("utf8"))
         except FileNotFoundError:
-            settings = {}
+            settings_dict = {}
         except OSError as e:
-            settings = {}
+            settings_dict = {}
             print(f"Enable to load settings: {e!r}")
-        return cls._from_dict(settings)
+        return cls._from_dict(settings_dict)
