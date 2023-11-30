@@ -54,11 +54,19 @@
      <property name="title">
       <string>&amp;Recent Files</string>
      </property>
+     <property name="icon">
+      <iconset theme="document-open-recent">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
      <addaction name="actionNone"/>
     </widget>
     <widget class="QMenu" name="menu_New">
      <property name="title">
       <string>&amp;New</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-new">
+       <normaloff>.</normaloff>.</iconset>
      </property>
      <addaction name="action_Empty_file"/>
      <addaction name="action_Mcq_ptyx_file"/>
@@ -92,9 +100,9 @@
     <addaction name="actionFind"/>
     <addaction name="actionReplace"/>
    </widget>
-   <widget class="QMenu" name="menu_propos">
+   <widget class="QMenu" name="menu_help">
     <property name="title">
-     <string>&amp;About</string>
+     <string>&amp;Help</string>
     </property>
    </widget>
    <widget class="QMenu" name="menuDebug">
@@ -103,12 +111,21 @@
     </property>
     <addaction name="action_Send_Qscintilla_Command"/>
    </widget>
+   <widget class="QMenu" name="menu_pTyX">
+    <property name="title">
+     <string>&amp;pTyX</string>
+    </property>
+    <addaction name="action_Update_imports"/>
+    <addaction name="action_Add_folder"/>
+    <addaction name="action_Open_file_from_current_import_line"/>
+   </widget>
    <addaction name="menuFichier"/>
    <addaction name="menu_Edit"/>
    <addaction name="menuCompilation"/>
+   <addaction name="menu_pTyX"/>
    <addaction name="menu_Tools"/>
    <addaction name="menuDebug"/>
-   <addaction name="menu_propos"/>
+   <addaction name="menu_help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="compilation_dock">
@@ -473,6 +490,28 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+N</string>
+   </property>
+  </action>
+  <action name="action_Update_imports">
+   <property name="text">
+    <string>&amp;Update imports</string>
+   </property>
+  </action>
+  <action name="action_Add_folder">
+   <property name="text">
+    <string>&amp;Add directory</string>
+   </property>
+  </action>
+  <action name="action_Open_file_from_current_import_line">
+   <property name="icon">
+    <iconset theme="document-open">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Open file from current import line</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+O</string>
    </property>
   </action>
  </widget>

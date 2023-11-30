@@ -85,3 +85,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
         ui.sendButton.pressed.connect(send_command_and_display_return)
         dialog.show()
+
+    def get_current_line_text(self) -> str:
+        line = self.getCursorPosition()[0]
+        return self.text(line)

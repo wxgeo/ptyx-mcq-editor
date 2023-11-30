@@ -358,7 +358,7 @@ class Settings:
         docs = {
             side: DocumentsCollection(
                 _side=side,
-                _documents=[Document(Path(path)) for path in data.get("files", [])],
+                _documents=[Document(Path(path)) for path in data.get("files", []) if Path(path).is_file()],
                 _current_index=data.get("current_index", 0),
             )
             for (side, data) in d.get("docs", {}).items()

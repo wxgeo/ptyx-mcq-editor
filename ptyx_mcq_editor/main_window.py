@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 import shutil
+from argparse import Namespace
 from pathlib import Path
 from tempfile import mkdtemp
+from typing import Final
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QCloseEvent, QIcon
@@ -18,7 +20,7 @@ from ptyx_mcq_editor.tools import install_desktop_shortcut
 class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
     session_should_be_restored = pyqtSignal(name="session_should_be_restored")
 
-    def __init__(self) -> None:
+    def __init__(self, args: Namespace = None) -> None:
         super().__init__(parent=None)
         self.settings = Settings()
         self.file_events_handler = FileEventsHandler(self)
@@ -54,24 +56,27 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.search_dock.connect_signals()
 
         self.session_should_be_restored.connect(self.file_events_handler.restore_previous_session)
-        self.session_should_be_restored.emit()
+        if args is None or not args.paths:
+            self.session_should_be_restored.emit()
+        else:
+            self.file_events_handler.open_doc(paths=[Path(path) for path in args.paths])
 
     def connect_menu_signals(self) -> None:
-        self.action_Empty_file.triggered.connect(
-            lambda: self.file_events_handler.new_doc(side=None, content=None)
-        )
-        self.action_Mcq_ptyx_file.triggered.connect(
-            lambda: self.file_events_handler.new_mcq_ptyx_doc(side=None)
-        )
-        self.action_Open.triggered.connect(lambda: self.file_events_handler.open_doc(side=None))
-        self.action_Save.triggered.connect(lambda: self.file_events_handler.save_doc(side=None, index=None))
-        self.action_Close.triggered.connect(lambda: self.file_events_handler.close_doc(side=None, index=None))
+        # Don't change handler variable value (because of name binding process in lambdas).
+        handler: Final[FileEventsHandler] = self.file_events_handler
+        self.action_Empty_file.triggered.connect(lambda: handler.new_doc(side=None, content=None))
+        self.action_Mcq_ptyx_file.triggered.connect(lambda: handler.new_mcq_ptyx_doc(side=None))
+        self.action_Open.triggered.connect(lambda: handler.open_doc(side=None))
+        self.action_Save.triggered.connect(lambda: handler.save_doc(side=None, index=None))
+        self.action_Close.triggered.connect(lambda: handler.close_doc(side=None, index=None))
 
-        self.actionSave_as.triggered.connect(
-            lambda: self.file_events_handler.save_doc_as(side=None, index=None)
-        )
+        self.actionSave_as.triggered.connect(lambda: handler.save_doc_as(side=None, index=None))
         self.action_LaTeX.triggered.connect(self.compilation_tabs.display_latex)
         self.action_Pdf.triggered.connect(self.compilation_tabs.display_pdf)
+        self.action_Update_imports.triggered.connect(handler.update_ptyx_imports)
+        self.action_Open_file_from_current_import_line.triggered.connect(
+            handler.open_file_from_current_ptyx_import_directive
+        )
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_desktop_menu_entry)
         self.actionFind.triggered.connect(
             lambda: self.search_dock.toggle_find_and_replace_dialog(replace=False)

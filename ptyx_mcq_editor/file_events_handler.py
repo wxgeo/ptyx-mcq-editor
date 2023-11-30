@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Final, Sequence, Callable
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import QObject, Qt
 from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QDialogButtonBox
-from ptyx_mcq.cli import get_template_path
+from ptyx_mcq.cli import get_template_path, update_include
 
 from ptyx_mcq_editor.editor.editor_tab import EditorTab
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
@@ -108,7 +108,7 @@ class FileEventsHandler(QObject):
             docs = self.settings.docs(side)
             tabs = self.book(side)
             tab_bar = tabs.tabBar()
-            print(f"Before: {side}: {docs.current_index=}, {len(docs)=}")
+            # print(f"Before: {side}: {docs.current_index=}, {len(docs)=}")
             assert tab_bar is not None
             # Synchronize tabs with docs, starting from the first doc.
             # 1. For each document, if `i` is its position:
@@ -142,11 +142,14 @@ class FileEventsHandler(QObject):
                     print(f"{side}: {docs.current_index=}")
                 assert current_index is not None
                 tabs.setCurrentIndex(current_index)
-                self.main_window.setWindowTitle(f"{param.WINDOW_TITLE} - {docs.current_doc.title}")
+
             else:
                 if param.DEBUG:
                     print(f"{side}: no document to select.")
-                self.main_window.setWindowTitle(param.WINDOW_TITLE)
+        if len(docs := self.settings.docs()) > 0:
+            self.main_window.setWindowTitle(f"{param.WINDOW_TITLE} - {docs.current_doc.title}")
+        else:
+            self.main_window.setWindowTitle(param.WINDOW_TITLE)
 
     # ----------------------------------------------
     #      Settings synchronization on events
@@ -155,7 +158,7 @@ class FileEventsHandler(QObject):
     def on_tab_selected(self, side: Side, index: int) -> None:
         if not self.freeze_update_ui:
             if param.DEBUG:
-                print("tab_selected")
+                print(f"tab_selected: {side}:{index}")
             self.settings.docs(side).current_index = index
             self._update_ui()
 
@@ -163,7 +166,7 @@ class FileEventsHandler(QObject):
         self, old_side: Side, old_index: int, new_side: Side = None, new_index: int = None
     ) -> None:
         if param.DEBUG:
-            print("tab_moved")
+            print(f"tab_moved: {old_side}:{old_index} -> {new_side}:{new_index}")
         if new_side is None:
             new_side = old_side
         if new_index is None:
@@ -222,6 +225,8 @@ class FileEventsHandler(QObject):
         if side is None:
             side = self.settings.current_side
         for path in paths:
+            if not path.is_file():
+                raise FileNotFoundError(f"File '{path}' does not exist.")
             try:
                 doc = self.settings.docs(side).add_doc(path=path)
                 # noinspection PyProtectedMember
@@ -390,3 +395,39 @@ class FileEventsHandler(QObject):
         else:
             assert result == AskForSavingDialog.CANCEL, repr(result)
             return False
+
+    # ----------------------------
+    #      Specific actions
+    # ============================
+
+    def update_ptyx_imports(self):
+        if (current_doc := self.settings.docs().current_doc) is not None and self.save_doc():
+            path = current_doc.path
+            assert path is not None
+            update_include(current_doc.path)
+            widget = self.book(None).currentWidget()
+            assert isinstance(widget, EditorTab), widget
+            widget.reload()
+
+    def open_file_from_current_ptyx_import_directive(self):
+        if self.settings.docs().current_doc is not None:
+            widget = self.book(None).currentWidget()
+            assert isinstance(widget, EditorTab), widget
+            current_line = widget.editor.getCursorPosition()[0]
+            directory = self.settings.current_directory
+            for line in range(0, current_line):
+                text = widget.editor.text(line)
+                pos = text.find(prefix := "-- DIR: ")
+                if pos != -1:
+                    directory = Path(text[pos + len(prefix) :].strip()).expanduser().resolve()
+                    if param.DEBUG:
+                        print(f"{directory=}")
+            import_directive = widget.editor.get_current_line_text()
+            pos = import_directive.find(prefix := "-- ")
+            if pos == -1:
+                raise ValueError("No directive in this line.")
+            else:
+                import_path = Path(import_directive[pos + len(prefix) :].strip())
+                if not import_path.is_absolute():
+                    import_path = directory / import_path
+                self.open_doc(paths=[import_path])

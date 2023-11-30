@@ -15,7 +15,7 @@ class EditorTab(EnhancedWidget):
         self.inner_layout = QVBoxLayout(self)
         self.editor = EditorWidget(self)
         self.inner_layout.addWidget(self.editor)
-        self.reload()
+        self.reload(content=content)
         self.connect_signals()
 
     def reload(self, content: str = None):
