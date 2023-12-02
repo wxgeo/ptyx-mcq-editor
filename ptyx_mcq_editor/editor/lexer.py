@@ -197,7 +197,7 @@ class MyLexer(QsciLexerCustom):
         # ------------------
         # 4.1 Get previous style and mode if any.
         if start > 0:
-            style = Style(editor.SendScintilla(editor.SCI_GETSTYLEINDEXAT, start - 1))
+            style = Style(editor.SendScintilla(editor.SCI_GETSTYLEAT, start - 1))
             mode = STYLES_LIST[style].mode
         else:
             style = Style.DEFAULT
