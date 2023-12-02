@@ -78,6 +78,8 @@
     <addaction name="actionSave_as"/>
     <addaction name="action_Close"/>
     <addaction name="separator"/>
+    <addaction name="actionN_ew_Session"/>
+    <addaction name="separator"/>
     <addaction name="action_Quitter"/>
    </widget>
    <widget class="QMenu" name="menuCompilation">
@@ -512,6 +514,14 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+O</string>
+   </property>
+  </action>
+  <action name="actionN_ew_Session">
+   <property name="icon">
+    <iconset theme="window-new"/>
+   </property>
+   <property name="text">
+    <string>N&amp;ew Session</string>
    </property>
   </action>
  </widget>

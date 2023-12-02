@@ -2,11 +2,14 @@ import builtins
 import re
 from enum import IntEnum, auto, Enum
 from keyword import iskeyword
-from typing import NamedTuple
+from typing import NamedTuple, TYPE_CHECKING
 
 from PyQt6.Qsci import QsciLexerCustom, QsciScintilla
 from PyQt6.QtGui import QColor, QFont
 from ptyx.context import GLOBAL_CONTEXT
+
+if TYPE_CHECKING:
+    from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 
 
 def get_all_tags() -> dict[str, tuple[int, int, list[str] | None]]:
@@ -132,8 +135,8 @@ class MyLexer(QsciLexerCustom):
                 QFont(
                     "Consolas",
                     13,
-                    weight=(QFont.Weight.Bold if is_bold else QFont.Weight.Normal),
-                    italic=is_italic,
+                    (QFont.Weight.Bold if is_bold else QFont.Weight.Normal),
+                    is_italic,
                 ),
                 style,
             )
@@ -148,7 +151,7 @@ class MyLexer(QsciLexerCustom):
         return ""
 
     def styleText(self, start: int, end: int):
-        editor = self.parent()
+        editor: EditorWidget = self.parent()
         assert isinstance(editor, QsciScintilla)
         # 1. Initialize the styling procedure
         # ------------------------------------
@@ -194,7 +197,7 @@ class MyLexer(QsciLexerCustom):
         # ------------------
         # 4.1 Get previous style and mode if any.
         if start > 0:
-            style = Style(editor.SendScintilla(editor.SCI_GETSTYLEAT, start - 1))
+            style = Style(editor.SendScintilla(editor.SCI_GETSTYLEINDEXAT, start - 1))
             mode = STYLES_LIST[style].mode
         else:
             style = Style.DEFAULT

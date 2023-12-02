@@ -37,7 +37,6 @@ def main(args: list | None = None) -> None:
         nargs="*",
         metavar="PATHS",
         type=Path,
-        default="new-mcq",
         help="One or more pTyX file to open (with '.ptyx' or '.ex' extension).",
     ).completer = FilesCompleter(("ex", "ptyx"))
     argcomplete.autocomplete(parser, always_complete_options=False)

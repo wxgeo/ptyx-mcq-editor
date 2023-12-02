@@ -83,6 +83,13 @@ class FileEventsHandler(QObject):
         self.main_window: Final = main_window
         self.freeze_update_ui: bool = False  # See update_ui() decorator docstring.
 
+    @update_ui
+    def finalize(self, paths: Sequence[Path] = ()) -> bool:
+        if paths:
+            self.settings.new_session()
+            self.open_doc(paths=paths)
+        return True
+
     # ---------------------
     #      Shortcuts
     # =====================
@@ -132,8 +139,10 @@ class FileEventsHandler(QObject):
                     tabs.new_tab(doc, index=i)
                 tabs.setTabText(i, doc.title)
             # Remove any remaining tab.
-            for j in range(len(docs), tabs.count()):
+            for j in range(tabs.count() - 1, len(docs) - 1, -1):
+                widget = tabs.widget(j)
                 tabs.removeTab(j)
+                widget.destroy()
 
             # Update current index.
             if len(docs) > 0:
@@ -187,6 +196,11 @@ class FileEventsHandler(QObject):
     @update_ui
     def restore_previous_session(self) -> bool:
         self.main_window.settings = Settings.load_settings()
+        return True
+
+    @update_ui
+    def new_session(self) -> bool:
+        self.main_window.settings.new_session()
         return True
 
     @update_ui

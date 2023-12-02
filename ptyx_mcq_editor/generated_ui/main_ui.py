@@ -194,6 +194,10 @@ class Ui_MainWindow(object):
         icon = QtGui.QIcon.fromTheme("document-open")
         self.action_Open_file_from_current_import_line.setIcon(icon)
         self.action_Open_file_from_current_import_line.setObjectName("action_Open_file_from_current_import_line")
+        self.actionN_ew_Session = QtGui.QAction(parent=MainWindow)
+        icon = QtGui.QIcon.fromTheme("window-new")
+        self.actionN_ew_Session.setIcon(icon)
+        self.actionN_ew_Session.setObjectName("actionN_ew_Session")
         self.menu_Recent_Files.addAction(self.actionNone)
         self.menu_New.addAction(self.action_Empty_file)
         self.menu_New.addAction(self.action_Mcq_ptyx_file)
@@ -203,6 +207,8 @@ class Ui_MainWindow(object):
         self.menuFichier.addAction(self.action_Save)
         self.menuFichier.addAction(self.actionSave_as)
         self.menuFichier.addAction(self.action_Close)
+        self.menuFichier.addSeparator()
+        self.menuFichier.addAction(self.actionN_ew_Session)
         self.menuFichier.addSeparator()
         self.menuFichier.addAction(self.action_Quitter)
         self.menuCompilation.addAction(self.action_LaTeX)
@@ -295,6 +301,7 @@ class Ui_MainWindow(object):
         self.action_Add_folder.setText(_translate("MainWindow", "&Add directory"))
         self.action_Open_file_from_current_import_line.setText(_translate("MainWindow", "&Open file from current import line"))
         self.action_Open_file_from_current_import_line.setShortcut(_translate("MainWindow", "Ctrl+Shift+O"))
+        self.actionN_ew_Session.setText(_translate("MainWindow", "N&ew Session"))
 from ptyx_mcq_editor.compilation.tab_widget import CompilationTabs
 from ptyx_mcq_editor.files_book import FilesBook
 from ptyx_mcq_editor.find_and_replace import FindAndReplaceWidget

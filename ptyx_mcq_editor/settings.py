@@ -8,7 +8,7 @@ import platformdirs
 from tomli_w import dumps
 
 CONFIG_PATH = Path(platformdirs.user_config_path("mcq-editor") / "config.toml")
-MAX_RECENT_FILES = 10
+MAX_RECENT_FILES = 12
 
 
 class DocumentHasNoPath(RuntimeError):
@@ -302,6 +302,8 @@ class Settings:
             index = self.docs(~side).index(path)
             self.move_doc(side, index, ~side)
             self.docs(~side).current_index = len(self.docs(~side)) - 1
+        else:
+            self.docs(side).add_doc(path=path)
         self._current_side = side
 
     def close_doc(self, side: Side = None, index: int = None) -> Path | None:
@@ -320,10 +322,32 @@ class Settings:
         if len(self._recent_files) > MAX_RECENT_FILES:
             self._recent_files.pop()
 
+    def new_session(self):
+        for side in Side:
+            while len(self.docs(side)) > 0:
+                self.close_doc(side, 0)
+
+    @property
+    def opened_files(self) -> frozenset[Path]:
+        """Return the (frozen) set of the opened files.
+
+        Result is recomputed each time, so it should be cached before being used in a loop.
+        """
+        return frozenset(path for side in Side for path in self.docs(side).paths)
+
     @property
     def recent_files(self) -> Iterator[Path]:
-        """Iterate over the recent files, starting with the more recent one."""
-        return iter(path for path in self._recent_files if path.is_file())
+        """Return an iterator over the recent files, starting with the more recent one.
+
+        The recent files list is updated first, removing invalid entries (deleted files).
+        """
+        # Update recent files list.
+        opened_files = self.opened_files
+        self._recent_files = [
+            path for path in self._recent_files if path.is_file() and path not in opened_files
+        ]
+
+        return iter(self._recent_files)
 
     @property
     def current_doc(self) -> Document | None:
@@ -380,9 +404,7 @@ class Settings:
         print(f"Config saved in {CONFIG_PATH}")
 
     @classmethod
-    def load_settings(
-        cls,
-    ) -> "Settings":
+    def load_settings(cls) -> "Settings":
         try:
             settings_dict = tomllib.loads(CONFIG_PATH.read_text("utf8"))
         except FileNotFoundError:

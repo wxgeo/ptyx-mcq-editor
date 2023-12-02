@@ -18,11 +18,14 @@ from ptyx_mcq_editor.tools import install_desktop_shortcut
 
 
 class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
-    session_should_be_restored = pyqtSignal(name="session_should_be_restored")
+    # restore_session_signal = pyqtSignal(name="restore_session_signal")
+    # new_session_signal = pyqtSignal(name="new_session_signal")
 
     def __init__(self, args: Namespace = None) -> None:
         super().__init__(parent=None)
-        self.settings = Settings()
+        # Always load settings, even when opening a new session,
+        # to get at least the recent files list.
+        self.settings = Settings.load_settings()
         self.file_events_handler = FileEventsHandler(self)
         self.setupUi(self)
         self.books = {Side.LEFT: self.left_tab_widget, Side.RIGHT: self.right_tab_widget}
@@ -55,11 +58,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.connect_menu_signals()
         self.search_dock.connect_signals()
 
-        self.session_should_be_restored.connect(self.file_events_handler.restore_previous_session)
-        if args is None or not args.paths:
-            self.session_should_be_restored.emit()
-        else:
-            self.file_events_handler.open_doc(paths=[Path(path) for path in args.paths])
+        self.file_events_handler.finalize([Path(path) for path in args.paths] if args is not None else [])
 
     def connect_menu_signals(self) -> None:
         # Don't change handler variable value (because of name binding process in lambdas).
@@ -68,9 +67,10 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.action_Mcq_ptyx_file.triggered.connect(lambda: handler.new_mcq_ptyx_doc(side=None))
         self.action_Open.triggered.connect(lambda: handler.open_doc(side=None))
         self.action_Save.triggered.connect(lambda: handler.save_doc(side=None, index=None))
-        self.action_Close.triggered.connect(lambda: handler.close_doc(side=None, index=None))
-
         self.actionSave_as.triggered.connect(lambda: handler.save_doc_as(side=None, index=None))
+        self.action_Close.triggered.connect(lambda: handler.close_doc(side=None, index=None))
+        self.actionN_ew_Session.triggered.connect(lambda: handler.new_session())
+
         self.action_LaTeX.triggered.connect(self.compilation_tabs.display_latex)
         self.action_Pdf.triggered.connect(self.compilation_tabs.display_pdf)
         self.action_Update_imports.triggered.connect(handler.update_ptyx_imports)
