@@ -47,7 +47,7 @@ class Document:
         self.__class__._id_counter += 1
         self._doc_id = self._id_counter
         self._is_saved = True
-        self._path = path
+        self._path = path.resolve() if path is not None else path
         self.__class__.all_docs[self.doc_id] = self
 
     def __str__(self):

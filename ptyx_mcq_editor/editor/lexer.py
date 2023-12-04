@@ -26,12 +26,10 @@ def get_all_tags() -> tuple[set[str], set[str]]:
     # Tags whose first argument is python code.
     tags_with_a_python_arg = {tag for tag in tags if tags[tag][0] >= 1}
     # TODO: Not implemented: tags with more than one python argument.
-    return tags_set - tags_with_a_python_arg, tags_with_a_python_arg
+    return tags_with_a_python_arg, tags_set - tags_with_a_python_arg
 
 
-TAGS, TAGS_WITH_A_PYTHON_ARG = get_all_tags()
-
-print(TAGS)
+TAGS_WITH_A_PYTHON_ARG, OTHER_TAGS = get_all_tags()
 
 PYTHON_BUILTINS = set(vars(builtins))
 PTYX_BUILTINS = set(GLOBAL_CONTEXT)
@@ -285,7 +283,7 @@ class MyLexer(QsciLexerCustom):
         elif token.startswith("#"):
             if token[1:].startswith(" "):
                 style = Style.PTYX_COMMENT
-            elif token[1:] in TAGS:
+            elif token[1:] in OTHER_TAGS:
                 style = Style.PTYX_TAG
             elif token[1:-1] in TAGS_WITH_A_PYTHON_ARG:
                 style = Style.PTYX_TAG
