@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 
 import ptyx_mcq
 from PyQt6 import Qsci
+from PyQt6.Qsci import QsciScintilla
+from PyQt6.QtGui import QColor
 from ptyx.latex_generator import Compiler
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
@@ -15,6 +17,9 @@ if TYPE_CHECKING:
 class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
     def __init__(self, parent) -> None:
         super().__init__(parent)
+        self.setMarginType(0, QsciScintilla.MarginType.NumberMargin)
+        self.setMarginWidth(0, "0000")
+        self.setMarginsForegroundColor(QColor("#ff888888"))
         self.setLexer(Qsci.QsciLexerTeX(self))
 
     def _get_latex(self) -> str:

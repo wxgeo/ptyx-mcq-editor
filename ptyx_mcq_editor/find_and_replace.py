@@ -135,9 +135,9 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
         # emitted only after leaving `find_and_replace()` ?
         if self.current_mcq_editor.hasFocus():
             self.new_search = True
-            print("New search")
-        else:
-            print("New search blocked")
+        #     print("New search")
+        # else:
+        #     print("New search blocked")
 
     def search_changed(self) -> None:
         print("New search and highlight")
