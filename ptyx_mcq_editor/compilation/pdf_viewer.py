@@ -33,3 +33,5 @@ class PdfViewer(QtPdfWidgets.QPdfView, EnhancedWidget):
         pdf_path = self._latex_file_path()
         if pdf_path is not None and pdf_path.is_file():
             self.doc.load(str(pdf_path))
+        else:
+            self.doc.load(None)
