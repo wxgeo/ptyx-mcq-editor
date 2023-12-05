@@ -3,7 +3,7 @@ import shutil
 from argparse import Namespace
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Final
+from typing import Final, Literal
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QCloseEvent, QIcon
@@ -151,3 +151,10 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
     def dbg_send_scintilla_command(self):
         if self.current_mcq_editor is not None:
             self.current_mcq_editor.dbg_send_scintilla_command()
+
+    def get_temp_path(self, suffix: Literal["tex", "pdf"]) -> Path | None:
+        """Get the path of a temporary file corresponding to the current document."""
+        doc = self.settings.current_doc
+        if doc is not None:
+            return self.tmp_dir / f"{'' if doc.path is None else doc.path.stem}-{doc.doc_id}.{suffix}"
+        return None

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 from PyQt6 import QtPdfWidgets
 from PyQt6.QtPdf import QPdfDocument
+from ptyx.compilation import compile_latex_to_pdf
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
@@ -17,5 +18,18 @@ class PdfViewer(QtPdfWidgets.QPdfView, EnhancedWidget):
         self.doc = QPdfDocument(self)
         self.setDocument(self.doc)
 
-    def load(self, pdf_path: Path) -> None:
-        self.doc.load(str(pdf_path))
+    def _latex_file_path(self) -> Path | None:
+        """Get the path of the current latex file."""
+        return self.main_window.get_temp_path("pdf")
+
+    def generate_pdf(self) -> None:
+        latex_file = self.main_window.get_temp_path("tex")
+        assert latex_file is not None
+        compilation_info = compile_latex_to_pdf(latex_file, dest=self.main_window.tmp_dir)
+        print(compilation_info)
+        self.load()
+
+    def load(self) -> None:
+        pdf_path = self._latex_file_path()
+        if pdf_path is not None and pdf_path.is_file():
+            self.doc.load(str(pdf_path))

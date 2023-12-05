@@ -23,17 +23,15 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
 
     def generate_pdf(self) -> None:
         self.dock.show()
-        main_window = self.main_window
-        latex = self.latex_viewer.load()
-        (latex_file := main_window.tmp_dir / "tmp.tex").write_text(latex)
-        pdf_file = main_window.tmp_dir / "tmp.pdf"
-        # print(_build_command(latex_file, pdf_file))
-        compilation_info = compile_latex_to_pdf(latex_file, dest=main_window.tmp_dir)
-        print(compilation_info)
-        self.pdf_viewer.load(pdf_file)
+        self.latex_viewer.generate_latex()
+        self.pdf_viewer.generate_pdf()
         self.setCurrentIndex(self.indexOf(self.pdf_viewer))
 
     def generate_latex(self) -> None:
         self.dock.show()
-        self.latex_viewer.load()
+        self.latex_viewer.generate_latex()
         self.setCurrentIndex(self.indexOf(self.latex_viewer))
+
+    def update_tabs(self) -> None:
+        self.latex_viewer.load()
+        self.pdf_viewer.load()

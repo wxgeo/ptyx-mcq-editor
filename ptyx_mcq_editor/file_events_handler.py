@@ -170,6 +170,7 @@ class FileEventsHandler(QObject):
                 print(f"tab_selected: {side}:{index}")
             self.settings.docs(side).current_index = index
             self._update_ui()
+            self.main_window.compilation_tabs.update_tabs()
 
     def on_tab_moved(
         self, old_side: Side, old_index: int, new_side: Side = None, new_index: int = None
