@@ -108,7 +108,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
                 if self.find_field.text():
                     self.highlight_all_find_results()
 
-    def clear_indicators(self) -> None:
+    def clear_search_indicators(self) -> None:
         if self.current_mcq_editor is None:
             return
         last_line = self.current_mcq_editor.lines() - 1
@@ -161,7 +161,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
         if self.current_mcq_editor is None:
             return
         self.find_field.setStyleSheet("")
-        self.clear_indicators()
+        self.clear_search_indicators()
         if self.isHidden():
             return
         to_find = self.find_field.text()

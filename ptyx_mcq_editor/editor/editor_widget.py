@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 from PyQt6.Qsci import QsciScintilla
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtWidgets import QDialog
 
@@ -12,6 +13,7 @@ if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_tab import EditorTab
 
 SEARCH_MARKER_ID = 0
+INCLUDE_DIRECTIVES_ID = 1
 
 
 class EditorWidget(QsciScintilla, EnhancedWidget):
@@ -64,6 +66,12 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, SEARCH_MARKER_ID, 200)
         self.SendScintilla(QsciScintilla.SCI_INDICSETFORE, SEARCH_MARKER_ID, QColor("#67d0eb"))
 
+        self.indicatorDefine(QsciScintilla.IndicatorStyle.DotBoxIndicator, INCLUDE_DIRECTIVES_ID)
+        self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), INCLUDE_DIRECTIVES_ID)
+        self.setIndicatorHoverStyle(QsciScintilla.IndicatorStyle.FullBoxIndicator, INCLUDE_DIRECTIVES_ID)
+        self.textChanged.connect(self.update_include_indicators)
+        self.indicatorClicked.connect(self.on_click)
+
     def dbg_send_scintilla_command(self) -> None:
         dialog = QDialog(self)
         ui = dbg_send_scintilla_messages_ui.Ui_Dialog()
@@ -89,3 +97,17 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
     def get_current_line_text(self) -> str:
         line = self.getCursorPosition()[0]
         return self.text(line)
+
+    def update_include_indicators(self):
+        last = self.lines() - 1
+        self.clearIndicatorRange(0, 0, last, len(self.text(last)), INCLUDE_DIRECTIVES_ID)
+        for i, line in enumerate(self.text().split("\n")):
+            if line.startswith("-- ") and not line[3:].startswith("DIR:"):
+                self.fillIndicatorRange(i, 3, i, len(line), INCLUDE_DIRECTIVES_ID)
+            elif line.startswith("!-- "):
+                self.fillIndicatorRange(i, 4, i, len(line), INCLUDE_DIRECTIVES_ID)
+
+    def on_click(self, line, index, keys):
+        self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
+            current_line=line, background=keys & Qt.KeyboardModifier.ControlModifier
+        )

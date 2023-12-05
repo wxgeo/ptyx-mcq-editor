@@ -7,7 +7,6 @@ from typing import NamedTuple, TYPE_CHECKING
 from PyQt6.Qsci import QsciLexerCustom, QsciScintilla
 from PyQt6.QtGui import QColor, QFont
 from ptyx.context import GLOBAL_CONTEXT
-from ptyx_mcq.tools.config_parser import Configuration
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_widget import EditorWidget
@@ -37,7 +36,18 @@ PTYX_BUILTINS = set(GLOBAL_CONTEXT)
 ALL_BUILTINS = PYTHON_BUILTINS | PTYX_BUILTINS
 
 
-CONFIG_KEYS = frozenset(Configuration.__dataclass_fields__)
+CONFIG_KEYS = {
+    "sty",
+    "correct",
+    "incorrect",
+    "skipped",
+    "floor",
+    "ceil",
+    "mode",
+    "ids",
+    "id format",
+    "default score",
+}
 
 
 class Style(IntEnum):
@@ -72,6 +82,7 @@ class Style(IntEnum):
     MCQ_HEADER = auto()
     MCQ_HEADER_DELIMITER = auto()
     MCQ_HEADER_CONFIG_KEY = auto()
+    MCQ_HEADER_COMMENT = auto()
 
     MCQ_CORE = auto()
     MCQ_CORE_DELIMITER = auto()
@@ -146,13 +157,14 @@ STYLES_LIST: dict[Style, StyleInfo] = {
     # Styles for the HEADER of a MCQ file
     Style.MCQ_HEADER: StyleInfo(Mode.CONFIG, "#000000", "#d1ebb0", False, False, True),
     Style.MCQ_HEADER_DELIMITER: StyleInfo(Mode.CONFIG, "#000000", "#bade8c", False, False, True),
-    Style.MCQ_HEADER_CONFIG_KEY: StyleInfo(Mode.CONFIG, "#4c66fc", "#d1ebb0", True, False, False),
+    Style.MCQ_HEADER_CONFIG_KEY: StyleInfo(Mode.CONFIG, "#35a305", "#d1ebb0", True, False, False),
+    Style.MCQ_HEADER_COMMENT: StyleInfo(Mode.CONFIG, "#777777", "#d1ebb0", False, True, True),
     # Styles for the inclusion directives
     Style.MCQ_CORE: StyleInfo(Mode.MCQ, "#000000", "#c9d9f0", False, False, True),
     Style.MCQ_CORE_DELIMITER: StyleInfo(Mode.MCQ, "#000000", "#8cadde", False, False, True),
-    Style.MCQ_INCLUDE_DIRECTIVE: StyleInfo(Mode.MCQ, "#000000", "#c9d9f0", True, True, False),
-    Style.MCQ_CHANGE_DIR_DIRECTIVE: StyleInfo(Mode.MCQ, "#000000", "#c9d9f0", True, False, False),
-    Style.MCQ_DISABLED_DIRECTIVE: StyleInfo(Mode.MCQ, "#777777", "#c9d9f0", False, True, False),
+    Style.MCQ_INCLUDE_DIRECTIVE: StyleInfo(Mode.MCQ, "#000000", "#c9d9f0", True, False, False),
+    Style.MCQ_CHANGE_DIR_DIRECTIVE: StyleInfo(Mode.MCQ, "#000000", "#c9d9f0", True, True, True),
+    Style.MCQ_DISABLED_DIRECTIVE: StyleInfo(Mode.MCQ, "#777777", "#c9d9f0", False, True, True),
 }
 
 VAR_NAME = r"#(?:\[[^]]+\])?[A-Za-z_][A-Za-z0-9_]*"
@@ -163,15 +175,17 @@ VAR_NAME_REGEX = re.compile(VAR_NAME)
 TOKENS_REGEX = re.compile(
     "|".join(
         [
-            r"^\.{4,}$",  # start of a python code section: ...........
+            r"^\.{4,}\n",  # start of a python code section: ...........
             "|".join(
                 f"#{tag}\\{{" for tag in TAGS_WITH_A_PYTHON_ARG
             ),  # Tags who accept a python argument, like #IF{.
             VAR_NAME,  # pTyX tag or variable: #TAG_NAME
-            "^!?-- .+$",  # include directive
-            "^={3,}$",  # header delimiter: ===
-            "^<{3,}$",  # MCQ start: <<<
-            "^>{3,}$",  # MCQ end: >>>
+            "^-- DIR: .*\n",  # change directory directive
+            "^-- ",  # include directive
+            "^!-- .*\n",  # disabled include directive
+            "^={3,}\n",  # header delimiter: ===
+            "^<{3,}\n",  # MCQ start: <<<
+            "^>{3,}\n",  # MCQ end: >>>
             "|".join(f"^{key}\\s*=" for key in CONFIG_KEYS),  # configuration keys
             "^# .*$",  # whole line comment
             " # .*$",  # comment at the end of a line
@@ -297,10 +311,12 @@ class MyLexer(QsciLexerCustom):
             else:
                 style = Style.MCQ_CORE
         elif mode == Mode.CONFIG:
-            if token.startswith("=="):
+            if token.startswith("==="):
                 mode = Mode.DEFAULT
                 style = Style.MCQ_HEADER_DELIMITER
-            elif token[-1] == "=" and token[:-1].strip().isalnum():
+            elif token.startswith("# "):
+                style = Style.MCQ_HEADER_COMMENT
+            elif token[-1] == "=" and token[:-1].strip() in CONFIG_KEYS:
                 style = Style.MCQ_HEADER_CONFIG_KEY
             else:
                 style = Style.MCQ_HEADER

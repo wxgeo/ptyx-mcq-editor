@@ -424,11 +424,15 @@ class FileEventsHandler(QObject):
             assert isinstance(widget, EditorTab), widget
             widget.reload()
 
-    def open_file_from_current_ptyx_import_directive(self):
+    def open_file_from_current_ptyx_import_directive(
+        self, current_line: int = None, background: bool = False
+    ):
         if self.settings.docs().current_doc is not None:
             widget = self.book(None).currentWidget()
             assert isinstance(widget, EditorTab), widget
-            current_line = widget.editor.getCursorPosition()[0]
+            if current_line is None:
+                current_line = widget.editor.getCursorPosition()[0]
+            print(f"Directive-open: {current_line=}")
             directory = self.settings.current_directory
             for line in range(0, current_line):
                 text = widget.editor.text(line)
@@ -437,7 +441,7 @@ class FileEventsHandler(QObject):
                     directory = Path(text[pos + len(prefix) :].strip()).expanduser().resolve()
                     if param.DEBUG:
                         print(f"{directory=}")
-            import_directive = widget.editor.get_current_line_text()
+            import_directive = widget.editor.text(current_line)
             pos = import_directive.find(prefix := "-- ")
             if pos == -1:
                 raise ValueError("No directive in this line.")
@@ -445,4 +449,8 @@ class FileEventsHandler(QObject):
                 import_path = Path(import_directive[pos + len(prefix) :].strip())
                 if not import_path.is_absolute():
                     import_path = directory / import_path
+                current_index = self.settings.docs().current_index
                 self.open_doc(paths=[import_path])
+                if background:
+                    self.settings.docs().current_index = current_index
+                    self._update_ui()

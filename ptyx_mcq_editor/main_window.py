@@ -75,7 +75,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.action_Pdf.triggered.connect(self.compilation_tabs.generate_pdf)
         self.action_Update_imports.triggered.connect(handler.update_ptyx_imports)
         self.action_Open_file_from_current_import_line.triggered.connect(
-            handler.open_file_from_current_ptyx_import_directive
+            lambda: handler.open_file_from_current_ptyx_import_directive()
         )
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_desktop_menu_entry)
         self.actionFind.triggered.connect(
