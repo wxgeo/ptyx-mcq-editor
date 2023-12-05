@@ -7,37 +7,18 @@ from typing import NamedTuple, TYPE_CHECKING
 from PyQt6.Qsci import QsciLexerCustom, QsciScintilla
 from PyQt6.QtGui import QColor, QFont
 from ptyx.context import GLOBAL_CONTEXT
+
 from ptyx_mcq.tools.config_parser import Configuration
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 
 
-def get_all_tags() -> tuple[set[str], set[str]]:
-    from ptyx.syntax_tree import SyntaxTreeGenerator
-    from ptyx_mcq import extend_compiler
-
-    tags = SyntaxTreeGenerator.tags.copy()
-    tags |= extend_compiler()["tags"]
-    tags_set = set(tags)
-    for tag in tags:
-        end_tags = tags[tag][2]
-        if end_tags is not None:
-            tags_set |= {tag.lstrip("@") for tag in end_tags}
-    # Tags whose first argument is python code.
-    tags_with_a_python_arg = {tag for tag in tags if tags[tag][0] >= 1}
-    # TODO: Not implemented: tags with more than one python argument.
-    return tags_with_a_python_arg, tags_set - tags_with_a_python_arg
-
-
-TAGS_WITH_A_PYTHON_ARG, OTHER_TAGS = get_all_tags()
+CONFIG_KEYS = frozenset(Configuration.__dataclass_fields__)
 
 PYTHON_BUILTINS = set(vars(builtins))
 PTYX_BUILTINS = set(GLOBAL_CONTEXT)
 ALL_BUILTINS = PYTHON_BUILTINS | PTYX_BUILTINS
-
-
-CONFIG_KEYS = frozenset(Configuration.__dataclass_fields__)
 
 
 class Style(IntEnum):
@@ -69,16 +50,6 @@ class Style(IntEnum):
     MCQ_NEUTRALIZED_ANSWER = auto()
     MCQ_OR = auto()
 
-    MCQ_HEADER = auto()
-    MCQ_HEADER_DELIMITER = auto()
-    MCQ_HEADER_CONFIG_KEY = auto()
-
-    MCQ_CORE = auto()
-    MCQ_CORE_DELIMITER = auto()
-    MCQ_INCLUDE_DIRECTIVE = auto()
-    MCQ_CHANGE_DIR_DIRECTIVE = auto()
-    MCQ_DISABLED_DIRECTIVE = auto()
-
 
 QUOTES = {
     Style.PYTHON_SINGLE_QUOTE_STRING: "'",
@@ -95,8 +66,6 @@ class Mode(Enum):
     PYTHON = auto()
     PYTHON_STRING = auto()
     EXPRESSION = auto()
-    CONFIG = auto()
-    MCQ = auto()
 
 
 class StyleInfo(NamedTuple):
@@ -143,16 +112,6 @@ STYLES_LIST: dict[Style, StyleInfo] = {
     Style.MCQ_INCORRECT_ANSWER: StyleInfo(Mode.DEFAULT, "#ab1600", "#ffd7d1", False, False, True),
     Style.MCQ_NEUTRALIZED_ANSWER: StyleInfo(Mode.DEFAULT, "#707070", "#c2c2c2", False, False, True),
     Style.MCQ_OR: StyleInfo(Mode.DEFAULT, "#4c66fc", "#ffebc7", False, False, True),
-    # Styles for the HEADER of a MCQ file
-    Style.MCQ_HEADER: StyleInfo(Mode.CONFIG, "#000000", "#d1ebb0", False, False, True),
-    Style.MCQ_HEADER_DELIMITER: StyleInfo(Mode.CONFIG, "#000000", "#bade8c", False, False, True),
-    Style.MCQ_HEADER_CONFIG_KEY: StyleInfo(Mode.CONFIG, "#4c66fc", "#d1ebb0", True, False, False),
-    # Styles for the inclusion directives
-    Style.MCQ_CORE: StyleInfo(Mode.MCQ, "#000000", "#c9d9f0", False, False, True),
-    Style.MCQ_CORE_DELIMITER: StyleInfo(Mode.MCQ, "#000000", "#8cadde", False, False, True),
-    Style.MCQ_INCLUDE_DIRECTIVE: StyleInfo(Mode.MCQ, "#000000", "#c9d9f0", True, True, False),
-    Style.MCQ_CHANGE_DIR_DIRECTIVE: StyleInfo(Mode.MCQ, "#000000", "#c9d9f0", True, False, False),
-    Style.MCQ_DISABLED_DIRECTIVE: StyleInfo(Mode.MCQ, "#777777", "#c9d9f0", False, True, False),
 }
 
 VAR_NAME = r"#(?:\[[^]]+\])?[A-Za-z_][A-Za-z0-9_]*"
@@ -168,11 +127,6 @@ TOKENS_REGEX = re.compile(
                 f"#{tag}\\{{" for tag in TAGS_WITH_A_PYTHON_ARG
             ),  # Tags who accept a python argument, like #IF{.
             VAR_NAME,  # pTyX tag or variable: #TAG_NAME
-            "^!?-- .+$",  # include directive
-            "^={3,}$",  # header delimiter: ===
-            "^<{3,}$",  # MCQ start: <<<
-            "^>{3,}$",  # MCQ end: >>>
-            "|".join(f"^{key}\\s*=" for key in CONFIG_KEYS),  # configuration keys
             "^# .*$",  # whole line comment
             " # .*$",  # comment at the end of a line
             "#[-+*=?]",  # special pTyX tags: #+, #-, #*, #=, #?
@@ -284,26 +238,6 @@ class MyLexer(QsciLexerCustom):
             elif token == QUOTES[style]:
                 mode = previous_mode
                 # No need to change style.
-        elif mode == Mode.MCQ:
-            if token.startswith("!-- ") and mode == Mode.MCQ:
-                style = Style.MCQ_DISABLED_DIRECTIVE
-            elif token.startswith("-- DIR: ") and mode == Mode.MCQ:
-                style = Style.MCQ_CHANGE_DIR_DIRECTIVE
-            elif token.startswith("-- ") and mode == Mode.MCQ:
-                style = Style.MCQ_INCLUDE_DIRECTIVE
-            elif token.startswith(">>>"):
-                mode = Mode.DEFAULT
-                style = Style.MCQ_CORE_DELIMITER
-            else:
-                style = Style.MCQ_CORE
-        elif mode == Mode.CONFIG:
-            if token.startswith("=="):
-                mode = Mode.DEFAULT
-                style = Style.MCQ_HEADER_DELIMITER
-            elif token[-1] == "=" and token[:-1].strip().isalnum():
-                style = Style.MCQ_HEADER_CONFIG_KEY
-            else:
-                style = Style.MCQ_HEADER
         elif token.startswith("...."):
             style = Style.PYTHON_BLOCK_DELIMITER
             assert token.rstrip("\n").rstrip(".") == "", token
@@ -360,12 +294,6 @@ class MyLexer(QsciLexerCustom):
             style = Style.MCQ_OR
         elif token == "%":
             style = Style.PTYX_COMMENT
-        elif token.startswith("===") and mode == Mode.DEFAULT:
-            mode = Mode.CONFIG
-            style = Style.MCQ_HEADER_DELIMITER
-        elif token.startswith("<<<") and mode == Mode.DEFAULT:
-            mode = Mode.MCQ
-            style = Style.MCQ_CORE_DELIMITER
         else:
             # Default style
             style = Style.DEFAULT
