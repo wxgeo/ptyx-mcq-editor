@@ -71,8 +71,8 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.action_Close.triggered.connect(lambda: handler.close_doc(side=None, index=None))
         self.actionN_ew_Session.triggered.connect(lambda: handler.new_session())
 
-        self.action_LaTeX.triggered.connect(self.compilation_tabs.display_latex)
-        self.action_Pdf.triggered.connect(self.compilation_tabs.display_pdf)
+        self.action_LaTeX.triggered.connect(self.compilation_tabs.generate_latex)
+        self.action_Pdf.triggered.connect(self.compilation_tabs.generate_pdf)
         self.action_Update_imports.triggered.connect(handler.update_ptyx_imports)
         self.action_Open_file_from_current_import_line.triggered.connect(
             handler.open_file_from_current_ptyx_import_directive
