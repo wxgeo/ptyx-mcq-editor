@@ -14,7 +14,8 @@ if TYPE_CHECKING:
 class PdfViewer(QtPdfWidgets.QPdfView, EnhancedWidget):
     def __init__(self, parent) -> None:
         super().__init__(parent)
-        self.pdf_viewer = QtPdfWidgets.QPdfView(None)
+        # self.pdf_viewer = QtPdfWidgets.QPdfView(None)
+        self.setPageMode(QtPdfWidgets.QPdfView.PageMode.MultiPage)
         self.doc = QPdfDocument(self)
         self.setDocument(self.doc)
 
@@ -33,5 +34,6 @@ class PdfViewer(QtPdfWidgets.QPdfView, EnhancedWidget):
         pdf_path = self._latex_file_path()
         if pdf_path is not None and pdf_path.is_file():
             self.doc.load(str(pdf_path))
+            print(self.doc.pageCount())
         else:
             self.doc.load(None)

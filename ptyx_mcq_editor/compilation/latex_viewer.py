@@ -54,9 +54,9 @@ class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
         except BaseException as e:
             print(e)
             latex = ""
-        if is_exercise:
-            assert "top=2.5cm" in latex
-            latex = latex.replace("top=2.5cm", "top=1cm", 1)
+        # if is_exercise:
+        #     assert "top=2.5cm" in latex
+        #     latex = latex.replace("top=2.5cm", "top=1cm", 1)
         self.setText(latex)
         path.write_text(latex, encoding="utf8")
 
