@@ -166,7 +166,9 @@ class DocumentsCollection:
         except IndexError:
             return None
 
-    def add_doc(self, *, path: Path = None, doc: Document = None, select=True) -> Document:
+    def add_doc(
+        self, *, path: Path = None, doc: Document = None, select=True, position: int = None
+    ) -> Document:
         """Open a new document, either an empty one or one corresponding to the given path.
 
         Set either a path, or a document, not both.
@@ -174,19 +176,22 @@ class DocumentsCollection:
         Return the added document.
         """
         if path is None and doc is None:
-            self._documents.append(doc := Document())
+            doc = Document()
         elif doc is not None:
             assert path is None
-            self._documents.append(doc)
         elif path is not None:
             if path in self.paths:
                 if select:
                     self._current_index = self.index(path)
                 raise SamePath("I can't open the same file twice.")
-            self._documents.append(doc := Document(path))
+            doc = Document(path)
+        assert doc is not None
+        if position is None:
+            self._documents.append(doc)
+        else:
+            self._documents.insert(position, doc)
         if select:
             self._current_index = len(self._documents) - 1
-        assert doc is not None
         return doc
 
     def remove_doc(self, index: int) -> None:

@@ -46,7 +46,9 @@ def update_ui(f: Callable[..., bool]) -> Callable[..., bool]:
             else:
                 print(f.__name__)
             update = f(self, *args, **kw)
-            assert isinstance(update, bool), update
+            assert isinstance(
+                update, bool
+            ), f"Method `FileEventsHandler.{f.__name__}` must return a boolean, not {update!r}"
             if update and not current_freeze_value:
                 self._update_ui()
             return update
@@ -139,10 +141,11 @@ class FileEventsHandler(QObject):
                     tabs.new_tab(doc, index=i)
                 tabs.setTabText(i, doc.title)
             # Remove any remaining tab.
+            # We must start from the last one, to not change remaining tabs positions when destroying another one!
             for j in range(tabs.count() - 1, len(docs) - 1, -1):
                 widget = tabs.widget(j)
                 tabs.removeTab(j)
-                widget.destroy()
+                widget.destroy()  # type: ignore
 
             # Update current index.
             if len(docs) > 0:
@@ -175,20 +178,21 @@ class FileEventsHandler(QObject):
     def on_tab_moved(
         self, old_side: Side, old_index: int, new_side: Side = None, new_index: int = None
     ) -> None:
-        if param.DEBUG:
-            print(f"tab_moved: {old_side}:{old_index} -> {new_side}:{new_index}")
-        if new_side is None:
-            new_side = old_side
-        if new_index is None:
-            new_index = old_index
-        if new_side != old_side:
-            # TODO: implement this.
-            raise NotImplementedError
-        else:
-            self.settings.move_doc(old_side, old_index, new_side, new_index)
-            # Warning: no need to manually move tab, Qt will automatically do this.
-            assert isinstance(tab := self.book(new_side).widget(new_index), EditorTab)
-            assert self.settings.docs(new_side).doc(new_index) is tab.doc
+        if not self.freeze_update_ui:
+            if param.DEBUG:
+                print(f"tab_moved: {old_side}:{old_index} -> {new_side}:{new_index}")
+            if new_side is None:
+                new_side = old_side
+            if new_index is None:
+                new_index = old_index
+            if new_side != old_side:
+                # TODO: implement this.
+                raise NotImplementedError
+            else:
+                self.settings.move_doc(old_side, old_index, new_side, new_index)
+                # Warning: no need to manually move tab, Qt will automatically do this.
+                assert isinstance(tab := self.book(new_side).widget(new_index), EditorTab)
+                assert self.settings.docs(new_side).doc(new_index) is tab.doc
 
     # -------------------
     #      Actions
@@ -232,7 +236,7 @@ class FileEventsHandler(QObject):
     def open_doc(self, side: Side = None, paths: Sequence[Path] = ()) -> bool:
         if len(paths) == 0:
             # noinspection PyTypeChecker
-            paths = self.open_dialog()
+            paths = self.open_file_dialog()
             if len(paths) == 0:
                 print("open_file action canceled.")
                 return False
@@ -287,7 +291,7 @@ class FileEventsHandler(QObject):
             while not saved and not canceled:
                 assert isinstance(tab.editor, EditorWidget)
                 if path is None:
-                    path = self.save_dialog()
+                    path = self.save_file_dialog()
                     if path is None:
                         # User cancelled dialog
                         print("save_file action canceled.")
@@ -338,7 +342,7 @@ class FileEventsHandler(QObject):
     #      Dialogs
     # =================
 
-    def save_dialog(self) -> Path | None:
+    def save_file_dialog(self) -> Path | None:
         # noinspection PyTypeChecker
         path_str, _ = QFileDialog.getSaveFileName(
             self.main_window,
@@ -354,7 +358,7 @@ class FileEventsHandler(QObject):
             self.settings.current_directory = path.parent
         return path
 
-    def open_dialog(self) -> list[Path]:
+    def open_file_dialog(self) -> list[Path]:
         # noinspection PyTypeChecker
         filenames, _ = QFileDialog.getOpenFileNames(
             self.main_window,
@@ -424,16 +428,32 @@ class FileEventsHandler(QObject):
             assert isinstance(widget, EditorTab), widget
             widget.reload()
 
-    def open_file_from_current_ptyx_import_directive(
-        self, current_line: int = None, background: bool = False
-    ):
-        if self.settings.docs().current_doc is not None:
-            widget = self.book(None).currentWidget()
+    def add_directory(self):
+        widget = self.book(None).currentWidget()
+        if widget is not None:
+            # noinspection PyTypeChecker
+            path_str = QFileDialog.getExistingDirectory(
+                self.main_window,
+                "Add directory...",
+                str(self._find_current_directory_for_includes()),
+            )
+            if path_str:
+                assert isinstance(widget, EditorTab), widget
+                for line in range(0, widget.editor.lines()):
+                    if widget.editor.text(line).startswith(">>>"):
+                        widget.editor.insertAt(f"-- DIR: {path_str}\n", line, 0)
+                        return
+                else:
+                    raise ValueError("Nowhere to insert directory directive.")
+
+    def _find_current_directory_for_includes(self, current_line: int = None) -> Path:
+        directory = self.settings.current_directory
+        widget = self.book(None).currentWidget()
+        if widget is not None:
             assert isinstance(widget, EditorTab), widget
             if current_line is None:
                 current_line = widget.editor.getCursorPosition()[0]
             print(f"Directive-open: {current_line=}")
-            directory = self.settings.current_directory
             for line in range(0, current_line):
                 text = widget.editor.text(line)
                 pos = text.find(prefix := "-- DIR: ")
@@ -441,7 +461,17 @@ class FileEventsHandler(QObject):
                     directory = Path(text[pos + len(prefix) :].strip()).expanduser().resolve()
                     if param.DEBUG:
                         print(f"{directory=}")
-            import_directive = widget.editor.text(current_line)
+        return directory
+
+    @update_ui
+    def open_file_from_current_ptyx_import_directive(
+        self, current_line: int = None, background: bool = False, preview_only: bool = False
+    ) -> bool:
+        if self.settings.docs().current_doc is not None:
+            widget = self.book(None).currentWidget()
+            assert isinstance(widget, EditorTab), widget
+            directory = self._find_current_directory_for_includes(current_line=current_line)
+            import_directive = widget.editor.text(current_line)  # type: ignore
             pos = import_directive.find(prefix := "-- ")
             if pos == -1:
                 raise ValueError("No directive in this line.")
@@ -449,8 +479,13 @@ class FileEventsHandler(QObject):
                 import_path = Path(import_directive[pos + len(prefix) :].strip())
                 if not import_path.is_absolute():
                     import_path = directory / import_path
-                current_index = self.settings.docs().current_index
-                self.open_doc(paths=[import_path])
-                if background:
-                    self.settings.docs().current_index = current_index
-                    self._update_ui()
+                if preview_only:
+                    self.main_window.compilation_tabs.generate_pdf(doc_path=import_path)
+                else:
+                    docs = self.settings.docs()
+                    try:
+                        docs.add_doc(path=import_path, select=not background, position=docs.current_index + 1)
+                    except SamePath:
+                        docs.move_doc(docs.index(import_path), docs.current_index + 1, select=not background)
+                    return True
+        return False

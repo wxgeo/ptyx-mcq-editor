@@ -243,7 +243,7 @@ class MyLexer(QsciLexerCustom):
         return ""
 
     def styleText(self, start: int, end: int):
-        editor: EditorWidget = self.parent()
+        editor: EditorWidget = self.parent()  # type: ignore
         assert isinstance(editor, QsciScintilla)
         # 1. Initialize the styling procedure
         # ------------------------------------
@@ -270,7 +270,7 @@ class MyLexer(QsciLexerCustom):
         else:
             style = Style.DEFAULT
             mode = Mode.DEFAULT
-            previous_mode = mode.DEFAULT
+            previous_mode = Mode.DEFAULT
         # 4.2 Style the text in a loop
         for i, token in enumerate(token_list):
             assert isinstance(token, str), token

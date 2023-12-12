@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 SEARCH_MARKER_ID = 0
 INCLUDE_DIRECTIVES_ID = 1
 
+# TODO: tool tips for clickable lines.
+#  https://riverbankcomputing.com/pipermail/qscintilla/2008-November/000382.html
+#  https://doc.qt.io/qt-6/qtooltip.html#showText
+
 
 class EditorWidget(QsciScintilla, EnhancedWidget):
     def __init__(self, parent: "EditorTab"):
@@ -109,5 +113,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
     def on_click(self, line, index, keys):
         self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
-            current_line=line, background=keys & Qt.KeyboardModifier.ControlModifier
+            current_line=line,
+            background=True,
+            preview_only=keys & Qt.KeyboardModifier.ControlModifier,
         )

@@ -8,6 +8,7 @@ from types import TracebackType
 from typing import Type
 
 import argcomplete
+from PyQt6.QtCore import QRect, QPoint
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QMessageBox
 from argcomplete import FilesCompleter
@@ -38,7 +39,9 @@ def main(args: list | None = None) -> None:
         metavar="PATHS",
         type=Path,
         help="One or more pTyX file to open (with '.ptyx' or '.ex' extension).",
-    ).completer = FilesCompleter(("ex", "ptyx"))
+    ).completer = FilesCompleter(  # type: ignore
+        ("ex", "ptyx")
+    )
     argcomplete.autocomplete(parser, always_complete_options=False)
     parsed_args = parser.parse_args(args)
     try:
@@ -52,6 +55,10 @@ def main(args: list | None = None) -> None:
         sys.excepthook = partial(my_excepthook, window=main_window)
         # Used to handle Ctrl+C
         signal.signal(signal.SIGINT, lambda sig, _: app.quit())
+        main_window.move(
+            main_window.screen().geometry().center()
+            - QRect(QPoint(), main_window.frameGeometry().size()).center()
+        )
         main_window.show()
         return_code = app.exec()
     except BaseException as e:

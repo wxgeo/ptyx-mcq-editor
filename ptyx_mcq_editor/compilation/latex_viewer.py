@@ -22,43 +22,48 @@ class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
         self.setMarginsForegroundColor(QColor("#ff888888"))
         self.setLexer(Qsci.QsciLexerTeX(self))
 
-    def _latex_file_path(self) -> Path | None:
+    def _latex_file_path(self, doc_path: Path = None) -> Path | None:
         """Get the path of the current latex file."""
-        return self.main_window.get_temp_path("tex")
+        return self.main_window.get_temp_path("tex", doc_path=doc_path)
 
-    def _is_single_exercise(self) -> bool:
+    def _is_single_exercise(self, doc_path: Path = None) -> bool:
         try:
-            return self.main_window.settings.current_doc.path.suffix == ".ex"
+            if doc_path is None:
+                doc_path = self.main_window.settings.current_doc.path
+            return doc_path.suffix == ".ex"
         except AttributeError:
             return False
 
-    def generate_latex(self) -> None:
-        """Generate a LaTeX file corresponding to the current edited document."""
+    def generate_latex(self, doc_path: Path = None) -> None:
+        """Generate a LaTeX file.
+
+        If `doc_path` is None, the LaTeX file corresponds to the current edited document.
+        Else, `doc_path` must point to a .ptyx or .ex file.
+        """
         main_window = self.main_window
         doc = main_window.settings.current_doc
         editor = main_window.current_mcq_editor
-        path = self._latex_file_path()
-        if doc is None or editor is None or path is None:
+        latex_path = self._latex_file_path(doc_path=doc_path)
+        if doc is None or editor is None or latex_path is None:
             return
-        code = editor.text()
+        code = editor.text() if doc_path is None else doc_path.read_text(encoding="utf8")
         compiler = Compiler()
         options = {"MCQ_KEEP_ALL_VERSIONS": True, "PTYX_WITH_ANSWERS": True}
-        if is_exercise := self._is_single_exercise():
+        if self._is_single_exercise(doc_path):
             print("\n == Exercise detected. == \n")
             code = self._wrap_ptyx_code(code)
             options["MCQ_REMOVE_HEADER"] = True
             options["MCQ_PREVIEW_MODE"] = True
             print(code)
+        else:
+            options["MCQ_DISPLAY_QUESTION_TITLE"] = True
         try:
-            latex = compiler.parse(code=code, **options)
+            latex = compiler.parse(code=code, **options)  # type: ignore
         except BaseException as e:
             print(e)
             latex = ""
-        # if is_exercise:
-        #     assert "top=2.5cm" in latex
-        #     latex = latex.replace("top=2.5cm", "top=1cm", 1)
         self.setText(latex)
-        path.write_text(latex, encoding="utf8")
+        latex_path.write_text(latex, encoding="utf8")
 
     @staticmethod
     def _wrap_ptyx_code(code: str) -> str:
@@ -70,11 +75,11 @@ class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
         before, _, after = re.split("(<<<.+>>>)", template, flags=re.MULTILINE | re.DOTALL)
         return f"{before}\n<<<\n{code}\n>>>\n{after}"
 
-    def _get_latex(self) -> str:
-        path = self._latex_file_path()
-        if path is None or not path.is_file():
+    def _get_latex(self, doc_path: Path = None) -> str:
+        latex_path = self._latex_file_path(doc_path=doc_path)
+        if latex_path is None or not latex_path.is_file():
             return ""
-        return path.read_text(encoding="utf8")
+        return latex_path.read_text(encoding="utf8")
 
     # def _get_latex(self) -> str:
     #     if self.main_window.current_mcq_editor is None:
@@ -92,5 +97,5 @@ class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
     #     )
     #     return latex
 
-    def load(self) -> None:
-        self.setText(self._get_latex())
+    def load(self, doc_path: Path = None) -> None:
+        self.setText(self._get_latex(doc_path=doc_path))

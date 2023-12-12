@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 import shutil
 from argparse import Namespace
+from base64 import urlsafe_b64encode
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import Final, Literal
 
-from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QCloseEvent, QIcon
 from PyQt6.QtWidgets import QMainWindow, QMessageBox
 
@@ -15,6 +15,10 @@ from ptyx_mcq_editor.generated_ui.main_ui import Ui_MainWindow
 from ptyx_mcq_editor.param import ICON_PATH
 from ptyx_mcq_editor.settings import Settings, Side
 from ptyx_mcq_editor.tools import install_desktop_shortcut
+
+
+def path_hash(path: Path | str) -> str:
+    return urlsafe_b64encode(hash(str(path)).to_bytes(8, signed=True)).decode("ascii").rstrip("=")
 
 
 class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
@@ -71,9 +75,10 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.action_Close.triggered.connect(lambda: handler.close_doc(side=None, index=None))
         self.actionN_ew_Session.triggered.connect(lambda: handler.new_session())
 
-        self.action_LaTeX.triggered.connect(self.compilation_tabs.generate_latex)
-        self.action_Pdf.triggered.connect(self.compilation_tabs.generate_pdf)
+        self.action_LaTeX.triggered.connect(lambda: self.compilation_tabs.generate_latex())
+        self.action_Pdf.triggered.connect(lambda: self.compilation_tabs.generate_pdf())
         self.action_Update_imports.triggered.connect(handler.update_ptyx_imports)
+        self.action_Add_folder.triggered.connect(handler.add_directory)
         self.action_Open_file_from_current_import_line.triggered.connect(
             lambda: handler.open_file_from_current_ptyx_import_directive()
         )
@@ -152,9 +157,12 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         if self.current_mcq_editor is not None:
             self.current_mcq_editor.dbg_send_scintilla_command()
 
-    def get_temp_path(self, suffix: Literal["tex", "pdf"]) -> Path | None:
+    def get_temp_path(self, suffix: Literal["tex", "pdf"], doc_path: Path = None) -> Path | None:
         """Get the path of a temporary file corresponding to the current document."""
-        doc = self.settings.current_doc
-        if doc is not None:
-            return self.tmp_dir / f"{'' if doc.path is None else doc.path.stem}-{doc.doc_id}.{suffix}"
-        return None
+        if doc_path is None:
+            doc = self.settings.current_doc
+            if doc is not None:
+                doc_path = doc.path
+            if doc_path is None:
+                doc_path = Path(f"new-doc-{doc.doc_id}")
+        return self.tmp_dir / f"{'' if doc_path is None else doc_path.stem}-{path_hash(doc_path)}.{suffix}"

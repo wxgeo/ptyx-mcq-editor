@@ -1,5 +1,6 @@
+from pathlib import Path
+
 from PyQt6.QtWidgets import QTabWidget, QDockWidget, QWidget
-from ptyx.compilation import compile_latex_to_pdf
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
 from ptyx_mcq_editor.compilation.pdf_viewer import PdfViewer
@@ -17,19 +18,19 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
 
     @property
     def dock(self) -> QDockWidget:
-        dock = self.parent().parent()
+        dock = self.parent().parent()  # type: ignore
         assert isinstance(dock, QDockWidget)
         return dock
 
-    def generate_pdf(self) -> None:
+    def generate_pdf(self, doc_path: Path = None) -> None:
         self.dock.show()
-        self.latex_viewer.generate_latex()
-        self.pdf_viewer.generate_pdf()
+        self.latex_viewer.generate_latex(doc_path=doc_path)
+        self.pdf_viewer.generate_pdf(doc_path=doc_path)
         self.setCurrentIndex(self.indexOf(self.pdf_viewer))
 
-    def generate_latex(self) -> None:
+    def generate_latex(self, doc_path: Path = None) -> None:
         self.dock.show()
-        self.latex_viewer.generate_latex()
+        self.latex_viewer.generate_latex(doc_path=doc_path)
         self.setCurrentIndex(self.indexOf(self.latex_viewer))
 
     def update_tabs(self) -> None:
