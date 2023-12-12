@@ -161,8 +161,9 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         """Get the path of a temporary file corresponding to the current document."""
         if doc_path is None:
             doc = self.settings.current_doc
-            if doc is not None:
-                doc_path = doc.path
+            if doc is None:
+                return None
+            doc_path = doc.path
             if doc_path is None:
                 doc_path = Path(f"new-doc-{doc.doc_id}")
         return self.tmp_dir / f"{'' if doc_path is None else doc_path.stem}-{path_hash(doc_path)}.{suffix}"

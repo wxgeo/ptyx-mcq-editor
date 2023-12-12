@@ -56,7 +56,7 @@ def main(args: list | None = None) -> None:
         # Used to handle Ctrl+C
         signal.signal(signal.SIGINT, lambda sig, _: app.quit())
         main_window.move(
-            main_window.screen().geometry().center()
+            main_window.screen().geometry().center()  # type: ignore
             - QRect(QPoint(), main_window.frameGeometry().size()).center()
         )
         main_window.show()
