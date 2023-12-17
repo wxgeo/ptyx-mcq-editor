@@ -62,6 +62,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.setMarginWidth(0, "0000")
         self.setMarginsForegroundColor(QColor("#ff888888"))
 
+        self.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)
+
         self.setLexer(MyLexer(self))
 
         # Marker use to highlight all search results
