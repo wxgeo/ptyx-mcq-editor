@@ -115,6 +115,8 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         if self.file_events_handler.ask_for_saving_if_needed():
             self.settings.save_settings()
             shutil.rmtree(self.tmp_dir)
+            # Pdf doc must be closed to avoid a segfault on exit.
+            self.compilation_tabs.pdf_viewer.doc.close()
             return True
         return False
 

@@ -63,6 +63,7 @@ def main(args: list | None = None) -> None:
         return_code = app.exec()
     except BaseException as e:
         raise e
+    print("Bye!")
     sys.exit(return_code)
 
 
