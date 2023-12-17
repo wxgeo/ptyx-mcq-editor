@@ -105,6 +105,11 @@ class FileEventsHandler(QObject):
             side = self.settings.current_side
         return self.main_window.books[side]
 
+    def current_editor(self) -> EditorWidget | None:
+        tab = self.book(None).currentWidget()
+        assert isinstance(tab, EditorTab) or tab is None, tab
+        return tab.editor if tab is not None else None
+
     # ------------------------------------------
     #      UI synchronization with settings
     # ==========================================
@@ -162,6 +167,7 @@ class FileEventsHandler(QObject):
             self.main_window.setWindowTitle(f"{param.WINDOW_TITLE} - {docs.current_doc.title}")
         else:
             self.main_window.setWindowTitle(param.WINDOW_TITLE)
+        self.update_status_message()
 
     # ----------------------------------------------
     #      Settings synchronization on events
@@ -429,8 +435,8 @@ class FileEventsHandler(QObject):
             widget.reload()
 
     def add_directory(self):
-        widget = self.book(None).currentWidget()
-        if widget is not None:
+        editor = self.current_editor()
+        if editor is not None:
             # noinspection PyTypeChecker
             path_str = QFileDialog.getExistingDirectory(
                 self.main_window,
@@ -438,24 +444,22 @@ class FileEventsHandler(QObject):
                 str(self._find_current_directory_for_includes()),
             )
             if path_str:
-                assert isinstance(widget, EditorTab), widget
-                for line in range(0, widget.editor.lines()):
-                    if widget.editor.text(line).startswith(">>>"):
-                        widget.editor.insertAt(f"-- DIR: {path_str}\n", line, 0)
+                for line in range(0, editor.lines()):
+                    if editor.text(line).startswith(">>>"):
+                        editor.insertAt(f"-- DIR: {path_str}\n", line, 0)
                         return
                 else:
                     raise ValueError("Nowhere to insert directory directive.")
 
     def _find_current_directory_for_includes(self, current_line: int = None) -> Path:
         directory = self.settings.current_directory
-        widget = self.book(None).currentWidget()
-        if widget is not None:
-            assert isinstance(widget, EditorTab), widget
+        editor = self.current_editor()
+        if editor is not None:
             if current_line is None:
-                current_line = widget.editor.getCursorPosition()[0]
+                current_line = editor.getCursorPosition()[0]
             print(f"Directive-open: {current_line=}")
             for line in range(0, current_line):
-                text = widget.editor.text(line)
+                text = editor.text(line)
                 pos = text.find(prefix := "-- DIR: ")
                 if pos != -1:
                     directory = Path(text[pos + len(prefix) :].strip()).expanduser().resolve()
@@ -468,10 +472,9 @@ class FileEventsHandler(QObject):
         self, current_line: int = None, background: bool = False, preview_only: bool = False
     ) -> bool:
         if self.settings.docs().current_doc is not None:
-            widget = self.book(None).currentWidget()
-            assert isinstance(widget, EditorTab), widget
+            editor = self.current_editor()
             directory = self._find_current_directory_for_includes(current_line=current_line)
-            import_directive = widget.editor.text(current_line)  # type: ignore
+            import_directive = editor.text(current_line)  # type: ignore
             pos = import_directive.find(prefix := "-- ")
             if pos == -1:
                 raise ValueError("No directive in this line.")
@@ -489,3 +492,8 @@ class FileEventsHandler(QObject):
                         docs.move_doc(docs.index(import_path), docs.current_index + 1, select=not background)
                     return True
         return False
+
+    def update_status_message(self):
+        editor = self.current_editor()
+        if editor is not None:
+            self.main_window.status_label.setText(editor.status_message)

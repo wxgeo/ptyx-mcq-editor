@@ -7,7 +7,7 @@ from tempfile import mkdtemp
 from typing import Final, Literal
 
 from PyQt6.QtGui import QCloseEvent, QIcon
-from PyQt6.QtWidgets import QMainWindow, QMessageBox
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel
 
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 from ptyx_mcq_editor.file_events_handler import FileEventsHandler
@@ -55,6 +55,9 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
 
         # TODO: enable right view
         self.hide_right_view()
+
+        self.status_label = QLabel(self)
+        self.statusbar.addWidget(self.status_label)
 
         # -------------------
         #   Connect signals

@@ -23,6 +23,7 @@ INCLUDE_DIRECTIVES_ID = 1
 class EditorWidget(QsciScintilla, EnhancedWidget):
     def __init__(self, parent: "EditorTab"):
         super().__init__(parent)
+        self.status_message = ""
 
         self.setUtf8(True)  # Set encoding to UTF-8
         font = QFont()
@@ -107,15 +108,23 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
     def update_include_indicators(self):
         last = self.lines() - 1
         self.clearIndicatorRange(0, 0, last, len(self.text(last)), INCLUDE_DIRECTIVES_ID)
+        n_includes = n_disabled_includes = 0
         for i, line in enumerate(self.text().split("\n")):
             if line.startswith("-- ") and not line[3:].startswith("DIR:"):
                 self.fillIndicatorRange(i, 3, i, len(line), INCLUDE_DIRECTIVES_ID)
+                n_includes += 1
             elif line.startswith("!-- "):
                 self.fillIndicatorRange(i, 4, i, len(line), INCLUDE_DIRECTIVES_ID)
+                n_disabled_includes += 1
+        if n_includes > 0 or n_disabled_includes > 0:
+            self.status_message = f"{n_includes} imports ({n_disabled_includes} disabled)"
+        else:
+            self.status_message = ""
+        self.main_window.file_events_handler.update_status_message()
 
     def on_click(self, line, index, keys):
         self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
             current_line=line,
             background=True,
-            preview_only=keys & Qt.KeyboardModifier.ControlModifier,
+            preview_only=not (keys & Qt.KeyboardModifier.ControlModifier),
         )
