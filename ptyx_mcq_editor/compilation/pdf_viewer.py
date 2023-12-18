@@ -16,6 +16,7 @@ class PdfViewer(QtPdfWidgets.QPdfView, EnhancedWidget):
         super().__init__(parent)
         # self.pdf_viewer = QtPdfWidgets.QPdfView(None)
         self.setPageMode(QtPdfWidgets.QPdfView.PageMode.MultiPage)
+        self.setZoomMode(QtPdfWidgets.QPdfView.ZoomMode.FitToWidth)
         self.doc = QPdfDocument(self)
         self.setDocument(self.doc)
 
