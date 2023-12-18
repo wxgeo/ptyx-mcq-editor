@@ -1,3 +1,4 @@
+import traceback
 from typing import TYPE_CHECKING
 
 from PyQt6.Qsci import QsciScintilla
@@ -90,7 +91,10 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), INCLUDE_DIRECTIVES_ID)
         self.setIndicatorHoverStyle(QsciScintilla.IndicatorStyle.FullBoxIndicator, INCLUDE_DIRECTIVES_ID)
         self.textChanged.connect(self.update_include_indicators)
-        self.indicatorClicked.connect(self.on_click)
+
+        # Don't use QScintilla.indicatorClicked signal, since it lead to an occasional severe bug with a selection
+        # anchor impossible to remove.
+        self.indicatorReleased.connect(self.on_click)
 
         # self.installEventFilter(EventFilter(self))
 
@@ -147,11 +151,14 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
     def on_click(self, line, _, keys):
         ctrl_pressed = keys & Qt.KeyboardModifier.ControlModifier
         shift_pressed = keys & Qt.KeyboardModifier.ShiftModifier
-        self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
-            current_line=line,
-            background=not shift_pressed,
-            preview_only=not ctrl_pressed and not shift_pressed,
-        )
+        try:
+            self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
+                current_line=line,
+                background=not shift_pressed,
+                preview_only=not ctrl_pressed and not shift_pressed,
+            )
+        except IOError:
+            traceback.print_exc()
         if shift_pressed:
             # Dirty hack to unselect text.
             # The problem is, Scintilla will select it *after* processing `on_click`, so we can't
@@ -160,7 +167,19 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             # https://groups.google.com/g/scintilla-interest/c/XY1sKYBtGj0
             # https://sourceforge.net/p/scintilla/bugs/1679/
             # noinspection PyTypeChecker
-            QTimer.singleShot(10, self.unselect)
+            QTimer.singleShot(10, self.update_include_indicators)
+
+    # def on_click(self, line, _, keys):
+    #     ctrl_pressed = keys & Qt.KeyboardModifier.ControlModifier
+    #     shift_pressed = keys & Qt.KeyboardModifier.ShiftModifier
+    #     QTimer.singleShot(
+    #         1000,
+    #         lambda: self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
+    #             current_line=line,
+    #             background=not shift_pressed,
+    #             preview_only=not ctrl_pressed and not shift_pressed,
+    #         ),
+    #     )
 
     def deleteAt(self, line: int, col: int, n: int) -> None:
         """Delete `n` (unicode) chars on the given line, starting from given column.

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final, Sequence, Callable
 
 from PyQt6.Qsci import QsciScintilla
-from PyQt6.QtCore import QObject, Qt
+from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QDialogButtonBox
 from ptyx_mcq.cli import get_template_path, update_include
 
@@ -80,10 +80,13 @@ class AskForSavingDialog(QDialog, ask_for_saving_ui.Ui_Dialog):
 
 
 class FileEventsHandler(QObject):
+    file_missing = pyqtSignal(str, name="file_missing")
+
     def __init__(self, main_window: "McqEditorMainWindow"):
         super().__init__(parent=main_window)
         self.main_window: Final = main_window
         self.freeze_update_ui: bool = False  # See update_ui() decorator docstring.
+        self.file_missing.connect(self.create_missing_file)
 
     @update_ui
     def finalize(self, paths: Sequence[Path] = ()) -> bool:
@@ -469,7 +472,10 @@ class FileEventsHandler(QObject):
 
     @update_ui
     def open_file_from_current_ptyx_import_directive(
-        self, current_line: int = None, background: bool = False, preview_only: bool = False
+        self,
+        current_line: int = None,
+        background: bool = False,
+        preview_only: bool = False,
     ) -> bool:
         if self.settings.docs().current_doc is not None:
             editor = self.current_editor()
@@ -485,15 +491,23 @@ class FileEventsHandler(QObject):
                 import_path = Path(import_directive[pos + len(prefix) :].strip())
                 if not import_path.is_absolute():
                     import_path = directory / import_path
-                if preview_only:
-                    self.main_window.compilation_tabs.generate_pdf(doc_path=import_path)
-                else:
-                    docs = self.settings.docs()
-                    try:
-                        docs.add_doc(path=import_path, select=not background, position=docs.current_index + 1)
-                    except SamePath:
-                        docs.move_doc(docs.index(import_path), docs.current_index + 1, select=not background)
-                    return True
+                try:
+                    if preview_only:
+                        self.main_window.compilation_tabs.generate_pdf(doc_path=import_path)
+                    else:
+                        docs = self.settings.docs()
+                        try:
+                            docs.add_doc(
+                                path=import_path, select=not background, position=docs.current_index + 1
+                            )
+                        except SamePath:
+                            docs.move_doc(
+                                docs.index(import_path), docs.current_index + 1, select=not background
+                            )
+                        return True
+                except IOError:
+                    return self.create_missing_file(import_path)
+
         return False
 
     def update_status_message(self):
@@ -505,3 +519,17 @@ class FileEventsHandler(QObject):
         editor = self.current_editor()
         if editor is not None:
             editor.toggle_comment()
+
+    def create_missing_file(self, filepath: Path) -> bool:
+        # noinspection PyTypeChecker
+        answer = QMessageBox.question(
+            self.main_window,
+            "File not found",
+            f"Create new file <b>{filepath.name}</b> ?",
+            defaultButton=QMessageBox.StandardButton.Yes,
+        )
+        if answer == QMessageBox.StandardButton.Yes:
+            filepath.write_text("")
+            self.open_doc(paths=[filepath])
+            return True
+        return False
