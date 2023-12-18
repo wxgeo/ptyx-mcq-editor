@@ -30,6 +30,7 @@ def get_all_tags() -> tuple[set[str], set[str]]:
 
 
 TAGS_WITH_A_PYTHON_ARG, OTHER_TAGS = get_all_tags()
+OTHER_TAGS.add("#")
 
 PYTHON_BUILTINS = set(vars(builtins))
 PTYX_BUILTINS = set(GLOBAL_CONTEXT)
@@ -189,7 +190,7 @@ TOKENS_REGEX = re.compile(
             "|".join(f"^{key}\\s*=" for key in CONFIG_KEYS),  # configuration keys
             "^# .*$",  # whole line comment
             " # .*$",  # comment at the end of a line
-            "#[-+*=?]",  # special pTyX tags: #+, #-, #*, #=, #?
+            "#[-+*=?#]",  # special pTyX tags: #+, #-, #*, #=, #?, ##
             r"#\{",  # starts a pTyX expression: #{
             "^[-+!] ",  # an answer (incorrect, correct or disabled)
             r"\\\\",  # \\ (to parse python strings, it's easier to consider it as a single token)
