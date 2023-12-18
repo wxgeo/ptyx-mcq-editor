@@ -477,6 +477,7 @@ class FileEventsHandler(QObject):
         background: bool = False,
         preview_only: bool = False,
     ) -> bool:
+        print(preview_only, background)
         if self.settings.docs().current_doc is not None:
             editor = self.current_editor()
             assert editor is not None

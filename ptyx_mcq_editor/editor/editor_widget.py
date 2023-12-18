@@ -2,7 +2,7 @@ import traceback
 from typing import TYPE_CHECKING
 
 from PyQt6.Qsci import QsciScintilla
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtWidgets import QDialog
 
@@ -38,6 +38,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         super().__init__(parent)
         self.status_message: str = ""
         self._directives_lines: list[int] = []
+        self._modifiers = Qt.KeyboardModifier.NoModifier
 
         self.setUtf8(True)  # Set encoding to UTF-8
         font = QFont()
@@ -94,6 +95,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
         # Don't use QScintilla.indicatorClicked signal, since it lead to an occasional severe bug with a selection
         # anchor impossible to remove.
+        self.indicatorClicked.connect(self.save_modifiers)
         self.indicatorReleased.connect(self.on_click)
 
         # self.installEventFilter(EventFilter(self))
@@ -148,9 +150,12 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             self.status_message = ""
         self.main_window.file_events_handler.update_status_message()
 
+    def save_modifiers(self, line, _, keys):
+        self._modifiers = keys
+
     def on_click(self, line, _, keys):
-        ctrl_pressed = keys & Qt.KeyboardModifier.ControlModifier
-        shift_pressed = keys & Qt.KeyboardModifier.ShiftModifier
+        ctrl_pressed = self._modifiers & Qt.KeyboardModifier.ControlModifier
+        shift_pressed = self._modifiers & Qt.KeyboardModifier.ShiftModifier
         try:
             self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
                 current_line=line,
@@ -160,26 +165,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         except IOError:
             traceback.print_exc()
         if shift_pressed:
-            # Dirty hack to unselect text.
-            # The problem is, Scintilla will select it *after* processing `on_click`, so we can't
-            # unselect it from here.
-            # As a consequence, we have to find a way to unselect it after exiting current handler.
-            # https://groups.google.com/g/scintilla-interest/c/XY1sKYBtGj0
-            # https://sourceforge.net/p/scintilla/bugs/1679/
-            # noinspection PyTypeChecker
-            QTimer.singleShot(10, self.update_include_indicators)
-
-    # def on_click(self, line, _, keys):
-    #     ctrl_pressed = keys & Qt.KeyboardModifier.ControlModifier
-    #     shift_pressed = keys & Qt.KeyboardModifier.ShiftModifier
-    #     QTimer.singleShot(
-    #         1000,
-    #         lambda: self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
-    #             current_line=line,
-    #             background=not shift_pressed,
-    #             preview_only=not ctrl_pressed and not shift_pressed,
-    #         ),
-    #     )
+            # Scintilla select text as a side effect when clicking with shift key pressed.
+            self.unselect()
 
     def deleteAt(self, line: int, col: int, n: int) -> None:
         """Delete `n` (unicode) chars on the given line, starting from given column.

@@ -10,7 +10,7 @@ from PyQt6.QtGui import QCloseEvent, QIcon
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel
 
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
-from ptyx_mcq_editor.file_events_handler import FileEventsHandler
+from ptyx_mcq_editor.events_handler import FileEventsHandler
 from ptyx_mcq_editor.generated_ui.main_ui import Ui_MainWindow
 from ptyx_mcq_editor.param import ICON_PATH
 from ptyx_mcq_editor.settings import Settings, Side
