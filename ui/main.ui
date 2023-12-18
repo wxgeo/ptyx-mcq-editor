@@ -88,6 +88,7 @@
     </property>
     <addaction name="action_LaTeX"/>
     <addaction name="action_Pdf"/>
+    <addaction name="actionPublish"/>
    </widget>
    <widget class="QMenu" name="menu_Tools">
     <property name="title">
@@ -430,7 +431,7 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="action_LaTeX">
    <property name="text">
-    <string>&amp;LaTeX</string>
+    <string>&amp;LaTeX code preview</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+Return</string>
@@ -442,7 +443,7 @@ p, li { white-space: pre-wrap; }
      <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>&amp;Pdf</string>
+    <string>&amp;Pdf preview</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Return</string>
@@ -567,6 +568,14 @@ p, li { white-space: pre-wrap; }
   <action name="actionTest">
    <property name="text">
     <string>Test</string>
+   </property>
+  </action>
+  <action name="actionPublish">
+   <property name="text">
+    <string>Pu&amp;blish</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
  </widget>

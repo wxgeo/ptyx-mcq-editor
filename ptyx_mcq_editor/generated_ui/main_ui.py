@@ -215,6 +215,8 @@ class Ui_MainWindow(object):
         self.actionComment.setObjectName("actionComment")
         self.actionTest = QtGui.QAction(parent=MainWindow)
         self.actionTest.setObjectName("actionTest")
+        self.actionPublish = QtGui.QAction(parent=MainWindow)
+        self.actionPublish.setObjectName("actionPublish")
         self.menu_Recent_Files.addAction(self.actionNone)
         self.menu_New.addAction(self.action_Empty_file)
         self.menu_New.addAction(self.action_Mcq_ptyx_file)
@@ -230,6 +232,7 @@ class Ui_MainWindow(object):
         self.menuFichier.addAction(self.action_Quitter)
         self.menuCompilation.addAction(self.action_LaTeX)
         self.menuCompilation.addAction(self.action_Pdf)
+        self.menuCompilation.addAction(self.actionPublish)
         self.menu_Tools.addAction(self.action_Add_MCQ_Editor_to_start_menu)
         self.menu_Edit.addAction(self.actionFind)
         self.menu_Edit.addAction(self.actionReplace)
@@ -300,9 +303,9 @@ class Ui_MainWindow(object):
         self.actionSave_as.setText(_translate("MainWindow", "Save &as"))
         self.actionSave_as.setShortcut(_translate("MainWindow", "Ctrl+Shift+S"))
         self.action_Quitter.setText(_translate("MainWindow", "&Quitter"))
-        self.action_LaTeX.setText(_translate("MainWindow", "&LaTeX"))
+        self.action_LaTeX.setText(_translate("MainWindow", "&LaTeX code preview"))
         self.action_LaTeX.setShortcut(_translate("MainWindow", "Ctrl+Shift+Return"))
-        self.action_Pdf.setText(_translate("MainWindow", "&Pdf"))
+        self.action_Pdf.setText(_translate("MainWindow", "&Pdf preview"))
         self.action_Pdf.setShortcut(_translate("MainWindow", "Ctrl+Return"))
         self.action_Add_MCQ_Editor_to_start_menu.setText(_translate("MainWindow", "&Add shortcut to MCQ Editor in the applications menu"))
         self.actionFind.setText(_translate("MainWindow", "&Find"))
@@ -327,6 +330,8 @@ class Ui_MainWindow(object):
         self.actionComment.setText(_translate("MainWindow", "&Comment"))
         self.actionComment.setShortcut(_translate("MainWindow", "Ctrl+M"))
         self.actionTest.setText(_translate("MainWindow", "Test"))
+        self.actionPublish.setText(_translate("MainWindow", "Pu&blish"))
+        self.actionPublish.setShortcut(_translate("MainWindow", "Ctrl+S"))
 from ptyx_mcq_editor.compilation.tab_widget import CompilationTabs
 from ptyx_mcq_editor.files_book import FilesBook
 from ptyx_mcq_editor.find_and_replace import FindAndReplaceWidget
