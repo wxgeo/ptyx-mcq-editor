@@ -113,18 +113,25 @@
     </property>
     <addaction name="action_Send_Qscintilla_Command"/>
    </widget>
-   <widget class="QMenu" name="menu_pTyX">
+   <widget class="QMenu" name="menu_Code">
     <property name="title">
-     <string>&amp;pTyX</string>
+     <string>&amp;Code</string>
     </property>
-    <addaction name="action_Update_imports"/>
-    <addaction name="action_Add_folder"/>
-    <addaction name="action_Open_file_from_current_import_line"/>
+    <widget class="QMenu" name="menuImports">
+     <property name="title">
+      <string>&amp;Imports</string>
+     </property>
+     <addaction name="action_Update_imports"/>
+     <addaction name="action_Add_folder"/>
+     <addaction name="action_Open_file_from_current_import_line"/>
+    </widget>
+    <addaction name="actionComment"/>
+    <addaction name="menuImports"/>
    </widget>
    <addaction name="menuFichier"/>
    <addaction name="menu_Edit"/>
+   <addaction name="menu_Code"/>
    <addaction name="menuCompilation"/>
-   <addaction name="menu_pTyX"/>
    <addaction name="menu_Tools"/>
    <addaction name="menuDebug"/>
    <addaction name="menu_help"/>
@@ -516,10 +523,16 @@ p, li { white-space: pre-wrap; }
    <property name="text">
     <string>&amp;Update imports</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+I</string>
+   </property>
   </action>
   <action name="action_Add_folder">
    <property name="text">
     <string>&amp;Add directory</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+I</string>
    </property>
   </action>
   <action name="action_Open_file_from_current_import_line">
@@ -541,6 +554,19 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="text">
     <string>N&amp;ew Session</string>
+   </property>
+  </action>
+  <action name="actionComment">
+   <property name="text">
+    <string>&amp;Comment</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
+   </property>
+  </action>
+  <action name="actionTest">
+   <property name="text">
+    <string>Test</string>
    </property>
   </action>
  </widget>

@@ -70,6 +70,8 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
     def connect_menu_signals(self) -> None:
         # Don't change handler variable value (because of name binding process in lambdas).
         handler: Final[FileEventsHandler] = self.file_events_handler
+
+        # *** 'File' menu ***
         self.action_Empty_file.triggered.connect(lambda: handler.new_doc(side=None, content=None))
         self.action_Mcq_ptyx_file.triggered.connect(lambda: handler.new_mcq_ptyx_doc(side=None))
         self.action_Open.triggered.connect(lambda: handler.open_doc(side=None))
@@ -77,22 +79,32 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.actionSave_as.triggered.connect(lambda: handler.save_doc_as(side=None, index=None))
         self.action_Close.triggered.connect(lambda: handler.close_doc(side=None, index=None))
         self.actionN_ew_Session.triggered.connect(lambda: handler.new_session())
+        self.menuFichier.aboutToShow.connect(self.update_recent_files_menu)
 
+        # *** 'Make' menu ***
         self.action_LaTeX.triggered.connect(lambda: self.compilation_tabs.generate_latex())
         self.action_Pdf.triggered.connect(lambda: self.compilation_tabs.generate_pdf())
+
+        # *** 'Code' menu ***
         self.action_Update_imports.triggered.connect(handler.update_ptyx_imports)
         self.action_Add_folder.triggered.connect(handler.add_directory)
         self.action_Open_file_from_current_import_line.triggered.connect(
             lambda: handler.open_file_from_current_ptyx_import_directive()
         )
+        self.actionComment.triggered.connect(handler.toggle_comment)
+
+        # *** 'Tools' menu ***
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_desktop_menu_entry)
+
+        # *** 'Edit' menu ***
         self.actionFind.triggered.connect(
             lambda: self.search_dock.toggle_find_and_replace_dialog(replace=False)
         )
         self.actionReplace.triggered.connect(
             lambda: self.search_dock.toggle_find_and_replace_dialog(replace=True)
         )
-        self.menuFichier.aboutToShow.connect(self.update_recent_files_menu)
+
+        # *** 'Debug' menu ***
         self.action_Send_Qscintilla_Command.triggered.connect(self.dbg_send_scintilla_command)
 
     # noinspection PyMethodOverriding

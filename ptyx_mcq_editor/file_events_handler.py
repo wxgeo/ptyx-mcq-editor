@@ -473,8 +473,11 @@ class FileEventsHandler(QObject):
     ) -> bool:
         if self.settings.docs().current_doc is not None:
             editor = self.current_editor()
+            assert editor is not None
+            if current_line is None:
+                current_line = editor.getCursorPosition()[0]
             directory = self._find_current_directory_for_includes(current_line=current_line)
-            import_directive = editor.text(current_line)  # type: ignore
+            import_directive = editor.text(current_line)
             pos = import_directive.find(prefix := "-- ")
             if pos == -1:
                 raise ValueError("No directive in this line.")
@@ -497,3 +500,8 @@ class FileEventsHandler(QObject):
         editor = self.current_editor()
         if editor is not None:
             self.main_window.status_label.setText(editor.status_message)
+
+    def toggle_comment(self):
+        editor = self.current_editor()
+        if editor is not None:
+            editor.toggle_comment()

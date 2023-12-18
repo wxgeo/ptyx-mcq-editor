@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from PyQt6.Qsci import QsciScintilla
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor
 from PyQt6.QtWidgets import QDialog
 
@@ -20,10 +20,23 @@ INCLUDE_DIRECTIVES_ID = 1
 #  https://doc.qt.io/qt-6/qtooltip.html#showText
 
 
+# class EventFilter(QObject):
+#     # noinspection PyMethodOverriding
+#     def eventFilter(self, widget: QObject | None, event: QEvent | None) -> bool:
+#         if event is not None and event.type() == QEvent.Type.ShortcutOverride:
+#             assert isinstance(event, QKeyEvent)
+#             # Ignore only the Ctrl + / shortcut override (char("47") == "/").
+#             if (event.modifiers() & Qt.KeyboardModifier.ControlModifier) and event.key() == 47:
+#                 event.ignore()
+#                 return True
+#         return super().eventFilter(widget, event)
+
+
 class EditorWidget(QsciScintilla, EnhancedWidget):
     def __init__(self, parent: "EditorTab"):
         super().__init__(parent)
-        self.status_message = ""
+        self.status_message: str = ""
+        self._directives_lines: list[int] = []
 
         self.setUtf8(True)  # Set encoding to UTF-8
         font = QFont()
@@ -79,6 +92,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.textChanged.connect(self.update_include_indicators)
         self.indicatorClicked.connect(self.on_click)
 
+        # self.installEventFilter(EventFilter(self))
+
     def dbg_send_scintilla_command(self) -> None:
         dialog = QDialog(self)
         ui = dbg_send_scintilla_messages_ui.Ui_Dialog()
@@ -105,26 +120,114 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         line = self.getCursorPosition()[0]
         return self.text(line)
 
-    def update_include_indicators(self):
+    def update_include_indicators(self) -> None:
         last = self.lines() - 1
         self.clearIndicatorRange(0, 0, last, len(self.text(last)), INCLUDE_DIRECTIVES_ID)
         n_includes = n_disabled_includes = 0
+        self._directives_lines.clear()
+        i: int
+        line: str
         for i, line in enumerate(self.text().split("\n")):
-            if line.startswith("-- ") and not line[3:].startswith("DIR:"):
-                self.fillIndicatorRange(i, 3, i, len(line), INCLUDE_DIRECTIVES_ID)
-                n_includes += 1
+            if line.startswith("-- "):
+                if not line[3:].lstrip().startswith("DIR:"):
+                    self.fillIndicatorRange(i, 3, i, len(line), INCLUDE_DIRECTIVES_ID)
+                    n_includes += 1
+                self._directives_lines.append(i)
             elif line.startswith("!-- "):
-                self.fillIndicatorRange(i, 4, i, len(line), INCLUDE_DIRECTIVES_ID)
-                n_disabled_includes += 1
+                if not line[4:].lstrip().startswith("DIR:"):
+                    self.fillIndicatorRange(i, 4, i, len(line), INCLUDE_DIRECTIVES_ID)
+                    n_disabled_includes += 1
+                self._directives_lines.append(i)
         if n_includes > 0 or n_disabled_includes > 0:
             self.status_message = f"{n_includes} imports ({n_disabled_includes} disabled)"
         else:
             self.status_message = ""
         self.main_window.file_events_handler.update_status_message()
 
-    def on_click(self, line, index, keys):
+    def on_click(self, line, _, keys):
+        ctrl_pressed = keys & Qt.KeyboardModifier.ControlModifier
+        shift_pressed = keys & Qt.KeyboardModifier.ShiftModifier
         self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
             current_line=line,
-            background=True,
-            preview_only=not (keys & Qt.KeyboardModifier.ControlModifier),
+            background=not shift_pressed,
+            preview_only=not ctrl_pressed and not shift_pressed,
         )
+        if shift_pressed:
+            # Dirty hack to unselect text.
+            # The problem is, Scintilla will select it *after* processing `on_click`, so we can't
+            # unselect it from here.
+            # As a consequence, we have to find a way to unselect it after exiting current handler.
+            # https://groups.google.com/g/scintilla-interest/c/XY1sKYBtGj0
+            # https://sourceforge.net/p/scintilla/bugs/1679/
+            # noinspection PyTypeChecker
+            QTimer.singleShot(10, self.unselect)
+
+    def deleteAt(self, line: int, col: int, n: int) -> None:
+        """Delete `n` (unicode) chars on the given line, starting from given column.
+
+        Other lines will never be affected, even if `n` is greater than
+        the number of remaining chars on the line.
+
+        If `n` is negative, it will remove chars backward starting from given column.
+        """
+        from_position = self.positionFromLineIndex(line, col)
+        # `n` is a number of characters, while Scintilla expect a number of bytes.
+        # So, let's use `positionFromLineIndex()` to make the conversion.
+        to_position = self.positionFromLineIndex(line, col + n)
+        self.SendScintilla(QsciScintilla.SCI_DELETERANGE, from_position, to_position - from_position)
+
+    def toggle_comment(self) -> None:
+        """Comment or uncomment current line,
+        or lines corresponding to current selection if any.
+        """
+        from_line, from_col, to_line, to_col = self.getSelection()
+        if from_line == -1:
+            # No selection: comment/uncomment the current line only.
+            self.toggle_comment_at_line(self.getCursorPosition()[0])
+        else:
+            # Selected text found: comment/uncomment all selected lines.
+            # Nota:
+            # Method `toggle_comment_at_line()` loose selection when calling `QScintilla.insertAt()`.
+            # Since it's nicer to keep the selection (to be able to comment and uncomment several lines
+            # successively), we'll have to restore it.
+            # However, we have to take care of inserted or deleted characters,
+            # since they induce a shift in the selection start and end positions.
+            from_shift = to_shift = 0
+            for line_num in range(from_line, to_line + 1):
+                to_shift = self.toggle_comment_at_line(line_num)
+            if from_shift == 0:
+                from_shift = to_shift
+            # Restore selection
+            self.setSelection(from_line, from_col + from_shift, to_line, to_col + to_shift)
+
+    def toggle_comment_at_line(self, line_num: int) -> int:
+        """Comment or uncomment given line.
+
+        Return the number of characters inserted or deleted at the start of the line.
+        (Result will be positive for inserted characters, negative else).
+        """
+        line = self.text(line_num)
+        if line_num in self._directives_lines:
+            # Special case: to disable a directive, prefix it with `!`.
+            if line.startswith("!"):
+                # Enable directive.
+                self.deleteAt(line_num, 0, 1)
+                return -1
+            else:
+                # Disable directive.
+                self.insertAt("!", line_num, 0)
+                return 1
+        else:
+            # General case: prefix a line with `# ` to comment it.
+            if line.startswith("# "):
+                # Uncomment line.
+                self.deleteAt(line_num, 0, 2)
+                return -2
+            else:
+                # Comment line.
+                self.insertAt("# ", line_num, 0)
+                return 2
+
+    def unselect(self):
+        line, col = self.getCursorPosition()
+        self.setSelection(line, col, line, col)
