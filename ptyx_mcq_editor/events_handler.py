@@ -465,7 +465,9 @@ class FileEventsHandler(QObject):
                 text = editor.text(line)
                 pos = text.find(prefix := "-- DIR: ")
                 if pos != -1:
-                    directory = Path(text[pos + len(prefix) :].strip()).expanduser().resolve()
+                    directory = Path(text[pos + len(prefix) :].strip()).expanduser()
+                    if not directory.is_absolute():
+                        directory = self.settings.current_directory / directory
                     if param.DEBUG:
                         print(f"{directory=}")
         return directory

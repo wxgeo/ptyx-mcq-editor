@@ -248,13 +248,30 @@ class Settings:
 
     @property
     def current_directory(self) -> Path:
-        if self.current_doc is None or self.current_doc.path is None:
+        """Current directory, used for example when opening or saving a file.
+
+        This is the folder containing the current file, if saved on disk.
+        Else, it is last used directory.
+        """
+        if self.current_doc_path is None:
             return self._current_directory if self._current_directory is not None else Path.cwd()
-        return self.current_doc.path.parent
+        return self.current_doc_path.parent
 
     @current_directory.setter
     def current_directory(self, path: Path) -> None:
         self._current_directory = path
+
+    @property
+    def current_doc(self) -> Document | None:
+        return self.docs(self._current_side).current_doc
+
+    @property
+    def current_doc_path(self) -> Path | None:
+        return None if self.current_doc is None else self.current_doc.path
+
+    # @property
+    # def current_doc_directory(self) -> Path | None:
+    #     return None if self.current_doc_path is None else self.current_doc_path.parent
 
     @property
     def current_side(self) -> Side:
@@ -353,10 +370,6 @@ class Settings:
         ]
 
         return iter(self._recent_files)
-
-    @property
-    def current_doc(self) -> Document | None:
-        return self.docs(self._current_side).current_doc
 
     # @property
     # def current_doc_is_saved(self) -> bool:

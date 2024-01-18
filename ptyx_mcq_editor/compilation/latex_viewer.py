@@ -1,3 +1,5 @@
+import contextlib
+import os
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -27,12 +29,9 @@ class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
         return self.main_window.get_temp_path("tex", doc_path=doc_path)
 
     def _is_single_exercise(self, doc_path: Path = None) -> bool:
-        try:
-            if doc_path is None:
-                doc_path = self.main_window.settings.current_doc.path
-            return doc_path.suffix == ".ex"
-        except AttributeError:
-            return False
+        if doc_path is None:
+            doc_path = self.main_window.settings.current_doc_path
+        return doc_path is not None and doc_path.suffix == ".ex"
 
     def generate_latex(self, doc_path: Path = None) -> None:
         """Generate a LaTeX file.
@@ -58,7 +57,12 @@ class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
         else:
             options["MCQ_DISPLAY_QUESTION_TITLE"] = True
         try:
-            latex = compiler.parse(code=code, **options)  # type: ignore
+            # Change current directory to the parent directory of the ptyx file.
+            # This allows for relative paths in include directives when compiling.
+            with contextlib.chdir(
+                main_window.settings.current_directory if doc_path is None else doc_path.parent
+            ):
+                latex = compiler.parse(code=code, **options)  # type: ignore
         except BaseException as e:
             print(e)
             latex = ""
