@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Final, Sequence, Callable
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QDialogButtonBox
-from ptyx_mcq.cli import get_template_path, update_include
+from ptyx_mcq.cli import get_template_path, update as update_include
 
 from ptyx_mcq_editor.editor.editor_tab import EditorTab
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
