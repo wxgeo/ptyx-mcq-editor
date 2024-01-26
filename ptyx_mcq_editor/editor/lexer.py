@@ -198,6 +198,7 @@ TOKENS_REGEX = re.compile(
             r'\\"',  # \" (to parse python strings, it's easier to consider it as a single token)
             r"^OR[ \t]*\n",  # OR (introduce another version of an exercise)
             r"\\[a-zA-Z]+",  # LaTeX macro: \macro
+            r"\\(?:%|{|})",  # Escape %, {, } in LaTeX
             "'{3}",  # '''
             '"{3}',  # """
             r"\n",  # \n
@@ -365,7 +366,7 @@ class MyLexer(QsciLexerCustom):
                 style = Style.DEFAULT
         elif token.startswith(" # "):
             style = Style.PTYX_COMMENT
-        elif token.startswith("\\") and token[1:].isalpha():
+        elif token.startswith("\\") and (token[1:].isalpha() or token[1:] in ("%", "{", "}")):
             style = Style.PTYX_LATEX_MACRO
         elif token == "- ":
             style = Style.MCQ_INCORRECT_ANSWER
