@@ -441,7 +441,7 @@ p, li { white-space: pre-wrap; }
     <string>&amp;LaTeX code preview</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+Return</string>
+    <string>Shift+F5</string>
    </property>
   </action>
   <action name="action_Pdf">
@@ -453,7 +453,7 @@ p, li { white-space: pre-wrap; }
     <string>&amp;Pdf preview</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Return</string>
+    <string>F5</string>
    </property>
   </action>
   <action name="action_Add_MCQ_Editor_to_start_menu">

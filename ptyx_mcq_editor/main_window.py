@@ -84,6 +84,9 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         # *** 'Make' menu ***
         self.action_LaTeX.triggered.connect(lambda: self.compilation_tabs.generate_latex())
         self.action_Pdf.triggered.connect(lambda: self.compilation_tabs.generate_pdf())
+        # Support multiple shortcuts
+        self.action_Pdf.setShortcuts(["F5", "Ctrl+Return"])
+        self.action_LaTeX.setShortcuts(["Shift+F5", "Ctrl+Shift+Return"])
 
         # *** 'Code' menu ***
         self.action_Update_imports.triggered.connect(handler.update_ptyx_imports)
