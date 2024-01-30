@@ -14,7 +14,7 @@ mcq-editor = "ptyx_mcq_editor.main:main"
 [tool.poetry.dependencies]
 python = "^3.10"
 pyqt6-qscintilla = "^2.14.1"
-ptyx-mcq = "^27.0"
+ptyx-mcq = "^27.1"
 platformdirs = "^3.2.0"
 tomli-w = "^1.0.0"
 argcomplete = "^3.1.6"

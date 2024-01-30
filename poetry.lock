@@ -482,7 +482,7 @@ sympy = ">=1.10.1,<2.0.0"
 
 [[package]]
 name = "ptyx-mcq"
-version = "27.0.0"
+version = "27.1.0"
 description = "pTyX-MCQ is a generator/scanner of MCQ, based on pTyX."
 optional = false
 python-versions = "^3.10"
@@ -814,4 +814,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "58c517c594e19eb1e8316172ee533c91b6201efbb28cf5e5c3d4cfa2e3e18d61"
+content-hash = "a4e2167b94b147003973d1b8feb1b223720a8e6ca09ae1746d02c61feee15ab4"
