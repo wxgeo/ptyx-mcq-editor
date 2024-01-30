@@ -6,6 +6,7 @@ authors = ["Nicolas Pourcelot <nicolas.pourcelot@gmail.com>"]
 readme = "README.md"
 packages = [{include = "ptyx_mcq_editor"}]
 include = ["ressources"]
+license = "GPL-3.0-or-later"
 
 [tool.poetry.scripts]
 mcq-editor = "ptyx_mcq_editor.main:main"
@@ -13,7 +14,7 @@ mcq-editor = "ptyx_mcq_editor.main:main"
 [tool.poetry.dependencies]
 python = "^3.10"
 pyqt6-qscintilla = "^2.14.1"
-ptyx-mcq = "^26.0.0"
+ptyx-mcq = "^27.0"
 platformdirs = "^3.2.0"
 tomli-w = "^1.0.0"
 argcomplete = "^3.1.6"
@@ -21,7 +22,7 @@ argcomplete = "^3.1.6"
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"
 ptyx-mcq = {path = "../ptyx-mcq", develop = true}
-ptyx = {path = "../ptyx", develop = true}
+#ptyx = {path = "../ptyx", develop = true}
 black = "^23.10.1"
 ruff = "^0.1.4"
 tox = "^4.11.3"
@@ -30,6 +31,7 @@ pytest = "^7.4.3"
 
 [tool.black]
 line-length = 110
+extend-exclude = "ptyx_mcq_editor/generated_ui/.*"
 
 [tool.ruff]
 line-length = 110
