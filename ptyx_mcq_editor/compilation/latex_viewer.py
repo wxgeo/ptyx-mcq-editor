@@ -1,15 +1,12 @@
 import contextlib
-import os
-import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import ptyx_mcq
 from PyQt6 import Qsci
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QColor
 from ptyx.latex_generator import Compiler
-from ptyx_mcq.make.include_parser import improve_ex_file_content
+from ptyx_mcq.make.exercises_parsing import wrap_exercise
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
@@ -51,7 +48,7 @@ class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
         options = {"MCQ_KEEP_ALL_VERSIONS": True, "PTYX_WITH_ANSWERS": True}
         if self._is_single_exercise(doc_path):
             print("\n == Exercise detected. == \n")
-            code = self._wrap_ptyx_code(code, doc_path)
+            code = wrap_exercise(code, doc_path)
             options["MCQ_REMOVE_HEADER"] = True
             options["MCQ_PREVIEW_MODE"] = True
             print("Temporary pTyX file code:")
@@ -72,15 +69,6 @@ class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
             latex = ""
         self.setText(latex)
         latex_path.write_text(latex, encoding="utf8")
-
-    @staticmethod
-    def _wrap_ptyx_code(code: str, doc_path: Path) -> str:
-        """For mcq exercises, automatically add a minimal header to make it compilation-ready."""
-        template = (Path(ptyx_mcq.__file__).parent / "templates/original/new.ptyx").read_text()
-        code = improve_ex_file_content(code, ex_file_path=doc_path)
-        # re.sub() doesn't seem to work when "\dfrac" is in the replacement string... using re.split() instead.
-        before, _, after = re.split("(<<<.+>>>)", template, flags=re.MULTILINE | re.DOTALL)
-        return f"{before}\n<<<\n{code}\n>>>\n{after}"
 
     def _get_latex(self, doc_path: Path = None) -> str:
         latex_path = self._latex_file_path(doc_path=doc_path)
