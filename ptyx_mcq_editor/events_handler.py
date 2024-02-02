@@ -21,7 +21,12 @@ Abort = QMessageBox.StandardButton.Abort
 Discard = QMessageBox.StandardButton.Discard
 Save = QMessageBox.StandardButton.Save
 
-FILES_FILTER = ("Mcq Exercises Files (*.ex)", "pTyX Files (*.ptyx)", "All Files (*.*)")
+FILES_FILTER = (
+    "All supported Files (*.ex *.ptyx)",
+    "Mcq Exercises Files (*.ex)",
+    "pTyX Files (*.ptyx)",
+    "All Files (*.*)",
+)
 
 
 def update_ui(f: Callable[..., bool]) -> Callable[..., bool]:
