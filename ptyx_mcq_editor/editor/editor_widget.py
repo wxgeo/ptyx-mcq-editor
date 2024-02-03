@@ -1,9 +1,10 @@
 import traceback
+from enum import IntEnum
 from typing import TYPE_CHECKING
 
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QColor
+from PyQt6.QtGui import QFont, QColor, QKeyEvent
 from PyQt6.QtWidgets import QDialog
 
 from ptyx_mcq_editor.editor.lexer import MyLexer
@@ -31,6 +32,15 @@ INCLUDE_DIRECTIVES_ID = 1
 #                 event.ignore()
 #                 return True
 #         return super().eventFilter(widget, event)
+
+
+class DelimiterKeyCode(IntEnum):
+    DOLLAR = 36
+    PARENTHESIS = 40
+    BRACKET = 91
+    BRACE = 123
+    SINGLE_QUOTE = 39
+    DOUBLE_QUOTE = 34
 
 
 class EditorWidget(QsciScintilla, EnhancedWidget):
@@ -100,6 +110,26 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
         # self.installEventFilter(EventFilter(self))
 
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        # key code == 40 -> "("
+        key = event.key()
+        if self.hasSelectedText() and key in (int(k) for k in DelimiterKeyCode):
+            from_line, from_col, to_line, to_col = self.getSelection()
+            start = chr(key)
+            if start == "(":
+                end = ")"
+            elif start == "[":
+                end = "]"
+            elif start == "{":
+                end = "}"
+            else:
+                end = start
+            self.insertAt(end, to_line, to_col)
+            self.insertAt(start, from_line, from_col)
+            self.setCursorPosition(to_line, to_col + 2)
+        else:
+            super().keyPressEvent(event)
+
     def dbg_send_scintilla_command(self) -> None:
         dialog = QDialog(self)
         ui = dbg_send_scintilla_messages_ui.Ui_Dialog()
@@ -123,6 +153,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         dialog.show()
 
     def get_current_line_text(self) -> str:
+        """Get the content of the current line."""
         line = self.getCursorPosition()[0]
         return self.text(line)
 
