@@ -78,6 +78,7 @@ class Style(IntEnum):
     MCQ_CORRECT_ANSWER = auto()
     MCQ_INCORRECT_ANSWER = auto()
     MCQ_NEUTRALIZED_ANSWER = auto()
+    # MCQ_CONDITIONAL_ANSWER = auto()
     MCQ_OR = auto()
 
     MCQ_HEADER = auto()
@@ -154,6 +155,7 @@ STYLES_LIST: dict[Style, StyleInfo] = {
     Style.MCQ_CORRECT_ANSWER: StyleInfo(Mode.DEFAULT, "#138f00", "#d7ffd1", False, False, True),
     Style.MCQ_INCORRECT_ANSWER: StyleInfo(Mode.DEFAULT, "#ab1600", "#ffd7d1", False, False, True),
     Style.MCQ_NEUTRALIZED_ANSWER: StyleInfo(Mode.DEFAULT, "#707070", "#c2c2c2", False, False, True),
+    # Style.MCQ_CONDITIONAL_ANSWER: StyleInfo(Mode.DEFAULT, "#244573", "#a9c9f5", False, False, True),
     Style.MCQ_OR: StyleInfo(Mode.DEFAULT, "#4c66fc", "#ffebc7", False, False, True),
     # Styles for the HEADER of a MCQ file
     Style.MCQ_HEADER: StyleInfo(Mode.CONFIG, "#000000", "#d1ebb0", False, False, True),
@@ -193,6 +195,7 @@ TOKENS_REGEX = re.compile(
             "#[-+*=?#]",  # special pTyX tags: #+, #-, #*, #=, #?, ##
             r"#\{",  # starts a pTyX expression: #{
             "^[-+!] ",  # an answer (incorrect, correct or disabled)
+            r"^\?\{",  # a conditional answer (whose truth value depends on the condition)
             r"\\\\",  # \\ (to parse python strings, it's easier to consider it as a single token)
             r"\\'",  # \' (to parse python strings, it's easier to consider it as a single token)
             r'\\"',  # \" (to parse python strings, it's easier to consider it as a single token)
@@ -374,6 +377,10 @@ class MyLexer(QsciLexerCustom):
             style = Style.MCQ_CORRECT_ANSWER
         elif token == "! ":
             style = Style.MCQ_NEUTRALIZED_ANSWER
+        elif token == "?{":
+            # TODO: Temporary workaround, since "?" and "{" should not be of the same style.
+            style = Style.PTYX_TAG
+            mode = Mode.EXPRESSION
         elif token.startswith("OR") and token.endswith("\n"):
             style = Style.MCQ_OR
         elif token == "%":
