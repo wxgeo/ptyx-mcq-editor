@@ -1,3 +1,5 @@
+import ast
+import re
 import traceback
 from enum import IntEnum
 from typing import TYPE_CHECKING
@@ -32,6 +34,31 @@ INCLUDE_DIRECTIVES_ID = 1
 #                 event.ignore()
 #                 return True
 #         return super().eventFilter(widget, event)
+
+
+def analyze_code(code: str) -> SyntaxError | None:
+    # `let` is a pseudo-keyword added to python to declare variables very quickly.
+    # Since it is not valid python syntax, we'll have to convert it
+    # before testing python syntax.
+    def sub(m: re.Match):
+        vars_str = m.groupdict()["vars1"]
+        if vars_str is None:
+            vars_str = m.groupdict()["vars2"]
+        return f"{vars_str}=..."
+
+    code = re.sub("^( *)let ((?P<vars1>.+?) +(with|in) +|(?P<vars2>.+))", sub, flags=re.MULTILINE)
+    try:
+        ast.parse(code)
+    except SyntaxError as e:
+        return e
+    return None
+
+
+# TODO:
+#  We should analyze code in real time to detect its structure:
+#  - parts of python code
+#  - parts of MCQ code
+#  - strings inside python code...
 
 
 class DelimiterKeyCode(IntEnum):
