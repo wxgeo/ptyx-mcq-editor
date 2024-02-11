@@ -2,7 +2,6 @@ from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Sequence, Callable
 
-from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QDialogButtonBox
 from ptyx_mcq.cli import get_template_path, update as update_include
@@ -314,9 +313,7 @@ class FileEventsHandler(QObject):
                     assert path is not None
                     try:
                         doc.write(tab.editor.text(), path=path)
-                        # Tell Scintilla that the current editor's state is its new saved state.
-                        # More information on Scintilla messages: http://www.scintilla.org/ScintillaDoc.html
-                        tab.editor.SendScintilla(QsciScintilla.SCI_SETSAVEPOINT)
+                        tab.editor.on_save()
                         saved = True
                     except (IOError, DocumentHasNoPath, SamePath) as e:
                         # TODO: Custom message
@@ -541,3 +538,8 @@ class FileEventsHandler(QObject):
             self.open_doc(paths=[filepath])
             return True
         return False
+
+    def format_file(self):
+        editor = self.current_editor()
+        if editor is not None:
+            editor.autoformat()

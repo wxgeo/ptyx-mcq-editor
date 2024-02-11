@@ -128,6 +128,7 @@
     </widget>
     <addaction name="actionComment"/>
     <addaction name="menuImports"/>
+    <addaction name="actionFormat_python_code"/>
    </widget>
    <widget class="QMenu" name="menuScan">
     <property name="title">
@@ -588,6 +589,14 @@ p, li { white-space: pre-wrap; }
   <action name="action_Launch_scan">
    <property name="text">
     <string>&amp;Launch scan</string>
+   </property>
+  </action>
+  <action name="actionFormat_python_code">
+   <property name="text">
+    <string>Format python code</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+F</string>
    </property>
   </action>
  </widget>

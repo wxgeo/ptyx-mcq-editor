@@ -1,5 +1,4 @@
 import ast
-import re
 import traceback
 from enum import IntEnum
 from typing import TYPE_CHECKING
@@ -8,16 +7,21 @@ from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QColor, QKeyEvent
 from PyQt6.QtWidgets import QDialog
+from ptyx.extensions.extended_python import parse_extended_python_code
+from ptyx.errors import PythonBlockError, ErrorInformation
 
 from ptyx_mcq_editor.editor.lexer import MyLexer
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 from ptyx_mcq_editor.generated_ui import dbg_send_scintilla_messages_ui
+from ptyx_mcq_editor.tools import format_each_python_block, check_each_python_block
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_tab import EditorTab
 
 SEARCH_MARKER_ID = 0
 INCLUDE_DIRECTIVES_ID = 1
+COMPILATION_ERROR = 2
+
 
 # TODO: tool tips for clickable lines.
 #  https://riverbankcomputing.com/pipermail/qscintilla/2008-November/000382.html
@@ -37,18 +41,8 @@ INCLUDE_DIRECTIVES_ID = 1
 
 
 def analyze_code(code: str) -> SyntaxError | None:
-    # `let` is a pseudo-keyword added to python to declare variables very quickly.
-    # Since it is not valid python syntax, we'll have to convert it
-    # before testing python syntax.
-    def sub(m: re.Match):
-        vars_str = m.groupdict()["vars1"]
-        if vars_str is None:
-            vars_str = m.groupdict()["vars2"]
-        return f"{vars_str}=..."
-
-    code = re.sub("^( *)let ((?P<vars1>.+?) +(with|in) +|(?P<vars2>.+))", sub, flags=re.MULTILINE)
     try:
-        ast.parse(code)
+        ast.parse(parse_extended_python_code(code))
     except SyntaxError as e:
         return e
     return None
@@ -70,12 +64,17 @@ class DelimiterKeyCode(IntEnum):
     DOUBLE_QUOTE = 34
 
 
+MARGIN_COLOR = QColor("#ff888888")
+
+
 class EditorWidget(QsciScintilla, EnhancedWidget):
     def __init__(self, parent: "EditorTab"):
         super().__init__(parent)
         self.status_message: str = ""
         self._directives_lines: list[int] = []
         self._modifiers = Qt.KeyboardModifier.NoModifier
+        self._last_error_message = ""
+        self._errors_info: dict[int, ErrorInformation] = {}
 
         self.setUtf8(True)  # Set encoding to UTF-8
         font = QFont()
@@ -113,7 +112,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         # Margin 0 = Line nr margin
         self.setMarginType(0, QsciScintilla.MarginType.NumberMargin)
         self.setMarginWidth(0, "0000")
-        self.setMarginsForegroundColor(QColor("#ff888888"))
+        self.setMarginsForegroundColor(MARGIN_COLOR)
 
         self.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)
 
@@ -128,12 +127,25 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.indicatorDefine(QsciScintilla.IndicatorStyle.DotBoxIndicator, INCLUDE_DIRECTIVES_ID)
         self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), INCLUDE_DIRECTIVES_ID)
         self.setIndicatorHoverStyle(QsciScintilla.IndicatorStyle.FullBoxIndicator, INCLUDE_DIRECTIVES_ID)
-        self.textChanged.connect(self.update_include_indicators)
+        self.textChanged.connect(self.on_text_changed)
 
-        # Don't use QScintilla.indicatorClicked signal, since it lead to an occasional severe bug with a selection
-        # anchor impossible to remove.
-        self.indicatorClicked.connect(self.save_modifiers)
+        # Don't use directly QScintilla.indicatorClicked signal to handle indicators,
+        # since it leads to an occasional severe bug with a selection
+        # anchor impossible to remove (I couldn't figure out why...).
+        # However, we have to use it to get key modifiers, since QScintilla.indicatorReleased
+        # won't get them.
+        self.indicatorClicked.connect(self._save_modifiers)
         self.indicatorReleased.connect(self.on_click)
+
+        self.indicatorDefine(QsciScintilla.IndicatorStyle.SquiggleIndicator, COMPILATION_ERROR)
+        self.setIndicatorHoverForegroundColor(QColor("#cc0000"), COMPILATION_ERROR)
+
+        self.markerDefine("|", 0)
+        self.setMarkerBackgroundColor(QColor("red"), 0)
+        self.setMarkerForegroundColor(QColor("red"), 0)
+        self.setMarginSensitivity(0, True)
+        self.setMarginSensitivity(1, True)
+        self.marginClicked.connect(self.on_margin_clicked)
 
         # self.installEventFilter(EventFilter(self))
 
@@ -156,6 +168,70 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             self.setCursorPosition(to_line, to_col + 2)
         else:
             super().keyPressEvent(event)
+
+    def display_error(self, code: str, error: PythonBlockError) -> None:
+        shift = int(error.label) - 2
+        info = error.info
+        self._last_error_message = info.message
+        self.main_window.statusbar.showMessage(f"Compilation failed: {info.message}.")
+        self.main_window.statusbar.setStyleSheet("color: red")
+        print(info)
+        row = 0 if info.row is None else info.row
+        col = 0 if info.col is None else info.col
+        end_row = row if info.end_row is None else info.end_row
+        end_col = col if info.end_col is None else info.end_col
+        row, end_row = min(row, end_row), max(row, end_row)
+        col, end_col = min(col, end_col), max(col, end_col)
+        line_length = len(self.text(row))
+        col = min(line_length - 1, col)
+        end_col = max(col + 1, end_col)
+        print(shift + row, col, shift + end_row, end_col)
+        # Assign a value to the text
+        # Now apply the indicator-style on the chosen text
+        start_pos = self.positionFromLineIndex(shift + row, col)
+        end_pos = self.positionFromLineIndex(shift + end_row, end_col)
+        self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, COMPILATION_ERROR)
+        self.SendScintilla(QsciScintilla.SCI_SETINDICATORVALUE, COMPILATION_ERROR)
+        self.SendScintilla(QsciScintilla.SCI_INDICATORFILLRANGE, start_pos, end_pos - start_pos)
+        # self.fillIndicatorRange(shift + row, col, shift + end_row, end_col, COMPILATION_ERROR)
+
+    def autoformat(self) -> None:
+        formatted_text = format_each_python_block(self.text())
+        if formatted_text != self.text():
+            # Don't use `self.setText()`, as it would clear undo/redo history.
+            self.SendScintilla(QsciScintilla.SCI_SETTEXT, formatted_text.encode("utf8"))
+
+    def on_text_changed(self) -> None:
+        self.clear_indicators()
+        self.main_window.statusbar.showMessage("")
+        self.update_include_indicators()
+        self.check_python_code()
+
+    def on_margin_clicked(self, margin: int, line: int, state: Qt.KeyboardModifier) -> None:
+        print("ok")
+        if line in self._errors_info:
+            position = self.positionFromLineIndex(line, 0)
+            self.SendScintilla(
+                QsciScintilla.SCI_CALLTIPSHOW, position, self._errors_info[line].message.encode("utf8")
+            )
+
+    def check_python_code(self):
+        self.markerDeleteAll(0)
+        self._errors_info.clear()
+        for error_info in check_each_python_block(self.text()):
+            self.markerAdd(error_info.row, 0)
+            self._errors_info[error_info.row] = error_info
+
+    def on_save(self) -> None:
+        self.autoformat()
+        # Tell Scintilla that the current editor's state is its new saved state.
+        # More information on Scintilla messages: http://www.scintilla.org/ScintillaDoc.html
+        self.SendScintilla(QsciScintilla.SCI_SETSAVEPOINT)
+
+    def clear_indicators(self) -> None:
+        last = self.lines() - 1
+        for indicator in (INCLUDE_DIRECTIVES_ID, COMPILATION_ERROR):
+            self.clearIndicatorRange(0, 0, last, len(self.text(last)), indicator)
 
     def dbg_send_scintilla_command(self) -> None:
         dialog = QDialog(self)
@@ -185,8 +261,6 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         return self.text(line)
 
     def update_include_indicators(self) -> None:
-        last = self.lines() - 1
-        self.clearIndicatorRange(0, 0, last, len(self.text(last)), INCLUDE_DIRECTIVES_ID)
         n_includes = n_disabled_includes = 0
         self._directives_lines.clear()
         i: int
@@ -208,23 +282,30 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             self.status_message = ""
         self.main_window.file_events_handler.update_status_message()
 
-    def save_modifiers(self, line, _, keys):
+    def _save_modifiers(self, line, _, keys):
         self._modifiers = keys
 
-    def on_click(self, line, _, keys):
-        ctrl_pressed = self._modifiers & Qt.KeyboardModifier.ControlModifier
-        shift_pressed = self._modifiers & Qt.KeyboardModifier.ShiftModifier
-        try:
-            self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
-                current_line=line,
-                background=not shift_pressed,
-                preview_only=not ctrl_pressed and not shift_pressed,
+    def on_click(self, line: int, index: int, keys: Qt.KeyboardModifier) -> None:
+        position = self.positionFromLineIndex(line, index)
+        value = self.SendScintilla(QsciScintilla.SCI_INDICATORVALUEAT, COMPILATION_ERROR, position)
+        if value == COMPILATION_ERROR:
+            self.SendScintilla(
+                QsciScintilla.SCI_CALLTIPSHOW, position, self._last_error_message.encode("utf8")
             )
-        except IOError:
-            traceback.print_exc()
-        if shift_pressed:
-            # Scintilla select text as a side effect when clicking with shift key pressed.
-            self.unselect()
+        else:
+            ctrl_pressed = self._modifiers & Qt.KeyboardModifier.ControlModifier
+            shift_pressed = self._modifiers & Qt.KeyboardModifier.ShiftModifier
+            try:
+                self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
+                    current_line=line,
+                    background=not shift_pressed,
+                    preview_only=not ctrl_pressed and not shift_pressed,
+                )
+            except IOError:
+                traceback.print_exc()
+            if shift_pressed:
+                # Scintilla select text as a side effect when clicking with shift key pressed.
+                self.unselect()
 
     def deleteAt(self, line: int, col: int, n: int) -> None:
         """Delete `n` (unicode) chars on the given line, starting from given column.

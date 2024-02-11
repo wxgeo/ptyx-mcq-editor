@@ -95,6 +95,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
             lambda: handler.open_file_from_current_ptyx_import_directive()
         )
         self.actionComment.triggered.connect(handler.toggle_comment)
+        self.actionFormat_python_code.triggered.connect(handler.format_file)
 
         # *** 'Tools' menu ***
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_desktop_menu_entry)

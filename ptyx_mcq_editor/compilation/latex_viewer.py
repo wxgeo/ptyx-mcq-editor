@@ -5,13 +5,28 @@ from typing import TYPE_CHECKING
 from PyQt6 import Qsci
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QColor
+from ptyx.extensions.extended_python import main
 from ptyx.latex_generator import Compiler
+from ptyx.errors import PythonBlockError
 from ptyx_mcq.make.exercises_parsing import wrap_exercise
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
 if TYPE_CHECKING:
     pass
+
+
+def inject_labels(code: str) -> str:
+    """Inject a unique label in each python code snippet.
+
+    This make identification and highlighting easier when some python code fails."""
+    # It is much easier to parse extended python code first,
+    # so as to convert `....\n[xxx]\n....` blocks into `#PYTHON\n[xxx]\n#END_PYTHON` blocks.
+    # So, we will call `main(code)` first.
+    return "\n".join(
+        line + f":{i}:" if line.rstrip().endswith("#PYTHON") else line
+        for i, line in enumerate(main(code).split("\n"), start=1)
+    )
 
 
 class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
@@ -44,6 +59,7 @@ class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
         if doc is None or editor is None or latex_path is None:
             return
         code = editor.text() if doc_path is None else doc_path.read_text(encoding="utf8")
+        code = inject_labels(code)
         compiler = Compiler()
         options = {"MCQ_KEEP_ALL_VERSIONS": True, "PTYX_WITH_ANSWERS": True}
         if self._is_single_exercise(doc_path):
@@ -67,6 +83,8 @@ class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):
         except BaseException as e:
             print(e)
             latex = ""
+            if isinstance(e, PythonBlockError):
+                editor.display_error(code=code, error=e)
         self.setText(latex)
         latex_path.write_text(latex, encoding="utf8")
 
