@@ -139,6 +139,7 @@ def format_each_python_block(code: str) -> str:
     delimiter = 12 * "."
 
     def parser(start: str, end: str, content: str) -> str:
-        return f"{delimiter}\n{extended_python_ruff_formater(content)}{delimiter}"
+        content = extended_python_ruff_formater(content)
+        return "".join([delimiter, "" if content.startswith("\n") else "\n", content, delimiter])
 
     return parse_code_block(code, parser)

@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import QDialog
 from ptyx.extensions.extended_python import parse_extended_python_code
 from ptyx.errors import PythonBlockError, ErrorInformation
 
-from ptyx_mcq_editor.editor.lexer import MyLexer
+from ptyx_mcq_editor.editor.lexer import MyLexer, Mode
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 from ptyx_mcq_editor.generated_ui import dbg_send_scintilla_messages_ui
 from ptyx_mcq_editor.tools import format_each_python_block, check_each_python_block
@@ -21,6 +21,25 @@ if TYPE_CHECKING:
 SEARCH_MARKER_ID = 0
 INCLUDE_DIRECTIVES_ID = 1
 COMPILATION_ERROR = 2
+
+
+# Python keywords which introduced a new indented block, like `if`, `for`...
+PYTHON_INDENTED_BLOCK_KEYWORDS = [
+    "async",
+    "class",
+    "def",
+    "elif",
+    "else",
+    "except",
+    "finally",
+    "for",
+    "if",
+    "try",
+    "while",
+    "with",
+    "case",
+    "match",
+]
 
 
 # TODO: tool tips for clickable lines.
@@ -116,7 +135,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
         self.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)
 
-        self.setLexer(MyLexer(self))
+        self._lexer = MyLexer(self)
+        self.setLexer(self._lexer)
 
         # Marker use to highlight all search results
         self.SendScintilla(QsciScintilla.SCI_INDICSETSTYLE, SEARCH_MARKER_ID, QsciScintilla.INDIC_FULLBOX)
@@ -149,10 +169,13 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
         # self.installEventFilter(EventFilter(self))
 
-    def keyPressEvent(self, event: QKeyEvent) -> None:
-        # key code == 40 -> "("
+    def keyPressEvent(self, event: QKeyEvent | None) -> None:
+        assert event is not None
         key = event.key()
+        # DelimiterKeyCode: all wrapping characters, like (), {}, "", '' and so on.
         if self.hasSelectedText() and key in (int(k) for k in DelimiterKeyCode):
+            # When text is selected and user presses a parenthesis, for example, all
+            # the selected text must be wrapped with a couple of parenthesis.
             from_line, from_col, to_line, to_col = self.getSelection()
             start = chr(key)
             if start == "(":
@@ -166,10 +189,38 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             self.insertAt(end, to_line, to_col)
             self.insertAt(start, from_line, from_col)
             self.setCursorPosition(to_line, to_col + 2)
+        elif key in (Qt.Key.Key_Enter, Qt.Key.Key_Return):
+            line, index = self.getCursorPosition()
+            text = self.text(line).strip()
+            if (
+                text.endswith(":")
+                and text[:-1].split()[0] in PYTHON_INDENTED_BLOCK_KEYWORDS
+                and self.is_python_block_code(line, index)
+            ):
+                # Implement smart indentation inside a python code block.
+                # When user press [Enter] after writing for example `if x == 3:`,
+                # following line must be automatically indented with 4 additional spaces.
+                indent = len(self.text(line)) - len(self.text(line).lstrip()) + 4
+                super().keyPressEvent(event)
+                self.insert(4 * " ")
+                self.setCursorPosition(line + 1, indent)
+            else:
+                # Default action.
+                super().keyPressEvent(event)
         else:
+            # Default action.
             super().keyPressEvent(event)
 
+    def is_python_block_code(self, line: int, index: int) -> bool:
+        """Return `True` iff we are inside a python block code, yet not in a python string."""
+        return self._lexer.get_style_and_mode(self.positionFromLineIndex(line, index))[1] == Mode.PYTHON
+
     def display_error(self, code: str, error: PythonBlockError) -> None:
+        """Display an error when a document failed to be compiled.
+
+        An error marker will appear in the editor left margin,
+        and a message will be displayed in the status bar too.
+        """
         shift = int(error.label) - 2
         info = error.info
         self._last_error_message = info.message
@@ -196,6 +247,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         # self.fillIndicatorRange(shift + row, col, shift + end_row, end_col, COMPILATION_ERROR)
 
     def autoformat(self) -> None:
+        # TODO: display a message in the status bar if autoformat fails.
+        #  For that, `format_each_python_block()` should return a status code.
         formatted_text = format_each_python_block(self.text())
         if formatted_text != self.text():
             # Don't use `self.setText()`, as it would clear undo/redo history.

@@ -39,6 +39,21 @@ def f(x, y):
     assert format_each_python_block(code) == target
 
 
+def test_ruff_formater_for_invalid_python_code():
+    # Test that invalid python code is left untouched.
+    code = """Some text...
+
+............
+c = 4
+if x:
+b = 7
+............
+
+Other text.
+"""
+    assert format_each_python_block(code) == code
+
+
 def test_ruff_checker():
     code = """
 ..........

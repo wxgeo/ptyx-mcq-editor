@@ -239,6 +239,15 @@ class MyLexer(QsciLexerCustom):
             )
             self.setEolFill(fill_line, style)
 
+    def get_style_and_mode(self, position: int) -> tuple[Style, Mode]:
+        """Return mode at the given position (in bytes) in editor.
+
+        Mode is used mostly to know if we are inside a python code block,
+        a python expression or a python string.
+        """
+        style = Style(self.editor().SendScintilla(self.editor().SCI_GETSTYLEAT, position))
+        return style, STYLES_LIST[style].mode
+
     def language(self):
         return "PTYX MCQ"
 
@@ -247,7 +256,11 @@ class MyLexer(QsciLexerCustom):
             return Style(style).name
         return ""
 
-    def styleText(self, start: int, end: int):
+    def styleText(self, start: int, end: int) -> None:
+        """Style portion of text from `start` to `end`.
+
+        Note that `start` and `end` are positions in bytes (not strings).
+        """
         editor: EditorWidget = self.parent()  # type: ignore
         assert isinstance(editor, QsciScintilla)
         # 1. Initialize the styling procedure
@@ -268,8 +281,9 @@ class MyLexer(QsciLexerCustom):
         # ------------------
         # 4.1 Get previous style and mode if any.
         if start > 0:
-            style = Style(editor.SendScintilla(editor.SCI_GETSTYLEAT, start - 1))
-            mode = STYLES_LIST[style].mode
+            style, mode = self.get_style_and_mode(start - 1)
+            # style = Style(editor.SendScintilla(editor.SCI_GETSTYLEAT, start - 1))
+            # mode = STYLES_LIST[style].mode
             # Is this OK ??
             previous_mode = mode
         else:
@@ -280,7 +294,7 @@ class MyLexer(QsciLexerCustom):
         for i, token in enumerate(token_list):
             assert isinstance(token, str), token
             old_mode_value = mode
-            style, mode = self.get_style_and_mode(token, mode, style, previous_mode)
+            style, mode = self._get_token_style_and_mode(token, mode, style, previous_mode)
             if mode != old_mode_value:
                 previous_mode = old_mode_value
             # In setStyling, the length is the number of bytes, not the number of unicode characters !
@@ -288,7 +302,9 @@ class MyLexer(QsciLexerCustom):
             # print(repr(token), length)
 
     @staticmethod
-    def get_style_and_mode(token: str, mode: Mode, style: Style, previous_mode: Mode) -> tuple[Style, Mode]:
+    def _get_token_style_and_mode(
+        token: str, mode: Mode, style: Style, previous_mode: Mode
+    ) -> tuple[Style, Mode]:
         if style == Style.PTYX_COMMENT:
             if token == "\n":
                 style = Style.DEFAULT
