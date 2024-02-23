@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import Final, Literal
 
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QCloseEvent, QIcon
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel
 
@@ -52,6 +53,8 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
             self.setWindowIcon(QIcon(str(ICON_PATH)))
 
         self.search_dock.setVisible(False)
+        self.publish_dock.setVisible(False)
+        self.setCorner(Qt.Corner.TopRightCorner, Qt.DockWidgetArea.RightDockWidgetArea)
 
         # TODO: enable right view
         self.hide_right_view()
@@ -87,6 +90,9 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         # Support multiple shortcuts
         self.action_Pdf.setShortcuts(["F5", "Ctrl+Return"])
         self.action_LaTeX.setShortcuts(["Shift+F5", "Ctrl+Shift+Return"])
+        self.actionPublish.triggered.connect(
+            lambda: self.publish_dock.setVisible(not self.publish_dock.isVisible())
+        )
 
         # *** 'Code' menu ***
         self.action_Update_imports.triggered.connect(handler.update_ptyx_imports)

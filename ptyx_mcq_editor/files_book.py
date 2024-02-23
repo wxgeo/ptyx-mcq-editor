@@ -14,6 +14,11 @@ if TYPE_CHECKING:
 
 
 class FilesBook(QtWidgets.QTabWidget, EnhancedWidget):
+    """This class is aimed at containing all the opened files.
+
+    This class manages all the tabs containing the different edited files.
+    """
+
     side: Side
 
     def __init__(self, parent: "McqEditorMainWindow") -> None:

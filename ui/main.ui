@@ -392,6 +392,66 @@ p, li { white-space: pre-wrap; }
     </layout>
    </widget>
   </widget>
+  <widget class="PublishDock" name="publish_dock">
+   <property name="styleSheet">
+    <string notr="true">padding-left:10px;</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>4</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_3">
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_5">
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QLabel" name="doc_number_label">
+           <property name="text">
+            <string>Number of documents : </string>
+           </property>
+           <property name="buddy">
+            <cstring>doc_number_spinbox</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="doc_number_spinbox">
+           <property name="minimum">
+            <number>1</number>
+           </property>
+           <property name="maximum">
+            <number>1000</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QPushButton" name="generate_doc_button">
+       <property name="text">
+        <string>Generate</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </widget>
+  </widget>
   <action name="action_Open">
    <property name="icon">
     <iconset theme="document-open">
@@ -438,8 +498,14 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
   <action name="action_LaTeX">
+   <property name="icon">
+    <iconset theme="text-x-script"/>
+   </property>
    <property name="text">
     <string>&amp;LaTeX code preview</string>
+   </property>
+   <property name="toolTip">
+    <string extracomment="See the generated LaTeX code.">LaTeX code preview</string>
    </property>
    <property name="shortcut">
     <string>Shift+F5</string>
@@ -447,11 +513,13 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="action_Pdf">
    <property name="icon">
-    <iconset theme="view-refresh">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset theme="x-office-document"/>
    </property>
    <property name="text">
     <string>&amp;Pdf preview</string>
+   </property>
+   <property name="toolTip">
+    <string extracomment="Preview the Pdf document.">Pdf preview</string>
    </property>
    <property name="shortcut">
     <string>F5</string>
@@ -529,6 +597,9 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
   <action name="action_Update_imports">
+   <property name="icon">
+    <iconset theme="view-refresh"/>
+   </property>
    <property name="text">
     <string>&amp;Update imports</string>
    </property>
@@ -537,6 +608,9 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
   <action name="action_Add_folder">
+   <property name="icon">
+    <iconset theme="list-add"/>
+   </property>
    <property name="text">
     <string>&amp;Add directory</string>
    </property>
@@ -546,8 +620,7 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="action_Open_file_from_current_import_line">
    <property name="icon">
-    <iconset theme="document-open">
-     <normaloff>.</normaloff>.</iconset>
+    <iconset theme="go-jump"/>
    </property>
    <property name="text">
     <string>&amp;Open file from current import line</string>
@@ -579,8 +652,14 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
   <action name="actionPublish">
+   <property name="icon">
+    <iconset theme="emblem-documents"/>
+   </property>
    <property name="text">
     <string>Pu&amp;blish</string>
+   </property>
+   <property name="toolTip">
+    <string extracomment="Generate the Pdf document.">Publish</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+B</string>
@@ -599,6 +678,7 @@ p, li { white-space: pre-wrap; }
     <string>Ctrl+Shift+F</string>
    </property>
   </action>
+  <zorder>publish_dock</zorder>
  </widget>
  <customwidgets>
   <customwidget>
@@ -617,6 +697,12 @@ p, li { white-space: pre-wrap; }
    <class>CompilationTabs</class>
    <extends>QTabWidget</extends>
    <header>ptyx_mcq_editor.compilation.tab_widget</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PublishDock</class>
+   <extends>QDockWidget</extends>
+   <header>ptyx_mcq_editor.compilation.publish</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
