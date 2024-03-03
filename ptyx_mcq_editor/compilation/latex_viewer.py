@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from PyQt6 import Qsci
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QColor
-from ptyx.extensions.extended_python import main
+
 from ptyx.latex_generator import Compiler
 from ptyx.errors import PythonBlockError
 from ptyx_mcq.make.exercises_parsing import wrap_exercise
@@ -14,19 +14,6 @@ from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
 if TYPE_CHECKING:
     pass
-
-
-def inject_labels(code: str) -> str:
-    """Inject a unique label in each python code snippet.
-
-    This make identification and highlighting easier when some python code fails."""
-    # It is much easier to parse extended python code first,
-    # so as to convert `....\n[xxx]\n....` blocks into `#PYTHON\n[xxx]\n#END_PYTHON` blocks.
-    # So, we will call `main(code)` first.
-    return "\n".join(
-        line + f":{i}:" if line.rstrip().endswith("#PYTHON") else line
-        for i, line in enumerate(main(code).split("\n"), start=1)
-    )
 
 
 class LatexViewer(Qsci.QsciScintilla, EnhancedWidget):

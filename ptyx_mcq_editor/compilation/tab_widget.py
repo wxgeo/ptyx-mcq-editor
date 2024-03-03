@@ -5,9 +5,11 @@ from pathlib import Path
 from types import TracebackType
 from typing import Type, Callable
 
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, QThread
 from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtWidgets import QTabWidget, QDockWidget, QWidget
+
+from ptyx_mcq_editor.compilation.compiler import CompilerWorker, CompilerWorkerInfo
 from ptyx_mcq_editor.compilation.log_viewer import LogViewer
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
@@ -83,6 +85,9 @@ class Animation:
         self.parent.setTabIcon(self.index, QIcon(str(RESSOURCES_PATH / f"wait/wait-{self.frame}.svg")))
 
 
+# https://realpython.com/python-pyqt-qthread/
+
+
 class CompilationTabs(QTabWidget, EnhancedWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent=parent)
@@ -116,19 +121,96 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
     def generate_latex(self, doc_path: Path = None) -> None:
         self._generate(doc_path, self.latex_viewer)
 
+    @property
+    def current_code(self) -> str:
+        return self.main_window.current_mcq_editor.text()
+
+    @property
+    def current_path(self) -> Path | None:
+        """Return the path of the current document.
+
+        If the current document has no path, a temporary unique name is generated.
+        If there is no current document, `None` is returned instead.
+        """
+        doc = self.main_window.settings.current_doc
+        if doc is None:
+            return None
+        doc_path = doc.path
+        if doc_path is None:
+            doc_path = Path(f"new-doc-{doc.doc_id}")
+        return doc_path
+
     @capture_log
     def _generate(self, doc_path: Path, target_widget: QWidget) -> None:
+        pdf = target_widget is self.pdf_viewer
+        code = self.current_code if doc_path is None else doc_path.read_text(encoding="utf8")
+        doc_path = self.current_path if doc_path is None else doc_path
+        if doc_path is None:
+            return
         self.dock.show()
         self.setCurrentIndex(self.indexOf(target_widget))
         try:
             self.start_tab_animation(self.indexOf(target_widget))
-            self.latex_viewer.generate_latex(doc_path=doc_path)
-            if target_widget is self.pdf_viewer:
-                self.pdf_viewer.generate_pdf(doc_path=doc_path)
+
+            # Set `_use_another_thread` to `False` to make debugging easier.
+            self._run_compilation(
+                code=code,
+                doc_path=doc_path,
+                tmp_dir=self.main_window.tmp_dir,
+                target_widget=target_widget,
+                pdf=pdf,
+                _use_another_thread=False,
+            )
+
+            # self.latex_viewer.generate_latex(doc_path=doc_path)
+            # if target_widget is self.pdf_viewer:
+            #     self.pdf_viewer.generate_pdf(doc_path=doc_path)
         finally:
             # Don't store `self.indexOf(self.pdf_viewer)`, since user may have clicked
             # on another tab in the while. It's safer to recalculate the index.
             self.stop_tab_animation(self.indexOf(target_widget))
+
+    def _run_compilation(
+        self,
+        code: str,
+        doc_path: Path,
+        tmp_dir: Path,
+        pdf: bool,
+        target_widget: QWidget,
+        _use_another_thread=True,
+    ) -> None:
+        """Run the compilation process itself.
+
+        By default, another thread is used, but for debugging, it may be useful
+        to turn off multithreading, setting `_use_another_thread` to False.
+        """
+        worker = CompilerWorker(code=code, doc_path=doc_path, tmp_dir=tmp_dir, pdf=pdf)
+        if _use_another_thread:
+            thread = QThread(self)
+            worker.moveToThread(thread)
+            worker.finished.connect(self.display_result)
+            worker.finished.connect(thread.quit)
+            worker.finished.connect(worker.deleteLater)
+            thread.started.connect(worker.generate)
+            thread.started.connect(lambda: print("hello"))
+            thread.finished.connect(thread.deleteLater)
+            thread.finished.connect(self.stop_tab_animation)
+            thread.start()
+        else:
+            try:
+                worker.finished.connect(self.display_result)
+                worker.generate()
+            finally:
+                # Don't store `self.indexOf(self.pdf_viewer)`, since user may have clicked
+                # on another tab in the while. It's safer to recalculate the index.
+                self.stop_tab_animation(self.indexOf(target_widget))
+
+    def display_result(self, info: CompilerWorkerInfo) -> None:
+        print("Hello !")
+        if (error := info.get("error")) is None:
+            self.update_tabs()
+        else:
+            self.main_window.current_mcq_editor.editor.display_error(code=info["code"], error=error)
 
     def update_tabs(self) -> None:
         self.latex_viewer.load()
