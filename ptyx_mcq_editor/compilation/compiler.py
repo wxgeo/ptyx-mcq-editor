@@ -3,11 +3,10 @@ import io
 import sys
 from base64 import urlsafe_b64encode
 from functools import wraps
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from pathlib import Path
-from time import sleep
 from types import TracebackType
-from typing import Literal, TypedDict, NotRequired, Callable, Type
+from typing import Literal, TypedDict, NotRequired, Callable, Type, Any
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -87,6 +86,13 @@ def capture_log(f: Callable) -> Callable:
     return wrapper
 
 
+def compile_code(queue: Queue, code: str, options: dict[str, Any]) -> None:
+    """Compile code from another process, using queue to give back information."""
+    compiler = Compiler()
+    latex = compiler.parse(code=code, **options)  # type: ignore
+    queue.put(latex)
+
+
 class CompilerWorker(QObject):
     def __init__(self, code: str, doc_path: Path, tmp_dir: Path, pdf=False):
         super().__init__(None)
@@ -98,7 +104,7 @@ class CompilerWorker(QObject):
         self.tmp_dir = tmp_dir
 
     finished = pyqtSignal(dict, name="finished")
-    # process_started = pyqtSignal(Process, name="process_started")
+    process_started = pyqtSignal(Process, name="process_started")
     # progress = pyqtSignal(int)
 
     def get_temp_path(self, suffix: Literal["tex", "pdf"]) -> Path:
@@ -139,7 +145,6 @@ class CompilerWorker(QObject):
         # code = editor.text() if doc_path is None else doc_path.read_text(encoding="utf8")
         code = inject_labels(self.code)
         return_data: CompilerWorkerInfo = {"code": code}
-        compiler = Compiler()
         options = {"MCQ_KEEP_ALL_VERSIONS": True, "PTYX_WITH_ANSWERS": True}
         if self._is_single_exercise():
             print("\n == Exercise detected. == \n")
@@ -156,8 +161,17 @@ class CompilerWorker(QObject):
             # Change current directory to the parent directory of the ptyx file.
             # This allows for relative paths in include directives when compiling.
             with contextlib.chdir(self.doc_path.parent):
-                # Process()
-                latex = compiler.parse(code=code, **options)  # type: ignore
+                queue = Queue()
+                process = Process(target=compile_code, args=(queue, code, options))
+                # Share process with main thread, to enable user to kill it if needed.
+                # This may prove useful if there is an infinite loop in user code
+                # for example.
+                self.process_started.emit(process)
+                process.start()
+                print(f"Waiting for process {process.pid}")
+                process.join()
+                print(f"End of process {process.pid}")
+                latex = queue.get()
         except BaseException as e:
             print(e)
             latex = ""
@@ -170,15 +184,3 @@ class CompilerWorker(QObject):
         if self.pdf:
             return_data["compilation_info"] = compile_latex_to_pdf(latex_file, dest=self.tmp_dir)
         return return_data
-
-
-class TestWorker(QObject):
-    finished = pyqtSignal()
-    progress = pyqtSignal(int)
-
-    def run(self):
-        """Long-running task."""
-        for i in range(5):
-            sleep(0.2)
-            print("coucou")
-        self.finished.emit()

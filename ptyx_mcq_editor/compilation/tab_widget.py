@@ -1,15 +1,12 @@
-import io
-import sys
-from functools import wraps
+from dataclasses import dataclass
+from multiprocessing import Process
 from pathlib import Path
-from types import TracebackType
-from typing import Type, Callable
 
-from PyQt6.QtCore import QTimer, QThread, Qt
-from PyQt6.QtGui import QPixmap, QIcon, QMouseEvent, QContextMenuEvent, QAction
+from PyQt6.QtCore import QTimer, QThread
+from PyQt6.QtGui import QIcon, QContextMenuEvent, QAction
 from PyQt6.QtWidgets import QTabWidget, QDockWidget, QWidget, QMenu
 
-from ptyx_mcq_editor.compilation.compiler import CompilerWorker, CompilerWorkerInfo, TestWorker
+from ptyx_mcq_editor.compilation.compiler import CompilerWorker, CompilerWorkerInfo
 from ptyx_mcq_editor.compilation.log_viewer import LogViewer
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
@@ -45,6 +42,15 @@ class Animation:
 # https://realpython.com/python-pyqt-qthread/
 
 
+@dataclass(frozen=True)
+class CurrentCompilationInfo:
+    """Information concerning current running compilation, if any."""
+
+    is_running: bool
+    process: Process | None = None
+    target: QWidget = None
+
+
 class CompilationTabs(QTabWidget, EnhancedWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent=parent)
@@ -54,18 +60,23 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         self.addTab(self.latex_viewer, "LaTeX Code")
         self.addTab(self.pdf_viewer, "Pdf Rendering")
         self.addTab(self.log_viewer, "Log message")
-        self.running_compilation = False
+        # TODO: use a custom data class to gather all information concerning current running compilation
+        self.running_compilation_info = CurrentCompilationInfo(is_running=False)
+        # self.running_compilation = False
+        # self.running_process: Process | None = None
         # `_current_animations` stores the indexes of the tabs having a running animation.
         # For each tab's index, stores the index of the animation's current frame.
         # This is used when a document is loaded.
         self._document_loading_animations = {index: Animation(self, index) for index in range(2)}
 
-    def start_tab_animation(self, widget: QWidget) -> None:
-        self.running_compilation = True
+    def compilation_started(self, widget: QWidget) -> None:
+        self.running_compilation_info = CurrentCompilationInfo(is_running=True, target=widget)
         self._document_loading_animations[self.indexOf(widget)].start()
 
-    def stop_tab_animation(self, widget: QWidget) -> None:
-        self.running_compilation = False
+    def compilation_ended(self) -> None:
+        widget = self.running_compilation_info.target
+        assert widget is not None
+        self.running_compilation_info = CurrentCompilationInfo(is_running=False)
         self._document_loading_animations[self.indexOf(widget)].stop()
 
     @property
@@ -108,7 +119,7 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         self.dock.show()
         self.setCurrentIndex(self.indexOf(target_widget))
         # Set `_use_another_thread` to `False` to make debugging easier.
-        if not self.running_compilation:
+        if not self.running_compilation_info.is_running:
             self._run_compilation(
                 code=code,
                 doc_path=doc_path,
@@ -137,20 +148,21 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         to turn off multithreading, setting `_use_another_thread` to False.
         """
         # Small animation on the top of the tab, to let user know a process is running...
-        self.start_tab_animation(target_widget)
+        self.compilation_started(target_widget)
         # Store worker as attribute, or else it will be garbage-collected.
         self.worker = worker = CompilerWorker(code=code, doc_path=doc_path, tmp_dir=tmp_dir, pdf=pdf)
         # self.worker = worker = TestWorker()
         if _use_another_thread:
             self.thread = thread = QThread(self)
             worker.moveToThread(thread)
+            worker.process_started.connect(self.set_current_process)
             worker.finished.connect(self.display_result)
             worker.finished.connect(thread.quit)
             worker.finished.connect(worker.deleteLater)
             thread.started.connect(worker.generate)
             # thread.started.connect(lambda: print("hello"))
             thread.finished.connect(thread.deleteLater)
-            thread.finished.connect(lambda: self.stop_tab_animation(target_widget))
+            thread.finished.connect(lambda: self.compilation_ended())
             thread.start()
             print("started...")
         else:
@@ -160,10 +172,27 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
             finally:
                 # Don't store `self.indexOf(self.pdf_viewer)`, since user may have clicked
                 # on another tab in the while. It's safer to recalculate the index.
-                self.stop_tab_animation(target_widget)
+                self.compilation_ended()
+
+    def set_current_process(self, process: Process):
+        assert self.running_compilation_info.is_running
+        target = self.running_compilation_info.target
+        assert target is not None
+        self.running_compilation_info = CurrentCompilationInfo(
+            is_running=True, process=process, target=target
+        )
+
+    def abort_thread(self):
+        process = self.running_compilation_info.process
+        assert process is not None
+        id_ = process.pid
+        process.kill()
+        print(f"Process {id_} interrupted.")
+        self.thread.quit()
+        # self.thread.wait()
+        self.compilation_ended()
 
     def display_result(self, info: CompilerWorkerInfo) -> None:
-        print("Hello !")
         if (error := info.get("error")) is None:
             self.update_tabs()
         else:
@@ -183,9 +212,9 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
     #         super().keyPressEvent(event)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
-        if self.running_compilation:
+        if self.running_compilation_info.is_running:
             menu = QMenu(self)
             abort = QAction("&Abort running compilation", self)
             menu.addAction(abort)
-            abort.triggered.connect(self.thread.terminate)
+            abort.triggered.connect(self.abort_thread)
             menu.exec(event.globalPos())
