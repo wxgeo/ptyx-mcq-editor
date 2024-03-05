@@ -518,6 +518,7 @@ class FileEventsHandler(QObject):
     def update_status_message(self):
         editor = self.current_editor()
         if editor is not None:
+            self.main_window.statusbar.setStyleSheet("")
             self.main_window.status_label.setText(editor.status_message)
 
     def toggle_comment(self):

@@ -11,7 +11,7 @@
 
 import sys
 
-from PyQt6.QtCore import Qt, QSize, pyqtProperty
+from PyQt6.QtCore import Qt, QSize, pyqtProperty  # type: ignore
 from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtWidgets import QWidget, QSizePolicy, QApplication
 

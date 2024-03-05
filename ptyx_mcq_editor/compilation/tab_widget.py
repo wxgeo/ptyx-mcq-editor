@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from multiprocessing import Process
+from multiprocessing.queues import Queue as QueueType
 from pathlib import Path
 
 from PyQt6.QtCore import QTimer, QThread
@@ -48,7 +49,8 @@ class CurrentCompilationInfo:
 
     is_running: bool
     process: Process | None = None
-    target: QWidget = None
+    target: QWidget | None = None
+    queue: QueueType | None = None
 
 
 class CompilationTabs(QTabWidget, EnhancedWidget):
@@ -110,7 +112,7 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
             doc_path = Path(f"new-doc-{doc.doc_id}")
         return doc_path
 
-    def _generate(self, doc_path: Path, target_widget: QWidget) -> None:
+    def _generate(self, doc_path: Path | None, target_widget: QWidget) -> None:
         pdf = target_widget is self.pdf_viewer
         code = self.current_code if doc_path is None else doc_path.read_text(encoding="utf8")
         doc_path = self.current_path if doc_path is None else doc_path
@@ -153,7 +155,7 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         self.worker = worker = CompilerWorker(code=code, doc_path=doc_path, tmp_dir=tmp_dir, pdf=pdf)
         # self.worker = worker = TestWorker()
         if _use_another_thread:
-            self.thread = thread = QThread(self)
+            self.current_thread = thread = QThread(self)
             worker.moveToThread(thread)
             worker.process_started.connect(self.set_current_process)
             worker.finished.connect(self.display_result)
@@ -174,12 +176,12 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
                 # on another tab in the while. It's safer to recalculate the index.
                 self.compilation_ended()
 
-    def set_current_process(self, process: Process):
+    def set_current_process(self, process: Process, queue: QueueType):
         assert self.running_compilation_info.is_running
         target = self.running_compilation_info.target
         assert target is not None
         self.running_compilation_info = CurrentCompilationInfo(
-            is_running=True, process=process, target=target
+            is_running=True, process=process, target=target, queue=queue
         )
 
     def abort_thread(self):
@@ -187,16 +189,20 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         assert process is not None
         id_ = process.pid
         process.kill()
+        queue = self.running_compilation_info.queue
+        assert queue is not None
+        process.join()
+        queue.put(None)
         print(f"Process {id_} interrupted.")
-        self.thread.quit()
-        # self.thread.wait()
-        self.compilation_ended()
+        self.current_thread.quit()
+        # self.current_thread.wait()
+        # self.compilation_ended()
 
     def display_result(self, info: CompilerWorkerInfo) -> None:
         if (error := info.get("error")) is None:
             self.update_tabs()
         else:
-            self.main_window.current_mcq_editor.editor.display_error(code=info["code"], error=error)
+            self.main_window.current_mcq_editor.display_error(code=info["code"], error=error)
 
     def update_tabs(self) -> None:
         self.latex_viewer.load()
@@ -211,7 +217,8 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
     #     else:
     #         super().keyPressEvent(event)
 
-    def contextMenuEvent(self, event: QContextMenuEvent) -> None:
+    def contextMenuEvent(self, event: QContextMenuEvent | None) -> None:
+        assert event is not None
         if self.running_compilation_info.is_running:
             menu = QMenu(self)
             abort = QAction("&Abort running compilation", self)

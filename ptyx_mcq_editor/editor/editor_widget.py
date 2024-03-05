@@ -215,36 +215,39 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         """Return `True` iff we are inside a python block code, yet not in a python string."""
         return self._lexer.get_style_and_mode(self.positionFromLineIndex(line, index))[1] == Mode.PYTHON
 
-    def display_error(self, code: str, error: PythonBlockError) -> None:
+    def display_error(self, code: str, error: BaseException) -> None:
         """Display an error when a document failed to be compiled.
 
         An error marker will appear in the editor left margin,
         and a message will be displayed in the status bar too.
         """
-        shift = int(error.label) - 2
-        info = error.info
-        self._last_error_message = info.message
-        self.main_window.statusbar.showMessage(f"Compilation failed: {info.message}.")
-        self.main_window.statusbar.setStyleSheet("color: red")
-        print(info)
-        row = 0 if info.row is None else info.row
-        col = 0 if info.col is None else info.col
-        end_row = row if info.end_row is None else info.end_row
-        end_col = col if info.end_col is None else info.end_col
-        row, end_row = min(row, end_row), max(row, end_row)
-        col, end_col = min(col, end_col), max(col, end_col)
-        line_length = len(self.text(row))
-        col = min(line_length - 1, col)
-        end_col = max(col + 1, end_col)
-        print(shift + row, col, shift + end_row, end_col)
-        # Assign a value to the text
-        # Now apply the indicator-style on the chosen text
-        start_pos = self.positionFromLineIndex(shift + row, col)
-        end_pos = self.positionFromLineIndex(shift + end_row, end_col)
-        self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, COMPILATION_ERROR)
-        self.SendScintilla(QsciScintilla.SCI_SETINDICATORVALUE, COMPILATION_ERROR)
-        self.SendScintilla(QsciScintilla.SCI_INDICATORFILLRANGE, start_pos, end_pos - start_pos)
-        # self.fillIndicatorRange(shift + row, col, shift + end_row, end_col, COMPILATION_ERROR)
+        self.main_window.statusbar.setStyleSheet("color: red;font-weight: bold")
+        if isinstance(error, PythonBlockError):
+            shift = int(error.label) - 2
+            info = error.info
+            self._last_error_message = info.message
+            self.main_window.statusbar.showMessage(f"Compilation failed: {info.message}.")
+            print(info)
+            row = 0 if info.row is None else info.row
+            col = 0 if info.col is None else info.col
+            end_row = row if info.end_row is None else info.end_row
+            end_col = col if info.end_col is None else info.end_col
+            row, end_row = min(row, end_row), max(row, end_row)
+            col, end_col = min(col, end_col), max(col, end_col)
+            line_length = len(self.text(row))
+            col = min(line_length - 1, col)
+            end_col = max(col + 1, end_col)
+            print(shift + row, col, shift + end_row, end_col)
+            # Assign a value to the text
+            # Now apply the indicator-style on the chosen text
+            start_pos = self.positionFromLineIndex(shift + row, col)
+            end_pos = self.positionFromLineIndex(shift + end_row, end_col)
+            self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, COMPILATION_ERROR)
+            self.SendScintilla(QsciScintilla.SCI_SETINDICATORVALUE, COMPILATION_ERROR)
+            self.SendScintilla(QsciScintilla.SCI_INDICATORFILLRANGE, start_pos, end_pos - start_pos)
+            # self.fillIndicatorRange(shift + row, col, shift + end_row, end_col, COMPILATION_ERROR)
+        else:
+            self.main_window.statusbar.showMessage(f"{type(error).__name__}: {error}")
 
     def autoformat(self) -> None:
         # TODO: display a message in the status bar if autoformat fails.
