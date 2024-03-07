@@ -56,7 +56,7 @@
      </property>
      <property name="icon">
       <iconset theme="document-open-recent">
-       <normaloff>.</normaloff>.</iconset>
+       <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
      </property>
      <addaction name="actionNone"/>
     </widget>
@@ -66,7 +66,7 @@
      </property>
      <property name="icon">
       <iconset theme="document-new">
-       <normaloff>.</normaloff>.</iconset>
+       <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
      </property>
      <addaction name="action_Empty_file"/>
      <addaction name="action_Mcq_ptyx_file"/>
@@ -397,7 +397,7 @@ p, li { white-space: pre-wrap; }
     <string notr="true">padding-left:10px;</string>
    </property>
    <attribute name="dockWidgetArea">
-    <number>4</number>
+    <number>2</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_3">
     <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -430,9 +430,18 @@ p, li { white-space: pre-wrap; }
       </layout>
      </item>
      <item>
-      <widget class="QPushButton" name="generate_doc_button">
+      <widget class="QToolButton" name="toolButton">
        <property name="text">
         <string>Generate</string>
+       </property>
+       <property name="toolButtonStyle">
+        <enum>Qt::ToolButtonTextBesideIcon</enum>
+       </property>
+       <property name="autoRaise">
+        <bool>false</bool>
+       </property>
+       <property name="arrowType">
+        <enum>Qt::NoArrow</enum>
        </property>
       </widget>
      </item>
@@ -455,7 +464,7 @@ p, li { white-space: pre-wrap; }
   <action name="action_Open">
    <property name="icon">
     <iconset theme="document-open">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
+     <normaloff>../../../../../../../../.designer/backup</normaloff>../../../../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Open</string>
@@ -467,7 +476,7 @@ p, li { white-space: pre-wrap; }
   <action name="action_Save">
    <property name="icon">
     <iconset theme="document-save">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
+     <normaloff>../../../../../../../../.designer/backup</normaloff>../../../../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Save</string>
@@ -479,7 +488,7 @@ p, li { white-space: pre-wrap; }
   <action name="actionSave_as">
    <property name="icon">
     <iconset theme="document-save-as">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
+     <normaloff>../../../../../../../../.designer/backup</normaloff>../../../../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>Save &amp;as</string>
@@ -491,7 +500,7 @@ p, li { white-space: pre-wrap; }
   <action name="action_Quitter">
    <property name="icon">
     <iconset theme="application-exit">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
+     <normaloff>../../../../../../../../.designer/backup</normaloff>../../../../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Quitter</string>
@@ -499,7 +508,8 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="action_LaTeX">
    <property name="icon">
-    <iconset theme="text-x-script"/>
+    <iconset theme="text-x-script">
+     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;LaTeX code preview</string>
@@ -513,7 +523,8 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="action_Pdf">
    <property name="icon">
-    <iconset theme="x-office-document"/>
+    <iconset theme="x-office-document">
+     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Pdf preview</string>
@@ -533,7 +544,7 @@ p, li { white-space: pre-wrap; }
   <action name="actionFind">
    <property name="icon">
     <iconset theme="edit-find">
-     <normaloff>.</normaloff>.</iconset>
+     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Find</string>
@@ -545,7 +556,7 @@ p, li { white-space: pre-wrap; }
   <action name="actionReplace">
    <property name="icon">
     <iconset theme="edit-find-replace">
-     <normaloff>.</normaloff>.</iconset>
+     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Replace</string>
@@ -567,7 +578,7 @@ p, li { white-space: pre-wrap; }
   <action name="action_Close">
    <property name="icon">
     <iconset theme="window-close">
-     <normaloff>.</normaloff>.</iconset>
+     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Close</string>
@@ -579,7 +590,7 @@ p, li { white-space: pre-wrap; }
   <action name="action_Empty_file">
    <property name="icon">
     <iconset theme="text-x-generic">
-     <normaloff>.</normaloff>.</iconset>
+     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Empty file</string>
@@ -598,7 +609,8 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="action_Update_imports">
    <property name="icon">
-    <iconset theme="view-refresh"/>
+    <iconset theme="view-refresh">
+     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Update imports</string>
@@ -609,7 +621,8 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="action_Add_folder">
    <property name="icon">
-    <iconset theme="list-add"/>
+    <iconset theme="list-add">
+     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Add directory</string>
@@ -620,7 +633,8 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="action_Open_file_from_current_import_line">
    <property name="icon">
-    <iconset theme="go-jump"/>
+    <iconset theme="go-jump">
+     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>&amp;Open file from current import line</string>
@@ -632,7 +646,7 @@ p, li { white-space: pre-wrap; }
   <action name="actionN_ew_Session">
    <property name="icon">
     <iconset theme="window-new">
-     <normaloff>.</normaloff>.</iconset>
+     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>N&amp;ew Session</string>
@@ -653,7 +667,8 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="actionPublish">
    <property name="icon">
-    <iconset theme="emblem-documents"/>
+    <iconset theme="emblem-documents">
+     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
    </property>
    <property name="text">
     <string>Pu&amp;blish</string>

@@ -60,9 +60,15 @@ class Ui_MainWindow(object):
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+        self.publish_dock = PublishDock(parent=MainWindow)
+        self.publish_dock.setStyleSheet("padding-left:10px;")
+        self.publish_dock.setObjectName("publish_dock")
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.publish_dock)
         self.compilation_dock = QtWidgets.QDockWidget(parent=MainWindow)
         self.compilation_dock.setEnabled(True)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.compilation_dock.sizePolicy().hasHeightForWidth())
@@ -75,7 +81,9 @@ class Ui_MainWindow(object):
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.dockWidgetContents)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.compilation_tabs = CompilationTabs(parent=self.dockWidgetContents)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.compilation_tabs.sizePolicy().hasHeightForWidth())
@@ -125,7 +133,9 @@ class Ui_MainWindow(object):
         self.regexCheckBox = QtWidgets.QCheckBox(parent=self.options)
         self.regexCheckBox.setObjectName("regexCheckBox")
         self.gridLayout.addWidget(self.regexCheckBox, 3, 1, 1, 1)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum
+        )
         self.gridLayout.addItem(spacerItem, 0, 2, 1, 1)
         self.horizontalLayout.addWidget(self.options)
         self.verticalLayout_2.addLayout(self.horizontalLayout)
@@ -138,7 +148,9 @@ class Ui_MainWindow(object):
         self.replace_button.setAutoDefault(True)
         self.replace_button.setObjectName("replace_button")
         self.buttons_field.addWidget(self.replace_button)
-        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        spacerItem1 = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum
+        )
         self.buttons_field.addItem(spacerItem1)
         self.previous_button = QtWidgets.QPushButton(parent=self.dockWidgetContents_2)
         self.previous_button.setCheckable(False)
@@ -151,13 +163,12 @@ class Ui_MainWindow(object):
         self.next_button.setObjectName("next_button")
         self.buttons_field.addWidget(self.next_button)
         self.verticalLayout_2.addLayout(self.buttons_field)
-        spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
+        spacerItem2 = QtWidgets.QSpacerItem(
+            20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding
+        )
         self.verticalLayout_2.addItem(spacerItem2)
         self.search_dock.setWidget(self.dockWidgetContents_2)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.search_dock)
-        self.publish_dock = PublishDock(parent=MainWindow)
-        self.publish_dock.setStyleSheet("padding-left:10px;")
-        self.publish_dock.setObjectName("publish_dock")
         self.dockWidgetContents_3 = QtWidgets.QWidget()
         self.dockWidgetContents_3.setObjectName("dockWidgetContents_3")
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.dockWidgetContents_3)
@@ -177,13 +188,17 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.addWidget(self.doc_number_spinbox)
         self.verticalLayout_5.addLayout(self.horizontalLayout_2)
         self.horizontalLayout_4.addLayout(self.verticalLayout_5)
-        self.generate_doc_button = QtWidgets.QPushButton(parent=self.dockWidgetContents_3)
-        self.generate_doc_button.setObjectName("generate_doc_button")
-        self.horizontalLayout_4.addWidget(self.generate_doc_button)
-        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
+        self.toolButton = QtWidgets.QToolButton(parent=self.dockWidgetContents_3)
+        self.toolButton.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.toolButton.setAutoRaise(False)
+        self.toolButton.setArrowType(QtCore.Qt.ArrowType.NoArrow)
+        self.toolButton.setObjectName("toolButton")
+        self.horizontalLayout_4.addWidget(self.toolButton)
+        spacerItem3 = QtWidgets.QSpacerItem(
+            40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum
+        )
         self.horizontalLayout_4.addItem(spacerItem3)
         self.publish_dock.setWidget(self.dockWidgetContents_3)
-        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(4), self.publish_dock)
         self.action_Open = QtGui.QAction(parent=MainWindow)
         icon = QtGui.QIcon.fromTheme("document-open")
         self.action_Open.setIcon(icon)
@@ -243,7 +258,9 @@ class Ui_MainWindow(object):
         self.action_Open_file_from_current_import_line = QtGui.QAction(parent=MainWindow)
         icon = QtGui.QIcon.fromTheme("go-jump")
         self.action_Open_file_from_current_import_line.setIcon(icon)
-        self.action_Open_file_from_current_import_line.setObjectName("action_Open_file_from_current_import_line")
+        self.action_Open_file_from_current_import_line.setObjectName(
+            "action_Open_file_from_current_import_line"
+        )
         self.actionN_ew_Session = QtGui.QAction(parent=MainWindow)
         icon = QtGui.QIcon.fromTheme("window-new")
         self.actionN_ew_Session.setIcon(icon)
@@ -304,7 +321,7 @@ class Ui_MainWindow(object):
         self.left_tab_widget.setCurrentIndex(-1)
         self.right_tab_widget.setCurrentIndex(-1)
         self.compilation_tabs.setCurrentIndex(-1)
-        self.action_Quitter.triggered.connect(MainWindow.close) # type: ignore
+        self.action_Quitter.triggered.connect(MainWindow.close)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -329,14 +346,19 @@ class Ui_MainWindow(object):
         self.selectionOnlyCheckBox.setText(_translate("MainWindow", "&Selection only"))
         self.caseCheckBox.setText(_translate("MainWindow", "&Case sensitive"))
         self.wholeCheckBox.setText(_translate("MainWindow", "&Whole words only"))
-        self.regexCheckBox.setToolTip(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
-"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
-"p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:\'Sans\'; font-size:10pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">whether the text to search should be interpreted as a regular expression.</p>\n"
-"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"></p>\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">You may want to take a look at the syntax of regular expressions:</p>\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><a href=\"http://doc.trolltech.com/qregexp.html\"><span style=\" text-decoration: underline; color:#0000ff;\">http://doc.trolltech.com/qregexp.html</span></a></p></body></html>"))
+        self.regexCheckBox.setToolTip(
+            _translate(
+                "MainWindow",
+                '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">\n'
+                '<html><head><meta name="qrichtext" content="1" /><style type="text/css">\n'
+                "p, li { white-space: pre-wrap; }\n"
+                "</style></head><body style=\" font-family:'Sans'; font-size:10pt; font-weight:400; font-style:normal;\">\n"
+                '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">whether the text to search should be interpreted as a regular expression.</p>\n'
+                '<p style="-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"></p>\n'
+                '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">You may want to take a look at the syntax of regular expressions:</p>\n'
+                '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><a href="http://doc.trolltech.com/qregexp.html"><span style=" text-decoration: underline; color:#0000ff;">http://doc.trolltech.com/qregexp.html</span></a></p></body></html>',
+            )
+        )
         self.regexCheckBox.setText(_translate("MainWindow", "R&egular Expression"))
         self.replace_all_button.setText(_translate("MainWindow", "Replace &All"))
         self.replace_button.setText(_translate("MainWindow", "&Replace"))
@@ -346,7 +368,7 @@ class Ui_MainWindow(object):
         self.next_button.setText(_translate("MainWindow", "&Next"))
         self.next_button.setShortcut(_translate("MainWindow", "F3"))
         self.doc_number_label.setText(_translate("MainWindow", "Number of documents : "))
-        self.generate_doc_button.setText(_translate("MainWindow", "Generate"))
+        self.toolButton.setText(_translate("MainWindow", "Generate"))
         self.action_Open.setText(_translate("MainWindow", "&Open"))
         self.action_Open.setShortcut(_translate("MainWindow", "Ctrl+O"))
         self.action_Save.setText(_translate("MainWindow", "&Save"))
@@ -360,7 +382,9 @@ class Ui_MainWindow(object):
         self.action_Pdf.setText(_translate("MainWindow", "&Pdf preview"))
         self.action_Pdf.setToolTip(_translate("MainWindow", "Pdf preview"))
         self.action_Pdf.setShortcut(_translate("MainWindow", "F5"))
-        self.action_Add_MCQ_Editor_to_start_menu.setText(_translate("MainWindow", "&Add shortcut to MCQ Editor in the applications menu"))
+        self.action_Add_MCQ_Editor_to_start_menu.setText(
+            _translate("MainWindow", "&Add shortcut to MCQ Editor in the applications menu")
+        )
         self.actionFind.setText(_translate("MainWindow", "&Find"))
         self.actionFind.setShortcut(_translate("MainWindow", "Ctrl+F"))
         self.actionReplace.setText(_translate("MainWindow", "&Replace"))
@@ -377,7 +401,9 @@ class Ui_MainWindow(object):
         self.action_Update_imports.setShortcut(_translate("MainWindow", "Ctrl+Shift+I"))
         self.action_Add_folder.setText(_translate("MainWindow", "&Add directory"))
         self.action_Add_folder.setShortcut(_translate("MainWindow", "Ctrl+I"))
-        self.action_Open_file_from_current_import_line.setText(_translate("MainWindow", "&Open file from current import line"))
+        self.action_Open_file_from_current_import_line.setText(
+            _translate("MainWindow", "&Open file from current import line")
+        )
         self.action_Open_file_from_current_import_line.setShortcut(_translate("MainWindow", "Ctrl+Shift+O"))
         self.actionN_ew_Session.setText(_translate("MainWindow", "N&ew Session"))
         self.actionComment.setText(_translate("MainWindow", "&Comment"))
@@ -389,6 +415,8 @@ class Ui_MainWindow(object):
         self.action_Launch_scan.setText(_translate("MainWindow", "&Launch scan"))
         self.actionFormat_python_code.setText(_translate("MainWindow", "Format python code"))
         self.actionFormat_python_code.setShortcut(_translate("MainWindow", "Ctrl+Shift+F"))
+
+
 from ptyx_mcq_editor.compilation.publish import PublishDock
 from ptyx_mcq_editor.compilation.tab_widget import CompilationTabs
 from ptyx_mcq_editor.files_book import FilesBook
@@ -397,6 +425,7 @@ from ptyx_mcq_editor.find_and_replace import FindAndReplaceWidget
 
 if __name__ == "__main__":
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
