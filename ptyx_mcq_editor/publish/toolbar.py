@@ -1,8 +1,7 @@
 from PyQt6.QtGui import QAction, QFont
-from PyQt6.QtWidgets import QDockWidget, QToolBar, QSpinBox, QLabel, QToolButton
+from PyQt6.QtWidgets import QToolBar, QSpinBox, QLabel
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
-from ptyx_mcq_editor.generated_ui.make_ui import Ui_publish_widget
 
 
 # class PublishDock(QDockWidget, EnhancedWidget):

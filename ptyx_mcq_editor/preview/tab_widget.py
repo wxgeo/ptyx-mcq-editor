@@ -7,14 +7,14 @@ from PyQt6.QtCore import QTimer, QThread
 from PyQt6.QtGui import QIcon, QContextMenuEvent, QAction
 from PyQt6.QtWidgets import QTabWidget, QDockWidget, QWidget, QMenu
 
-from ptyx_mcq_editor.compilation.compiler import CompilerWorker, CompilerWorkerInfo
-from ptyx_mcq_editor.compilation.log_viewer import LogViewer
+from ptyx_mcq_editor.preview.compiler import CompilerWorker, CompilerWorkerInfo
+from ptyx_mcq_editor.preview.log_viewer import LogViewer
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
-from ptyx_mcq_editor.compilation.pdf_viewer import PdfViewer
+from ptyx_mcq_editor.preview.pdf_viewer import PdfViewer
 
-from ptyx_mcq_editor.compilation.latex_viewer import LatexViewer
+from ptyx_mcq_editor.preview.latex_viewer import LatexViewer
 from ptyx_mcq_editor.param import RESSOURCES_PATH
 
 

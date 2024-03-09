@@ -6,7 +6,7 @@ from PyQt6.Qsci import QsciLexerCustom, QsciScintilla
 from PyQt6.QtGui import QColor, QFont
 
 if TYPE_CHECKING:
-    from ptyx_mcq_editor.compilation.log_viewer import LogViewer
+    from ptyx_mcq_editor.preview.log_viewer import LogViewer
 
 
 class Style(IntEnum):

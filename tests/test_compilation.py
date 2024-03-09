@@ -1,7 +1,7 @@
 from multiprocessing import Queue
 from pathlib import Path
 
-from ptyx_mcq_editor.compilation.compiler import CompilerWorker, compile_code
+from ptyx_mcq_editor.preview.compiler import CompilerWorker, compile_code
 
 
 def test_compilation_error(tmp_path):

@@ -5,7 +5,7 @@ from PyQt6 import Qsci
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtGui import QColor
 
-from ptyx_mcq_editor.compilation.log_lexer import LogLexer
+from ptyx_mcq_editor.preview.log_lexer import LogLexer
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
 if TYPE_CHECKING:
