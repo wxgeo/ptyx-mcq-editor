@@ -342,6 +342,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self._modifiers = keys
 
     def on_click(self, line: int, index: int, keys: Qt.KeyboardModifier) -> None:
+        """Action executed when user clicks on a Qscintilla indicator."""
         position = self.positionFromLineIndex(line, index)
         value = self.SendScintilla(QsciScintilla.SCI_INDICATORVALUEAT, COMPILATION_ERROR, position)
         if value == COMPILATION_ERROR:

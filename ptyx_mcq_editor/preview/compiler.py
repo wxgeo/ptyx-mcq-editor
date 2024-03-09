@@ -1,5 +1,6 @@
 import contextlib
 import io
+import pickle
 import sys
 from base64 import urlsafe_b64encode
 from multiprocessing import Process, Queue
@@ -15,16 +16,18 @@ from ptyx.compilation import compile_latex_to_pdf, SingleFileCompilationInfo
 from ptyx.errors import PtyxDocumentCompilationError
 from ptyx.extensions.extended_python import main
 from ptyx.latex_generator import Compiler
+from ptyx.shell import red, yellow
 
 from ptyx_mcq.make.exercises_parsing import wrap_exercise
 
 
 class CompilerWorkerInfo(TypedDict):
     code: str
+    doc_path: Path
     compilation_info: NotRequired[SingleFileCompilationInfo]
     error: NotRequired[BaseException]
     info: NotRequired[str]
-    log: NotRequired[str]
+    log: str
 
 
 def path_hash(path: Path | str) -> str:
@@ -94,7 +97,24 @@ def compile_code(queue: QueueType, code: str, options: dict[str, Any]) -> None:
         latex = compiler.parse(code=code, **options)
         queue.put(latex)
     except BaseException as e:
-        queue.put(e)
+        pickle_incompatibility = False
+        try:
+            if pickle.loads(pickle.dumps(e)) != e:
+                pickle_incompatibility = True
+        except BaseException:
+            pickle_incompatibility = True
+            raise
+        finally:
+            if pickle_incompatibility:
+                print(red(f"ERROR: Exception {type(e)} is not compatible with pickle!"))
+                print(yellow(f"Please open a bug report about it!"))
+                # Do not try to serialize this incompatible exception,
+                # this will fail, and may even generate segfaults!
+                # Let's use a vanilla `RuntimeError` instead.
+                # (Yet, we should make this exception compatible with pickle asap...)
+                queue.put(RuntimeError(str(e)))
+            else:
+                queue.put(e)
         print("xxxxxxxxxxxxxxxxxxxxxxxxxxxx")
         print(e, type(e), repr(e))
         print_exception(e)
@@ -128,15 +148,15 @@ class CompilerWorker(QObject):
         return self.doc_path.suffix == ".ex"
 
     def generate(self) -> None:
-        return_data: CompilerWorkerInfo = {"code": self.code}
-        log: CaptureLog | str = "Error, log couldn't be captured!"
-        try:
-            with CaptureLog() as log:
+        return_data: CompilerWorkerInfo = {"code": self.code, "doc_path": self.doc_path}
+        # log: CaptureLog | str = "Error, log couldn't be captured!"
+        with CaptureLog() as log:
+            try:
                 return_data = self._generate()
-        finally:
-            return_data["log"] = str(log)
-            print("End of task: emit 'finished' event.")
-            self.finished.emit(return_data)
+            finally:
+                return_data["log"] = log.getvalue()
+                print("End of task: emit 'finished' event.")
+                self.finished.emit(return_data)
 
     def _generate(self) -> CompilerWorkerInfo:
         """Generate a LaTeX file.
@@ -152,7 +172,7 @@ class CompilerWorker(QObject):
         #     return
         # code = editor.text() if doc_path is None else doc_path.read_text(encoding="utf8")
         code = inject_labels(self.code)
-        return_data: CompilerWorkerInfo = {"code": code}
+        return_data: CompilerWorkerInfo = {"code": code, "doc_path": self.doc_path, "log": "No log."}
         options = {"MCQ_KEEP_ALL_VERSIONS": True, "PTYX_WITH_ANSWERS": True}
         if self._is_single_exercise():
             print("\n == Exercise detected. == \n")
@@ -176,7 +196,10 @@ class CompilerWorker(QObject):
             self.process_started.emit(process, queue)
             process.start()
             print(f"Waiting for process {process.pid}")
-            # process.join()
+            # Do *NOT* join process while there is still data in the queue.
+            # See multiprocessing documentation concerning potential resulting deadlocks, and also:
+            # https://stackoverflow.com/questions/31665328/python-3-multiprocessing-queue-deadlock-when-calling-join-before-the-queue-is-em
+            # process.join()  <- So, don't do this!
             print(f"End of process {process.pid}")
         match queue.get():
             case str(latex):

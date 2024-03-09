@@ -481,7 +481,8 @@ class FileEventsHandler(QObject):
         background: bool = False,
         preview_only: bool = False,
     ) -> bool:
-        print(preview_only, background)
+        """If the current line of the editor is an import directive, open the corresponding file."""
+        # print(f"Open file from current line: {preview_only=}, {background=}")
         if self.settings.docs().current_doc is not None:
             editor = self.current_editor()
             assert editor is not None

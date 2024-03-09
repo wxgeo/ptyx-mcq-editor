@@ -25,6 +25,7 @@ class Animation:
         self.frame: int = 0
         self.timer = QTimer(parent)
         self.timer.setInterval(70)
+        # noinspection PyUnresolvedReferences
         self.timer.timeout.connect(self._update)
 
     def start(self):
@@ -48,6 +49,7 @@ class CurrentCompilationInfo:
     """Information concerning current running compilation, if any."""
 
     is_running: bool
+    doc_path: Path | None = None
     process: Process | None = None
     target: QWidget | None = None
     queue: QueueType | None = None
@@ -63,7 +65,7 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         self.addTab(self.pdf_viewer, "Pdf Rendering")
         self.addTab(self.log_viewer, "Log message")
         # TODO: use a custom data class to gather all information concerning current running compilation
-        self.running_compilation_info = CurrentCompilationInfo(is_running=False)
+        self.current_compilation_info = CurrentCompilationInfo(is_running=False)
         # self.running_compilation = False
         # self.running_process: Process | None = None
         # `_current_animations` stores the indexes of the tabs having a running animation.
@@ -71,14 +73,16 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         # This is used when a document is loaded.
         self._document_loading_animations = {index: Animation(self, index) for index in range(2)}
 
-    def compilation_started(self, widget: QWidget) -> None:
-        self.running_compilation_info = CurrentCompilationInfo(is_running=True, target=widget)
+    def compilation_started(self, widget: QWidget, doc_path: Path) -> None:
+        self.current_compilation_info = CurrentCompilationInfo(
+            is_running=True, target=widget, doc_path=doc_path
+        )
         self._document_loading_animations[self.indexOf(widget)].start()
 
     def compilation_ended(self) -> None:
-        widget = self.running_compilation_info.target
+        widget = self.current_compilation_info.target
         assert widget is not None
-        self.running_compilation_info = CurrentCompilationInfo(is_running=False)
+        self.current_compilation_info = CurrentCompilationInfo(is_running=False)
         self._document_loading_animations[self.indexOf(widget)].stop()
 
     @property
@@ -121,7 +125,7 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         self.dock.show()
         self.setCurrentIndex(self.indexOf(target_widget))
         # Set `_use_another_thread` to `False` to make debugging easier.
-        if not self.running_compilation_info.is_running:
+        if not self.current_compilation_info.is_running:
             self._run_compilation(
                 code=code,
                 doc_path=doc_path,
@@ -150,7 +154,7 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         to turn off multithreading, setting `_use_another_thread` to False.
         """
         # Small animation on the top of the tab, to let user know a process is running...
-        self.compilation_started(target_widget)
+        self.compilation_started(target_widget, doc_path=doc_path)
         # Store worker as attribute, or else it will be garbage-collected.
         self.worker = worker = CompilerWorker(code=code, doc_path=doc_path, tmp_dir=tmp_dir, pdf=pdf)
         # self.worker = worker = TestWorker()
@@ -161,6 +165,7 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
             worker.finished.connect(self.display_result)
             worker.finished.connect(thread.quit)
             worker.finished.connect(worker.deleteLater)
+            # noinspection PyUnresolvedReferences
             thread.started.connect(worker.generate)
             # thread.started.connect(lambda: print("hello"))
             thread.finished.connect(thread.deleteLater)
@@ -177,19 +182,20 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
                 self.compilation_ended()
 
     def set_current_process(self, process: Process, queue: QueueType):
-        assert self.running_compilation_info.is_running
-        target = self.running_compilation_info.target
+        assert self.current_compilation_info.is_running
+        target = self.current_compilation_info.target
+        doc_path = self.current_compilation_info.doc_path
         assert target is not None
-        self.running_compilation_info = CurrentCompilationInfo(
-            is_running=True, process=process, target=target, queue=queue
+        self.current_compilation_info = CurrentCompilationInfo(
+            is_running=True, process=process, target=target, queue=queue, doc_path=doc_path
         )
 
     def abort_thread(self):
-        process = self.running_compilation_info.process
+        process = self.current_compilation_info.process
         assert process is not None
         id_ = process.pid
         process.kill()
-        queue = self.running_compilation_info.queue
+        queue = self.current_compilation_info.queue
         assert queue is not None
         process.join()
         queue.put(None)
@@ -199,15 +205,17 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         # self.compilation_ended()
 
     def display_result(self, info: CompilerWorkerInfo) -> None:
+        self.log_viewer.setText(info["log"])
+        self.log_viewer.write_log(info["doc_path"])
         if (error := info.get("error")) is None:
-            self.update_tabs()
+            self.update_tabs(doc_path=info["doc_path"])
         else:
             self.main_window.current_mcq_editor.display_error(code=info["code"], error=error)
 
-    def update_tabs(self) -> None:
-        self.latex_viewer.load()
-        self.pdf_viewer.load()
-        self.log_viewer.load()
+    def update_tabs(self, doc_path: Path | None = None) -> None:
+        self.latex_viewer.load(doc_path=doc_path)
+        self.pdf_viewer.load(doc_path=doc_path)
+        self.log_viewer.load(doc_path=doc_path)
 
     # def mousePressEvent(self, event: QMouseEvent) -> None:
     #     if event.button() == Qt.MouseButton.RightButton:
@@ -217,11 +225,13 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
     #     else:
     #         super().keyPressEvent(event)
 
+    # noinspection PyMethodOverriding
     def contextMenuEvent(self, event: QContextMenuEvent | None) -> None:
         assert event is not None
-        if self.running_compilation_info.is_running:
+        if self.current_compilation_info.is_running:
             menu = QMenu(self)
             abort = QAction("&Abort running compilation", self)
             menu.addAction(abort)
+            # noinspection PyUnresolvedReferences
             abort.triggered.connect(self.abort_thread)
             menu.exec(event.globalPos())
