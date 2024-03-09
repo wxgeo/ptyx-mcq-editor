@@ -53,7 +53,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
             self.setWindowIcon(QIcon(str(ICON_PATH)))
 
         self.search_dock.setVisible(False)
-        self.publish_dock.setVisible(False)
+        # self.publish_dock.setVisible(False)
         self.setCorner(Qt.Corner.TopRightCorner, Qt.DockWidgetArea.RightDockWidgetArea)
 
         # TODO: enable right view
@@ -61,6 +61,12 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
 
         self.status_label = QLabel(self)
         self.statusbar.addWidget(self.status_label)
+
+        # self.publish_toolbar = PublishToolBar(self)
+        # self.addToolBar(self.publish_toolbar)
+
+        # self.publish_toolbar.addWidget(PublishWidget(self))
+        self.publish_toolbar.hide()
 
         # -------------------
         #   Connect signals
@@ -91,7 +97,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.action_Pdf.setShortcuts(["F5", "Ctrl+Return"])
         self.action_LaTeX.setShortcuts(["Shift+F5", "Ctrl+Shift+Return"])
         self.actionPublish.triggered.connect(
-            lambda: self.publish_dock.setVisible(not self.publish_dock.isVisible())
+            lambda: self.publish_toolbar.setVisible(not self.publish_toolbar.isVisible())
         )
 
         # *** 'Code' menu ***
