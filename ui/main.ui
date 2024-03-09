@@ -652,13 +652,13 @@ p, li { white-space: pre-wrap; }
   <customwidget>
    <class>CompilationTabs</class>
    <extends>QTabWidget</extends>
-   <header>ptyx_mcq_editor.compilation.tab_widget</header>
+   <header>ptyx_mcq_editor.preview.tab_widget</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PublishToolBar</class>
    <extends>QToolBar</extends>
-   <header>ptyx_mcq_editor.compilation.publish</header>
+   <header>ptyx_mcq_editor.publish.toolbar</header>
   </customwidget>
  </customwidgets>
  <resources/>

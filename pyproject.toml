@@ -9,7 +9,7 @@ include = ["ressources"]
 license = "GPL-3.0-or-later"
 
 [tool.poetry.scripts]
-mcq-editor = "ptyx_mcq_editor.main:main"
+mcq-editor = "ptyx_mcq_editor.app:main"
 
 [tool.poetry.dependencies]
 python = "^3.10"
