@@ -1,11 +1,11 @@
 from multiprocessing import Queue
 from pathlib import Path
 
-from ptyx_mcq_editor.preview.compiler import CompilerWorker, compile_code
+from ptyx_mcq_editor.preview.compiler import PreviewCompilerWorker, compile_code
 
 
 def test_compilation_error(tmp_path):
-    c = CompilerWorker("..............\nt=(4\n...........\n\n+ ok", Path("tmp.ex"), tmp_path)
+    c = PreviewCompilerWorker("..............\nt=(4\n...........\n\n+ ok", Path("tmp.ex"), tmp_path)
     return_data = c._generate()
     # noinspection PyUnresolvedReferences
     assert return_data["error"].info.message == "'(' was never closed"

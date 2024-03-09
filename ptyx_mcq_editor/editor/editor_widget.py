@@ -215,7 +215,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         """Return `True` iff we are inside a python block code, yet not in a python string."""
         return self._lexer.get_style_and_mode(self.positionFromLineIndex(line, index))[1] == Mode.PYTHON
 
-    def display_error(self, code: str, error: BaseException) -> None:
+    def display_error(self, error: BaseException, code: str = None) -> None:
         """Display an error when a document failed to be compiled.
 
         An error marker will appear in the editor left margin,

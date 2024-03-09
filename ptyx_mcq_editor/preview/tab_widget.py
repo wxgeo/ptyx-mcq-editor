@@ -7,7 +7,7 @@ from PyQt6.QtCore import QTimer, QThread
 from PyQt6.QtGui import QIcon, QContextMenuEvent, QAction
 from PyQt6.QtWidgets import QTabWidget, QDockWidget, QWidget, QMenu
 
-from ptyx_mcq_editor.preview.compiler import CompilerWorker, CompilerWorkerInfo
+from ptyx_mcq_editor.preview.compiler import PreviewCompilerWorker, PreviewCompilerWorkerInfo
 from ptyx_mcq_editor.preview.log_viewer import LogViewer
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
@@ -156,7 +156,7 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         # Small animation on the top of the tab, to let user know a process is running...
         self.compilation_started(target_widget, doc_path=doc_path)
         # Store worker as attribute, or else it will be garbage-collected.
-        self.worker = worker = CompilerWorker(code=code, doc_path=doc_path, tmp_dir=tmp_dir, pdf=pdf)
+        self.worker = worker = PreviewCompilerWorker(code=code, doc_path=doc_path, tmp_dir=tmp_dir, pdf=pdf)
         # self.worker = worker = TestWorker()
         if _use_another_thread:
             self.current_thread = thread = QThread(self)
@@ -204,7 +204,7 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         # self.current_thread.wait()
         # self.compilation_ended()
 
-    def display_result(self, info: CompilerWorkerInfo) -> None:
+    def display_result(self, info: PreviewCompilerWorkerInfo) -> None:
         self.log_viewer.setText(info["log"])
         self.log_viewer.write_log(info["doc_path"])
         if (error := info.get("error")) is None:
