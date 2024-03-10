@@ -1,20 +1,15 @@
-from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 
-from multiprocessing.queues import Queue as QueueType
-from multiprocessing import Process
 
 from PyQt6.QtCore import QThread
-from PyQt6.QtGui import QAction, QFont
-from PyQt6.QtWidgets import QToolBar, QSpinBox, QLabel, QToolButton, QPushButton
+from PyQt6.QtWidgets import QToolBar, QSpinBox, QLabel, QPushButton, QWidget
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 from ptyx_mcq_editor.publish.compiler import CompilerWorker, ProcessInfo, CompilerWorkerInfo
 
 
 class PublishToolBar(QToolBar, EnhancedWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.addWidget(QLabel("Number of documents: ", self))
         self.spinbox = QSpinBox(self)
@@ -122,6 +117,8 @@ class PublishToolBar(QToolBar, EnhancedWidget):
         self.log_viewer.setText(info["log"])
         self.log_viewer.write_log(info["doc_path"])
         if (error := info.get("error")) is None:
-            self.update_tabs(doc_path=info["doc_path"])
+            # self.update_tabs(doc_path=info["doc_path"])
+            pass
+            # TODO: Display some feedback to user.
         else:
             self.main_window.current_mcq_editor.display_error(error=error)

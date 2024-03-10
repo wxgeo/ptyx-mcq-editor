@@ -171,7 +171,7 @@ class FileEventsHandler(QObject):
                     print(f"{side}: no document to select.")
             # Set tooltips on tabs.
             for i, doc in enumerate(docs):
-                tabs.tabBar().setTabToolTip(i, str(doc.path))
+                tabs.tabBar().setTabToolTip(i, str(doc.path))  # type: ignore
 
         if len(docs := self.settings.docs()) > 0:
             self.main_window.setWindowTitle(f"{param.WINDOW_TITLE} - {docs.current_doc.title}")

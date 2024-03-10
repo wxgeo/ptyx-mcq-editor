@@ -2,30 +2,23 @@ import contextlib
 import io
 import pickle
 import sys
-from base64 import urlsafe_b64encode
 from dataclasses import dataclass
 from multiprocessing import Process, Queue
 from multiprocessing.queues import Queue as QueueType
 from pathlib import Path
 from traceback import print_exception
 from types import TracebackType
-from typing import Literal, TypedDict, NotRequired, Type, Any
+from typing import TypedDict, NotRequired, Type
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from ptyx.compilation import (
     compile_latex_to_pdf,
-    SingleFileCompilationInfo,
     make_files,
     MultipleFilesCompilationInfo,
 )
 from ptyx.errors import PtyxDocumentCompilationError
-from ptyx.extensions.extended_python import main
-from ptyx.latex_generator import Compiler
 from ptyx.shell import red, yellow
-from ptyx_mcq.cli import make
-
-from ptyx_mcq.make.exercises_parsing import wrap_exercise
 
 
 @dataclass
@@ -83,7 +76,7 @@ def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType
         finally:
             if pickle_incompatibility:
                 print(red(f"ERROR: Exception {type(e)} is not compatible with pickle!"))
-                print(yellow(f"Please open a bug report about it!"))
+                print(yellow("Please open a bug report about it!"))
                 # Do not try to serialize this incompatible exception,
                 # this will fail, and may even generate segfaults!
                 # Let's use a vanilla `RuntimeError` instead.
@@ -114,7 +107,7 @@ class CompilerWorker(QObject):
         self.finished.emit(compilation_info)
 
     def generate(self) -> None:
-        return_data: CompilerWorkerInfo = {"doc_path": self.doc_path}
+        return_data: CompilerWorkerInfo = {"doc_path": self.doc_path, "log": ""}
         # log: CaptureLog | str = "Error, log couldn't be captured!"
         with CaptureLog() as log:
             try:

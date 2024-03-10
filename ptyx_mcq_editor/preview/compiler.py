@@ -107,7 +107,7 @@ def compile_code(queue: QueueType, code: str, options: dict[str, Any]) -> None:
         finally:
             if pickle_incompatibility:
                 print(red(f"ERROR: Exception {type(e)} is not compatible with pickle!"))
-                print(yellow(f"Please open a bug report about it!"))
+                print(yellow("Please open a bug report about it!"))
                 # Do not try to serialize this incompatible exception,
                 # this will fail, and may even generate segfaults!
                 # Let's use a vanilla `RuntimeError` instead.
@@ -148,7 +148,7 @@ class PreviewCompilerWorker(QObject):
         return self.doc_path.suffix == ".ex"
 
     def generate(self) -> None:
-        return_data: PreviewCompilerWorkerInfo = {"code": self.code, "doc_path": self.doc_path}
+        return_data: PreviewCompilerWorkerInfo = {"code": self.code, "doc_path": self.doc_path, "log": ""}
         # log: CaptureLog | str = "Error, log couldn't be captured!"
         with CaptureLog() as log:
             try:

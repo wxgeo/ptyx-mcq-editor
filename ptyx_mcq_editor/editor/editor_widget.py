@@ -18,10 +18,6 @@ from ptyx_mcq_editor.tools import format_each_python_block, check_each_python_bl
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_tab import EditorTab
 
-SEARCH_MARKER_ID = 0
-INCLUDE_DIRECTIVES_ID = 1
-COMPILATION_ERROR = 2
-
 
 # Python keywords which introduced a new indented block, like `if`, `for`...
 PYTHON_INDENTED_BLOCK_KEYWORDS = [
@@ -83,6 +79,17 @@ class DelimiterKeyCode(IntEnum):
     DOUBLE_QUOTE = 34
 
 
+class Marker(IntEnum):
+    ERROR = 0
+    NEW = 1
+
+
+class Indicator(IntEnum):
+    SEARCH_MARKER_ID = 0
+    INCLUDE_DIRECTIVES_ID = 1
+    COMPILATION_ERROR = 2
+
+
 MARGIN_COLOR = QColor("#ff888888")
 
 
@@ -133,20 +140,28 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.setMarginWidth(0, "0000")
         self.setMarginsForegroundColor(MARGIN_COLOR)
 
+        # Margin 1 = Text Margin
+        self.setMarginType(1, QsciScintilla.MarginType.TextMargin)
+        self.setMarginWidth(1, "0")
+
         self.setBraceMatching(QsciScintilla.BraceMatch.SloppyBraceMatch)
 
         self._lexer = MyLexer(self)
         self.setLexer(self._lexer)
 
         # Marker use to highlight all search results
-        self.SendScintilla(QsciScintilla.SCI_INDICSETSTYLE, SEARCH_MARKER_ID, QsciScintilla.INDIC_FULLBOX)
-        self.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, SEARCH_MARKER_ID, 100)
-        self.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, SEARCH_MARKER_ID, 200)
-        self.SendScintilla(QsciScintilla.SCI_INDICSETFORE, SEARCH_MARKER_ID, QColor("#67d0eb"))
+        self.SendScintilla(
+            QsciScintilla.SCI_INDICSETSTYLE, Indicator.SEARCH_MARKER_ID, QsciScintilla.INDIC_FULLBOX
+        )
+        self.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, Indicator.SEARCH_MARKER_ID, 100)
+        self.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, Indicator.SEARCH_MARKER_ID, 200)
+        self.SendScintilla(QsciScintilla.SCI_INDICSETFORE, Indicator.SEARCH_MARKER_ID, QColor("#67d0eb"))
 
-        self.indicatorDefine(QsciScintilla.IndicatorStyle.DotBoxIndicator, INCLUDE_DIRECTIVES_ID)
-        self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), INCLUDE_DIRECTIVES_ID)
-        self.setIndicatorHoverStyle(QsciScintilla.IndicatorStyle.FullBoxIndicator, INCLUDE_DIRECTIVES_ID)
+        self.indicatorDefine(QsciScintilla.IndicatorStyle.DotBoxIndicator, Indicator.INCLUDE_DIRECTIVES_ID)
+        self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), Indicator.INCLUDE_DIRECTIVES_ID)
+        self.setIndicatorHoverStyle(
+            QsciScintilla.IndicatorStyle.FullBoxIndicator, Indicator.INCLUDE_DIRECTIVES_ID
+        )
         self.textChanged.connect(self.on_text_changed)
 
         # Don't use directly QScintilla.indicatorClicked signal to handle indicators,
@@ -157,15 +172,19 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.indicatorClicked.connect(self._save_modifiers)
         self.indicatorReleased.connect(self.on_click)
 
-        self.indicatorDefine(QsciScintilla.IndicatorStyle.SquiggleIndicator, COMPILATION_ERROR)
-        self.setIndicatorHoverForegroundColor(QColor("#cc0000"), COMPILATION_ERROR)
+        self.indicatorDefine(QsciScintilla.IndicatorStyle.SquiggleIndicator, Indicator.COMPILATION_ERROR)
+        self.setIndicatorHoverForegroundColor(QColor("#cc0000"), Indicator.COMPILATION_ERROR)
 
-        self.markerDefine("|", 0)
-        self.setMarkerBackgroundColor(QColor("red"), 0)
-        self.setMarkerForegroundColor(QColor("red"), 0)
+        self.markerDefine("|", Marker.ERROR)
+        self.setMarkerBackgroundColor(QColor("red"), Marker.ERROR)
+        self.setMarkerForegroundColor(QColor("red"), Marker.ERROR)
         self.setMarginSensitivity(0, True)
         self.setMarginSensitivity(1, True)
         self.marginClicked.connect(self.on_margin_clicked)
+
+        self.markerDefine("N", Marker.NEW)
+        self.setMarkerBackgroundColor(QColor("red"), Marker.NEW)
+        self.setMarkerForegroundColor(QColor("yellow"), Marker.NEW)
 
         # self.installEventFilter(EventFilter(self))
 
@@ -242,8 +261,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             # Now apply the indicator-style on the chosen text
             start_pos = self.positionFromLineIndex(shift + row, col)
             end_pos = self.positionFromLineIndex(shift + end_row, end_col)
-            self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, COMPILATION_ERROR)
-            self.SendScintilla(QsciScintilla.SCI_SETINDICATORVALUE, COMPILATION_ERROR)
+            self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, Indicator.COMPILATION_ERROR)
+            self.SendScintilla(QsciScintilla.SCI_SETINDICATORVALUE, Indicator.COMPILATION_ERROR)
             self.SendScintilla(QsciScintilla.SCI_INDICATORFILLRANGE, start_pos, end_pos - start_pos)
             # self.fillIndicatorRange(shift + row, col, shift + end_row, end_col, COMPILATION_ERROR)
         else:
@@ -276,6 +295,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
     def on_text_changed(self) -> None:
         self.clear_indicators()
+        self.markerDeleteAll(Marker.NEW)
         self.main_window.statusbar.showMessage("")
         self.update_include_indicators()
         self.check_python_code()
@@ -289,10 +309,10 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             )
 
     def check_python_code(self):
-        self.markerDeleteAll(0)
+        self.markerDeleteAll(Marker.ERROR)
         self._errors_info.clear()
         for error_info in check_each_python_block(self.text()):
-            self.markerAdd(error_info.row, 0)
+            self.markerAdd(error_info.row, Marker.ERROR)
             self._errors_info[error_info.row] = error_info
 
     def on_save(self) -> None:
@@ -303,7 +323,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
     def clear_indicators(self) -> None:
         last = self.lines() - 1
-        for indicator in (INCLUDE_DIRECTIVES_ID, COMPILATION_ERROR):
+        for indicator in (Indicator.INCLUDE_DIRECTIVES_ID, Indicator.COMPILATION_ERROR):
             self.clearIndicatorRange(0, 0, last, len(self.text(last)), indicator)
 
     def dbg_send_scintilla_command(self) -> None:
@@ -341,12 +361,12 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         for i, line in enumerate(self.text().split("\n")):
             if line.startswith("-- "):
                 if not line[3:].lstrip().startswith("DIR:"):
-                    self.fillIndicatorRange(i, 3, i, len(line), INCLUDE_DIRECTIVES_ID)
+                    self.fillIndicatorRange(i, 3, i, len(line), Indicator.INCLUDE_DIRECTIVES_ID)
                     n_includes += 1
                 self._directives_lines.append(i)
             elif line.startswith("!-- "):
                 if not line[4:].lstrip().startswith("DIR:"):
-                    self.fillIndicatorRange(i, 4, i, len(line), INCLUDE_DIRECTIVES_ID)
+                    self.fillIndicatorRange(i, 4, i, len(line), Indicator.INCLUDE_DIRECTIVES_ID)
                     n_disabled_includes += 1
                 self._directives_lines.append(i)
         if n_includes > 0 or n_disabled_includes > 0:
@@ -361,8 +381,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
     def on_click(self, line: int, index: int, keys: Qt.KeyboardModifier) -> None:
         """Action executed when user clicks on a Qscintilla indicator."""
         position = self.positionFromLineIndex(line, index)
-        value = self.SendScintilla(QsciScintilla.SCI_INDICATORVALUEAT, COMPILATION_ERROR, position)
-        if value == COMPILATION_ERROR:
+        value = self.SendScintilla(QsciScintilla.SCI_INDICATORVALUEAT, Indicator.COMPILATION_ERROR, position)
+        if value == Indicator.COMPILATION_ERROR:
             self.SendScintilla(
                 QsciScintilla.SCI_CALLTIPSHOW, position, self._last_error_message.encode("utf8")
             )
