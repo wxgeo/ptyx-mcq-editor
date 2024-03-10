@@ -252,10 +252,27 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
     def autoformat(self) -> None:
         # TODO: display a message in the status bar if autoformat fails.
         #  For that, `format_each_python_block()` should return a status code.
-        formatted_text = format_each_python_block(self.text())
-        if formatted_text != self.text():
-            # Don't use `self.setText()`, as it would clear undo/redo history.
-            self.SendScintilla(QsciScintilla.SCI_SETTEXT, formatted_text.encode("utf8"))
+        # Don't use `self.setText()`, as it would clear undo/redo history.
+        self.setText(format_each_python_block(self.text()), preserve_history=True)
+
+    def setText(self, text: str, preserve_history=False):
+        """Change editor text content.
+
+        By default, `QsciScintilla.setText()` resets history, but using
+        `preserve_history` keeps previous actions history, and
+         enables to undo action."""
+        if preserve_history:
+            if text != self.text():
+                self.SendScintilla(QsciScintilla.SCI_SETTEXT, text.encode("utf8"))
+        else:
+            super().setText(text)
+
+    # def setTextButPreserveHistory(self, new_text: str):
+    #     """Change editor text content, but preserve modifications history.
+    #
+    #     `QsciScintilla.setText()` clears history, which is often unwanted."""
+    #     if new_text != self.text():
+    #         self.SendScintilla(QsciScintilla.SCI_SETTEXT, new_text.encode("utf8"))
 
     def on_text_changed(self) -> None:
         self.clear_indicators()

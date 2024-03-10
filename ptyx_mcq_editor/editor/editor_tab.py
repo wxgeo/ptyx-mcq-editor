@@ -18,11 +18,12 @@ class EditorTab(EnhancedWidget):
         self.reload(content=content)
         self.connect_signals()
 
-    def reload(self, content: str = None):
+    def reload(self, content: str = None, preserve_history=False):
+        """Reload file content from disk. History is not preserved by default."""
         path = self.doc.path
         if content is None:
             content = path.read_text(encoding="utf-8") if path is not None else ""
-        self.editor.setText(content)
+        self.editor.setText(content, preserve_history=preserve_history)
 
     def connect_signals(self):
         self.editor.selectionChanged.connect(self.main_window.search_dock.highlight_all_find_results)

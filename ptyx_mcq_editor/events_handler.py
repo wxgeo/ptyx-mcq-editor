@@ -166,10 +166,13 @@ class FileEventsHandler(QObject):
                     print(f"{side}: {docs.current_index=}")
                 assert current_index is not None
                 tabs.setCurrentIndex(current_index)
-
             else:
                 if param.DEBUG:
                     print(f"{side}: no document to select.")
+            # Set tooltips on tabs.
+            for i, doc in enumerate(docs):
+                tabs.tabBar().setTabToolTip(i, str(doc.path))
+
         if len(docs := self.settings.docs()) > 0:
             self.main_window.setWindowTitle(f"{param.WINDOW_TITLE} - {docs.current_doc.title}")
         else:
@@ -434,10 +437,13 @@ class FileEventsHandler(QObject):
         if (current_doc := self.settings.docs().current_doc) is not None and self.save_doc():
             path = current_doc.path
             assert path is not None
+            print(f"Updating imports for file {current_doc.path}...")
             update_include(current_doc.path)
             widget = self.book(None).currentWidget()
             assert isinstance(widget, EditorTab), widget
-            widget.reload()
+            widget.reload(preserve_history=True)
+        else:
+            print("No file to update.")
 
     def add_directory(self):
         editor = self.current_editor()
