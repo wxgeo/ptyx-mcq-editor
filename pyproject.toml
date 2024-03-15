@@ -18,7 +18,7 @@ ptyx-mcq = "^27.1"
 platformdirs = "^3.2.0"
 tomli-w = "^1.0.0"
 argcomplete = "^3.1.6"
-ruff = "^0.2.1"
+ruff = "^0.3.2"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"
@@ -26,7 +26,6 @@ ptyx-mcq = {path = "../ptyx-mcq", develop = true}
 ptyx = {path = "../ptyx", develop = true}
 #ptyx = {path = "../ptyx", develop = true}
 black = "^23.10.1"
-ruff = "^0.2.1"
 tox = "^4.11.3"
 pytest = "^7.4.3"
 

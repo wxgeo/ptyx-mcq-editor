@@ -3,6 +3,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import traceback
 from subprocess import CompletedProcess, run, PIPE, STDOUT
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,7 @@ from ptyx.extensions.extended_python import (
     PYTHON_DELIMITER,
     parse_extended_python_code,
 )
+from ptyx.shell import red
 
 SHELL_COMMAND = "mcq-editor"
 
@@ -68,7 +70,19 @@ def ruff_check(code: str, select="E999,E101,F", ignore="F821") -> list[dict[str,
         encoding="utf-8",
     )
     # proc.returncode  # <- 1 if bad
-    return json.loads(proc.stdout)
+    output = proc.stdout
+    try:
+        js = json.loads(output)
+    except json.JSONDecodeError as e:
+        print(red("Error: invalid ruff output."))
+        print("--------------")
+        print(" Ruff output: ")
+        print("==============")
+        print(proc.stdout)
+        print("--------------")
+        traceback.print_exception(e)
+        js = {}
+    return js
 
 
 def check_each_python_block(code: str) -> list[ErrorInformation]:
