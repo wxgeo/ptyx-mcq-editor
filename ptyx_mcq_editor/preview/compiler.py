@@ -122,11 +122,12 @@ def compile_code(queue: QueueType, code: str, options: dict[str, Any]) -> None:
 
 
 class PreviewCompilerWorker(QObject):
-    def __init__(self, code: str, doc_path: Path, tmp_dir: Path, pdf=False):
+    def __init__(self, code: str, doc_path: Path, doc_id: int, tmp_dir: Path, pdf=False):
         super().__init__(None)
         self.log_already_captured = False
         self.code = code
         self.doc_path = doc_path
+        self.doc_id = doc_id
         assert self.doc_path is not None
         self.pdf = pdf
         self.tmp_dir = tmp_dir
@@ -173,7 +174,7 @@ class PreviewCompilerWorker(QObject):
         # code = editor.text() if doc_path is None else doc_path.read_text(encoding="utf8")
         code = inject_labels(self.code)
         return_data: PreviewCompilerWorkerInfo = {"code": code, "doc_path": self.doc_path, "log": "No log."}
-        options = {"MCQ_KEEP_ALL_VERSIONS": True, "PTYX_WITH_ANSWERS": True}
+        options = {"MCQ_KEEP_ALL_VERSIONS": True, "PTYX_WITH_ANSWERS": True, "PTYX_NUM": self.doc_id}
         if self._is_single_exercise():
             print("\n == Exercise detected. == \n")
             code = wrap_exercise(code, self.doc_path)

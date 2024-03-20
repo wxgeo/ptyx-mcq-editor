@@ -250,6 +250,9 @@
          <layout class="QGridLayout" name="gridLayout">
           <item row="3" column="0">
            <widget class="QCheckBox" name="selectionOnlyCheckBox">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Search only inside currently selected text.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>&amp;Selection only</string>
             </property>

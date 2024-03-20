@@ -5,7 +5,7 @@ from pathlib import Path
 
 from PyQt6.QtCore import QTimer, QThread
 from PyQt6.QtGui import QIcon, QContextMenuEvent, QAction
-from PyQt6.QtWidgets import QTabWidget, QDockWidget, QWidget, QMenu
+from PyQt6.QtWidgets import QTabWidget, QDockWidget, QWidget, QMenu, QToolBar, QSpinBox, QLabel
 
 from ptyx_mcq_editor.preview.compiler import PreviewCompilerWorker, PreviewCompilerWorkerInfo
 from ptyx_mcq_editor.preview.log_viewer import LogViewer
@@ -64,7 +64,17 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         self.addTab(self.latex_viewer, "LaTeX Code")
         self.addTab(self.pdf_viewer, "Pdf Rendering")
         self.addTab(self.log_viewer, "Log message")
-        # TODO: use a custom data class to gather all information concerning current running compilation
+        corner_toolbar = QToolBar(self)
+        self.doc_id_selector = QSpinBox(self)
+        self.doc_id_selector.setAccelerated(True)
+        self.doc_id_selector.setMinimum(0)
+        self.doc_id_selector.setMaximum(10000)
+        self.doc_id_selector.setToolTip(doc_id_tooltp := "Set document ID, used by random numbers generator.")
+        corner_toolbar.addWidget(doc_id_label := QLabel("&Doc ID: ", self))
+        doc_id_label.setBuddy(self.doc_id_selector)
+        doc_id_label.setToolTip(doc_id_tooltp)
+        corner_toolbar.addWidget(self.doc_id_selector)
+        self.setCornerWidget(corner_toolbar)
         self.current_compilation_info = CurrentCompilationInfo(is_running=False)
         # self.running_compilation = False
         # self.running_process: Process | None = None
@@ -156,7 +166,9 @@ class CompilationTabs(QTabWidget, EnhancedWidget):
         # Small animation on the top of the tab, to let user know a process is running...
         self.compilation_started(target_widget, doc_path=doc_path)
         # Store worker as attribute, or else it will be garbage-collected.
-        self.worker = worker = PreviewCompilerWorker(code=code, doc_path=doc_path, tmp_dir=tmp_dir, pdf=pdf)
+        self.worker = worker = PreviewCompilerWorker(
+            code=code, doc_path=doc_path, doc_id=self.doc_id_selector.value(), tmp_dir=tmp_dir, pdf=pdf
+        )
         # self.worker = worker = TestWorker()
         if _use_another_thread:
             self.current_thread = thread = QThread(self)
