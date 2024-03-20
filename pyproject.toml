@@ -62,7 +62,7 @@ passenv = HOME
 allowlist_externals = poetry
 commands =
     poetry install -v
-    poetry run ruff ptyx_mcq_editor tests
+    poetry run ruff check ptyx_mcq_editor tests
     poetry run mypy ptyx_mcq_editor tests
     poetry run pytest tests
 """

@@ -12,13 +12,10 @@ from typing import TypedDict, NotRequired, Type
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
-from ptyx.compilation import (
-    compile_latex_to_pdf,
-    make_files,
-    MultipleFilesCompilationInfo,
-)
+from ptyx.compilation import compile_latex_to_pdf, make_files, MultipleFilesCompilationInfo
 from ptyx.errors import PtyxDocumentCompilationError
 from ptyx.shell import red, yellow
+from ptyx_mcq.make.make import DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS
 
 
 @dataclass
@@ -63,7 +60,11 @@ class CaptureLog(io.StringIO):
 def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType) -> None:
     """Compile code from another process, using queue to give back information."""
     try:
-        compilation_info = make_files(ptyx_filename, number_of_documents=number_of_documents)
+        compilation_info = make_files(
+            ptyx_filename,
+            number_of_documents=number_of_documents,
+            options=DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS,
+        )
         queue.put(compilation_info)
     except BaseException as e:
         pickle_incompatibility = False
