@@ -42,6 +42,7 @@ def main(args: list | None = None) -> None:
     ).completer = FilesCompleter(  # type: ignore
         ("ex", "ptyx")
     )
+    parser.add_argument("--dry-run", action="store_true")
     argcomplete.autocomplete(parser, always_complete_options=False)
     parsed_args = parser.parse_args(args)
     try:
@@ -59,8 +60,12 @@ def main(args: list | None = None) -> None:
             main_window.screen().geometry().center()  # type: ignore
             - QRect(QPoint(), main_window.frameGeometry().size()).center()
         )
-        main_window.show()
-        return_code = app.exec()
+        if parsed_args.dry_run:
+            app.exit()
+            sys.exit(0)
+        else:
+            main_window.show()
+            return_code = app.exec()
     except BaseException as e:
         raise e
     print("Bye!")
