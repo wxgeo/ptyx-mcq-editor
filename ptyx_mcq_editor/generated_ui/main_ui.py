@@ -361,8 +361,8 @@ class Ui_MainWindow(object):
         self.action_Launch_scan.setText(_translate("MainWindow", "&Launch scan"))
         self.actionFormat_python_code.setText(_translate("MainWindow", "Format python code"))
         self.actionFormat_python_code.setShortcut(_translate("MainWindow", "Ctrl+Shift+F"))
+from ptyx_mcq_editor.editor.find_and_replace import FindAndReplaceWidget
 from ptyx_mcq_editor.files_book import FilesBook
-from ptyx_mcq_editor.find_and_replace import FindAndReplaceWidget
 from ptyx_mcq_editor.preview.tab_widget import CompilationTabs
 from ptyx_mcq_editor.publish.toolbar import PublishToolBar
 

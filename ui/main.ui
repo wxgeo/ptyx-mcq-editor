@@ -643,7 +643,7 @@ p, li { white-space: pre-wrap; }
   <customwidget>
    <class>FindAndReplaceWidget</class>
    <extends>QDockWidget</extends>
-   <header>ptyx_mcq_editor.find_and_replace</header>
+   <header>ptyx_mcq_editor.editor.find_and_replace</header>
    <container>1</container>
   </customwidget>
   <customwidget>
