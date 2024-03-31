@@ -1,5 +1,6 @@
 import contextlib
 import io
+import os
 import pickle
 import sys
 from dataclasses import dataclass
@@ -12,10 +13,10 @@ from typing import TypedDict, NotRequired, Type
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
-from ptyx.compilation import compile_latex_to_pdf, make_files, MultipleFilesCompilationInfo
+from ptyx.compilation import make_files, MultipleFilesCompilationInfo
 from ptyx.errors import PtyxDocumentCompilationError
 from ptyx.shell import red, yellow
-from ptyx_mcq.make.make import DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS
+from ptyx_mcq.make.make import DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS, generate_config_file
 
 
 @dataclass
@@ -65,6 +66,9 @@ def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType
             number_of_documents=number_of_documents,
             options=DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS,
         )
+        # Don't forget to generate config file!
+        generate_config_file(compilation_info.compiler)
+        assert ptyx_filename.with_suffix(".ptyx.mcq.config.json").is_file()
         queue.put(compilation_info)
     except BaseException as e:
         pickle_incompatibility = False
@@ -102,10 +106,10 @@ class CompilerWorker(QObject):
     process_started = pyqtSignal(ProcessInfo, name="process_started")
     # progress = pyqtSignal(int)
 
-    def compile_latex(self):
-        latex_file = self.get_temp_path("tex")
-        compilation_info = compile_latex_to_pdf(latex_file, dest=self.main_window.tmp_dir)
-        self.finished.emit(compilation_info)
+    # def compile_latex(self):
+    #     latex_file = self.get_temp_path("tex")
+    #     compilation_info = compile_latex_to_pdf(latex_file, dest=self.main_window.tmp_dir)
+    #     self.finished.emit(compilation_info)
 
     def generate(self) -> None:
         return_data: CompilerWorkerInfo = {"doc_path": self.doc_path, "log": ""}
@@ -136,6 +140,8 @@ class CompilerWorker(QObject):
         # This allows for relative paths in include directives when compiling.
         with contextlib.chdir(self.doc_path.parent):
             queue: Queue = Queue()
+            # Improve reproducibility, by disabling python hash seed.
+            os.environ["PYTHONHASHSEED"] = "0"
             process = Process(
                 target=compile_file,
                 args=(
