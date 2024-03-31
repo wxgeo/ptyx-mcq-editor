@@ -61,13 +61,13 @@ class CaptureLog(io.StringIO):
 def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType) -> None:
     """Compile code from another process, using queue to give back information."""
     try:
-        compilation_info = make_files(
+        compilation_info, compiler = make_files(
             ptyx_filename,
             number_of_documents=number_of_documents,
             options=DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS,
         )
         # Don't forget to generate config file!
-        generate_config_file(compilation_info.compiler)
+        generate_config_file(compiler)
         assert ptyx_filename.with_suffix(".ptyx.mcq.config.json").is_file()
         queue.put(compilation_info)
     except BaseException as e:
