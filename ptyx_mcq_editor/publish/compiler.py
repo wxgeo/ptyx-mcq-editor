@@ -1,5 +1,6 @@
 import contextlib
 import io
+import multiprocessing
 import os
 import pickle
 import sys
@@ -139,10 +140,13 @@ class CompilerWorker(QObject):
         # Change current directory to the parent directory of the ptyx file.
         # This allows for relative paths in include directives when compiling.
         with contextlib.chdir(self.doc_path.parent):
-            queue: Queue = Queue()
             # Improve reproducibility, by disabling python hash seed.
+            # https://stackoverflow.com/questions/52044045/os-environment-variable-reading-in-a-spawned-process
+            # https://docs.python.org/3/library/multiprocessing.html#multiprocessing-start-methods
             os.environ["PYTHONHASHSEED"] = "0"
-            process = Process(
+            ctx = multiprocessing.get_context("spawn")
+            queue: Queue = ctx.Queue()
+            process = ctx.Process(
                 target=compile_file,
                 args=(
                     self.doc_path,
