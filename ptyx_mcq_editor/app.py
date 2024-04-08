@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import os
 import signal
 import sys
 from argparse import ArgumentParser
@@ -32,6 +33,13 @@ def my_excepthook(
 
 
 def main(args: list | None = None) -> None:
+    # Make compilations more reproducible, by disabling PYTHONHASHSEED by default.
+    if not os.getenv("PYTHONHASHSEED"):
+        os.environ["PYTHONHASHSEED"] = "0"
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+    assert os.getenv("PYTHONHASHSEED")
+    print("PYTHONHASHSEED:", os.getenv("PYTHONHASHSEED"))
+
     parser = ArgumentParser(description="Editor for pTyX and MCQ files.")
     parser.add_argument(
         "paths",

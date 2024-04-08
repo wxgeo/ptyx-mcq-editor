@@ -16,7 +16,7 @@ from PyQt6.QtCore import QObject, pyqtSignal
 
 from ptyx.compilation import make_files, MultipleFilesCompilationInfo
 from ptyx.errors import PtyxDocumentCompilationError
-from ptyx.shell import red, yellow
+from ptyx.shell import red, yellow, print_info
 from ptyx_mcq.make.make import DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS, generate_config_file
 
 
@@ -69,7 +69,9 @@ def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType
         )
         # Don't forget to generate config file!
         generate_config_file(compiler)
-        assert ptyx_filename.with_suffix(".ptyx.mcq.config.json").is_file()
+        config_file = ptyx_filename.with_suffix(".ptyx.mcq.config.json")
+        assert config_file.is_file()
+        print_info(f"Configuration file generated: '{config_file}'.")
         queue.put(compilation_info)
     except BaseException as e:
         pickle_incompatibility = False
@@ -146,7 +148,7 @@ class CompilerWorker(QObject):
             os.environ["PYTHONHASHSEED"] = "0"
             ctx = multiprocessing.get_context("spawn")
             queue: Queue = ctx.Queue()
-            process = ctx.Process(
+            process: Process = ctx.Process(  # type: ignore
                 target=compile_file,
                 args=(
                     self.doc_path,
