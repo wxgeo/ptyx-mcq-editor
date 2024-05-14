@@ -218,7 +218,10 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
         if self.current_mcq_editor is None:
             return False
         else:
-            if action in (action.FIND_NEXT, action.FIND_PREVIOUS) and action != self.last_search_action:
+            if (
+                action in (SearchAction.FIND_NEXT, SearchAction.FIND_PREVIOUS)
+                and action != self.last_search_action
+            ):
                 self.new_search = True
                 self.last_search_action = action
             if not self.new_search:
