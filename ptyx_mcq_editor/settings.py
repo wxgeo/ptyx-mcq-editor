@@ -147,6 +147,10 @@ class DocumentsCollection:
         return [doc.path for doc in self._documents if doc.path is not None]
 
     @property
+    def resolved_paths(self) -> list[Path]:
+        return [doc.path.resolve() for doc in self._documents if doc.path is not None]
+
+    @property
     def current_doc(self) -> Document | None:
         if self.current_index is None:
             return None
@@ -180,7 +184,8 @@ class DocumentsCollection:
         elif doc is not None:
             assert path is None
         elif path is not None:
-            if path in self.paths:
+            # Attention, paths must be resolved to don't miss duplicates (symlinks...)!
+            if path.resolve() in self.resolved_paths:
                 if select:
                     self._current_index = self.index(path)
                 raise SamePath("I can't open the same file twice.")
@@ -199,7 +204,7 @@ class DocumentsCollection:
 
     def index(self, path: Path) -> int:
         for i, doc in enumerate(self._documents):
-            if doc.path == path:
+            if doc.path.resolve() == path.resolve():
                 return i
         raise IndexError(f"No document matching path '{path}'.")
 
@@ -316,11 +321,12 @@ class Settings:
         self._current_side = ~self._current_side
 
     def open_doc(self, path: Path, side: Side):
-        if path in self.docs(side).paths:
+        # Attention, paths must be resolved to don't miss duplicates (symlinks...)!
+        if path.resolve() in self.docs(side).resolved_paths:
             # Don't open twice the same document.
             index = self.docs(side).index(path)
             self.docs(side).current_index = index
-        elif path in self.docs(~side).paths:
+        elif path.resolve() in self.docs(~side).resolved_paths:
             index = self.docs(~side).index(path)
             self.move_doc(side, index, ~side)
             self.docs(~side).current_index = len(self.docs(~side)) - 1
@@ -339,7 +345,7 @@ class Settings:
     def _remember_file(self, new_path: Path) -> None:
         # The same file must not appear twice in the list.
         self._recent_files = [new_path] + [
-            path for path in self._recent_files if path != new_path and path.is_file()
+            path for path in self._recent_files if path.resolve() != new_path.resolve() and path.is_file()
         ]
         if len(self._recent_files) > MAX_RECENT_FILES:
             self._recent_files.pop()
