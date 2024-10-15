@@ -204,7 +204,7 @@ class DocumentsCollection:
 
     def index(self, path: Path) -> int:
         for i, doc in enumerate(self._documents):
-            if doc.path.resolve() == path.resolve():
+            if doc.path is not None and doc.path.resolve() == path.resolve():
                 return i
         raise IndexError(f"No document matching path '{path}'.")
 

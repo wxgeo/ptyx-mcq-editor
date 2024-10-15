@@ -312,6 +312,12 @@ class FileEventsHandler(QObject):
                         # User cancelled dialog
                         print("save_file action canceled.")
                         canceled = True
+                    elif path.suffix == "":
+                        # Automatically add suffix.
+                        if "#LOAD{mcq}" in tab.editor.text():
+                            path = path.with_suffix(".ptyx")
+                        else:
+                            path = path.with_suffix(".ex")
                 if not canceled:
                     assert path is not None
                     try:

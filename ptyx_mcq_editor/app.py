@@ -25,6 +25,7 @@ def my_excepthook(
     traceback: TracebackType | None,
     window: QMainWindow = None,
 ) -> None:
+    print("Exception detected!")
     # TODO: Log the exception here?
     # noinspection PyTypeChecker
     QMessageBox.critical(window, "Something went wrong!", f"{type(value).__name__}: {value}")
@@ -73,8 +74,12 @@ def main(args: list | None = None) -> None:
             sys.exit(0)
         else:
             main_window.show()
+            print("Application launched.")
             return_code = app.exec()
     except BaseException as e:
+        # Warning: SystemExit doesn't seem to been catchable, it's probably already caught
+        # at PyQt level, and cause Qt to quit.
+        print("Exception catched.")
         raise e
     print("Bye!")
     sys.exit(return_code)
