@@ -13,7 +13,7 @@ from ptyx.errors import PythonBlockError, ErrorInformation
 from ptyx_mcq_editor.editor.lexer import MyLexer, Mode
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 from ptyx_mcq_editor.generated_ui import dbg_send_scintilla_messages_ui
-from ptyx_mcq_editor.tools import format_each_python_block, check_each_python_block
+from ptyx_mcq_editor.tools.python_code_tools import format_each_python_block, check_each_python_block
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_tab import EditorTab

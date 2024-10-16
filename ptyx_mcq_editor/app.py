@@ -14,7 +14,8 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QMessageBox
 from argcomplete import FilesCompleter
 
-from ptyx_mcq_editor.main_window import ICON_PATH, McqEditorMainWindow
+from ptyx_mcq_editor.main_window import McqEditorMainWindow
+from ptyx_mcq_editor.param import ICON_PATH
 
 from ptyx_mcq_editor.signal_wake_up import SignalWakeupHandler
 

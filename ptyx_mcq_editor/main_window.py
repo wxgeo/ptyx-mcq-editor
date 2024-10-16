@@ -15,7 +15,7 @@ from ptyx_mcq_editor.events_handler import FileEventsHandler
 from ptyx_mcq_editor.generated_ui.main_ui import Ui_MainWindow
 from ptyx_mcq_editor.param import ICON_PATH
 from ptyx_mcq_editor.settings import Settings, Side
-from ptyx_mcq_editor.tools import install_desktop_shortcut
+from ptyx_mcq_editor.tools.desktop_shortcut import install_desktop_shortcut
 
 
 def path_hash(path: Path | str) -> str:

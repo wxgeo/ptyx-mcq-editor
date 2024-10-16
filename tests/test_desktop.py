@@ -1,7 +1,7 @@
 import tomllib
 from pathlib import Path
 
-from ptyx_mcq_editor.tools import SHELL_COMMAND, DESKTOP_FILE_NAME
+from ptyx_mcq_editor.param import SHELL_COMMAND, DESKTOP_FILE_NAME
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 

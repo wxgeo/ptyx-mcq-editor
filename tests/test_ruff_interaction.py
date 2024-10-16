@@ -1,6 +1,6 @@
 from ptyx.errors import ErrorInformation
 
-from ptyx_mcq_editor.tools import format_each_python_block, check_each_python_block
+from ptyx_mcq_editor.tools.python_code_tools import format_each_python_block, check_each_python_block
 
 
 def test_ruff_formater():
