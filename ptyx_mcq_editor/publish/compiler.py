@@ -18,6 +18,8 @@ from ptyx.compilation import make_files, MultipleFilesCompilationInfo
 from ptyx.errors import PtyxDocumentCompilationError
 from ptyx.shell import red, yellow, print_info
 from ptyx_mcq.make.make import DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS, generate_config_file
+from ptyx_mcq.parameters import CONFIG_FILE_EXTENSION
+from ptyx_mcq.tools.misc import CaptureLog
 
 
 @dataclass
@@ -34,31 +36,6 @@ class CompilerWorkerInfo(TypedDict):
     log: str
 
 
-class CaptureLog(io.StringIO):
-    """Class used to capture a copy of stdout and stderr output."""
-
-    def __enter__(self) -> "CaptureLog":
-        self.previous_stdout = sys.stdout
-        self.previous_stderr = sys.stderr
-        sys.stdout = self
-        sys.stderr = self
-        return self
-
-    def __exit__(
-        self,
-        exc_type: Type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        sys.stdout = self.previous_stdout
-        sys.stderr = self.previous_stderr
-        self.close()
-
-    def write(self, s: str, /) -> int:
-        self.previous_stdout.write(s)
-        return super().write(s)
-
-
 def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType) -> None:
     """Compile code from another process, using queue to give back information."""
     try:
@@ -69,11 +46,15 @@ def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType
         )
         # Don't forget to generate config file!
         generate_config_file(compiler)
-        config_file = ptyx_filename.with_suffix(".ptyx.mcq.config.json")
+        config_file = ptyx_filename.with_suffix(CONFIG_FILE_EXTENSION)
         assert config_file.is_file()
         print_info(f"Configuration file generated: '{config_file}'.")
         queue.put(compilation_info)
     except BaseException as e:
+        # An error occurred, we will share it with the main process if we can.
+        # For that, we have to test that the error is serializable, before sharing it through the pipe.
+        # (To communicate between processes, objects are serialized and deserialized
+        # using pickle, so only serializable objects can be shared).
         pickle_incompatibility = False
         try:
             if type(pickle.loads(pickle.dumps(e))) != type(e):

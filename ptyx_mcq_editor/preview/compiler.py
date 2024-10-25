@@ -19,6 +19,7 @@ from ptyx.latex_generator import Compiler
 from ptyx.shell import red, yellow
 
 from ptyx_mcq.make.exercises_parsing import wrap_exercise
+from ptyx_mcq.tools.misc import CaptureLog
 
 
 class PreviewCompilerWorkerInfo(TypedDict):
@@ -45,49 +46,6 @@ def inject_labels(code: str) -> str:
         line + f":{i}:" if line.rstrip().endswith("#PYTHON") else line
         for i, line in enumerate(main(code).split("\n"), start=1)
     )
-
-
-class CaptureLog(io.StringIO):
-    """Class used to capture a copy of stdout and stderr output."""
-
-    def __enter__(self) -> "CaptureLog":
-        self.previous_stdout = sys.stdout
-        self.previous_stderr = sys.stderr
-        sys.stdout = self
-        sys.stderr = self
-        return self
-
-    def __exit__(
-        self,
-        exc_type: Type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        sys.stdout = self.previous_stdout
-        sys.stderr = self.previous_stderr
-        self.close()
-
-    def write(self, s: str, /) -> int:
-        self.previous_stdout.write(s)
-        return super().write(s)
-
-
-# def capture_log(f: Callable) -> Callable:
-#     """Decorator used to capture a copy of stdout and stderr and print their content in log tab."""
-#
-#     @wraps(f)
-#     def wrapper(self: "PreviewCompilerWorker", *args, **kw):
-#         if not self.log_already_captured:
-#             try:
-#                 with CaptureLog() as log:
-#                     self.log_already_captured = True
-#                     f(self, *args, **kw)
-#                     self.log_viewer.setText(log.getvalue())
-#                     self.log_viewer.write_log()
-#             finally:
-#                 self.log_already_captured = False
-#
-#     return wrapper
 
 
 def compile_code(queue: QueueType, code: str, options: dict[str, Any]) -> None:
