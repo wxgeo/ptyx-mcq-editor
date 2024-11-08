@@ -1,23 +1,20 @@
 import contextlib
-import io
 import multiprocessing
 import os
 import pickle
-import sys
 from dataclasses import dataclass
 from multiprocessing import Process, Queue
 from multiprocessing.queues import Queue as QueueType
 from pathlib import Path
 from traceback import print_exception
-from types import TracebackType
-from typing import TypedDict, NotRequired, Type
+from typing import TypedDict, NotRequired
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from ptyx.compilation import make_files, MultipleFilesCompilationInfo
 from ptyx.errors import PtyxDocumentCompilationError
 from ptyx.shell import red, yellow, print_info
-from ptyx_mcq.make.make import DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS, generate_config_file
+from ptyx_mcq.make.make_command import DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS, generate_config_file
 from ptyx_mcq.parameters import CONFIG_FILE_EXTENSION
 from ptyx_mcq.tools.misc import CaptureLog
 
@@ -57,7 +54,7 @@ def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType
         # using pickle, so only serializable objects can be shared).
         pickle_incompatibility = False
         try:
-            if type(pickle.loads(pickle.dumps(e))) != type(e):
+            if type(pickle.loads(pickle.dumps(e))) is not type(e):
                 pickle_incompatibility = True
         except BaseException:
             pickle_incompatibility = True

@@ -8,27 +8,35 @@ packages = [{include = "ptyx_mcq_editor"}]
 include = ["ressources"]
 license = "GPL-3.0-or-later"
 
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.poetry.scripts]
 mcq-editor = "ptyx_mcq_editor.app:main"
 
 [tool.poetry.dependencies]
 python = "^3.10"
 pyqt6-qscintilla = "^2.14.1"
-ptyx-mcq = "^27.1"
-platformdirs = "^4"
+ptyx-mcq = "^28.0"
 tomli-w = "^1.0.0"
-argcomplete = "^3.1.6"
-ruff = "^0.3.2"
+ruff = "^0.7.2"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"
 ptyx-mcq = {path = "../ptyx-mcq", develop = true}
 ptyx = {path = "../ptyx", develop = true}
-#ptyx = {path = "../ptyx", develop = true}
-black = "^23.10.1"
+black = ">=24"
 tox = "^4.14"
-pytest = "^7.4.3"
+pytest = ">=7.4.3"
 
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+filterwarnings = [
+    'ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning',
+]
 
 [tool.black]
 line-length = 110
@@ -46,10 +54,6 @@ warn_unused_ignores = true
 strict_equality = true
 # Warning: exclude strings are handled as regex by mypy!
 exclude = ["ptyx_mcq_editor/generated_ui/"]
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
 
 [tool.tox]
 legacy_tox_ini = """

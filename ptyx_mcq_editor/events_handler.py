@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING, Final, Sequence, Callable
 
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QDialogButtonBox
-from ptyx_mcq.cli import get_template_path, update as update_include
+from ptyx_mcq.other_commands.template import get_template_path
+from ptyx_mcq.other_commands.update import update_exercises
 
 from ptyx_mcq_editor.editor.editor_tab import EditorTab
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
@@ -444,7 +445,7 @@ class FileEventsHandler(QObject):
             path = current_doc.path
             assert path is not None
             print(f"Updating imports for file {current_doc.path}...")
-            update_include(current_doc.path)
+            update_exercises(current_doc.path)
             widget = self.book(None).currentWidget()
             assert isinstance(widget, EditorTab), widget
             widget.reload(preserve_history=True)

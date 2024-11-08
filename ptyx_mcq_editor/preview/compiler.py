@@ -1,14 +1,11 @@
 import contextlib
-import io
 import pickle
-import sys
 from base64 import urlsafe_b64encode
 from multiprocessing import Process, Queue
 from multiprocessing.queues import Queue as QueueType
 from pathlib import Path
 from traceback import print_exception
-from types import TracebackType
-from typing import Literal, TypedDict, NotRequired, Type, Any
+from typing import Literal, TypedDict, NotRequired, Any
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -57,7 +54,7 @@ def compile_code(queue: QueueType, code: str, options: dict[str, Any]) -> None:
     except BaseException as e:
         pickle_incompatibility = False
         try:
-            if type(pickle.loads(pickle.dumps(e))) != type(e):
+            if type(pickle.loads(pickle.dumps(e))) is not type(e):
                 pickle_incompatibility = True
         except BaseException:
             pickle_incompatibility = True
