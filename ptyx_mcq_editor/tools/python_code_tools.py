@@ -5,7 +5,11 @@ import traceback
 from typing import Any
 
 from ptyx.errors import ErrorInformation
-from ptyx.extensions.extended_python import PYTHON_DELIMITER, parse_extended_python_code, parse_code_block
+from ptyx.extensions.extended_python import (
+    PYTHON_DELIMITER,
+    parse_code_block,
+    parse_extended_python_line,
+)
 
 from ptyx.shell import red
 
@@ -58,10 +62,14 @@ def check_each_python_block(code: str) -> list[ErrorInformation]:
                         d["location"]["column"],
                         d["end_location"]["column"],
                     )
-                    for d in ruff_check(parse_extended_python_code(code))
+                    for d in ruff_check(code)
                 )
                 lines.clear()
         elif inside_python_block:
+            try:
+                line = parse_extended_python_line(line)
+            except SyntaxError as e:
+                errors.append(ErrorInformation(e.msg, row=start + i))
             lines.append(line)
     return errors
 
