@@ -7,7 +7,7 @@ from tempfile import mkdtemp
 from typing import Final, Literal
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QCloseEvent, QIcon
+from PyQt6.QtGui import QCloseEvent, QIcon, QDropEvent, QDragEnterEvent
 from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel
 
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
@@ -75,6 +75,29 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.search_dock.connect_signals()
 
         self.file_events_handler.finalize([Path(path) for path in args.paths] if args is not None else [])
+
+        self.setAcceptDrops(True)
+
+    # noinspection PyMethodOverriding
+    def dragEnterEvent(self, event: QDragEnterEvent):  # type: ignore
+        print("dragEnter event")
+        # Check if the event has URLs (files or folders)
+        if self.file_events_handler.any_dragged_file(event):
+            event.accept()
+        else:
+            event.ignore()
+
+    # noinspection PyMethodOverriding
+    def dropEvent(self, event: QDropEvent):  # type:ignore
+        # Retrieve the URLs of dropped files
+        mimedata = event.mimeData()
+        assert mimedata is not None
+        urls = mimedata.urls()
+        if urls:
+            # Display the paths of the files in the label
+            file_paths = [Path(url.toLocalFile()) for url in urls]
+            print(f"Files dropped: {', '.join(map(str, file_paths))}")
+            self.file_events_handler.open_doc(paths=file_paths)
 
     def connect_menu_signals(self) -> None:
         # Don't change handler variable value (because of name binding process in lambdas).

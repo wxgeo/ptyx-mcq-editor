@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Final, Sequence, Callable
 
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
+from PyQt6.QtGui import QDragEnterEvent
 from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QDialogButtonBox
 from ptyx_mcq.other_commands.template import get_template_path
 from ptyx_mcq.other_commands.update import update_exercises
@@ -558,3 +559,11 @@ class FileEventsHandler(QObject):
         editor = self.current_editor()
         if editor is not None:
             editor.autoformat()
+
+    # ----------------------------
+    #       Various tools
+    # ============================
+
+    @staticmethod
+    def any_dragged_file(event: QDragEnterEvent) -> bool:
+        return (mimedata := event.mimeData()) is not None and mimedata.hasUrls()

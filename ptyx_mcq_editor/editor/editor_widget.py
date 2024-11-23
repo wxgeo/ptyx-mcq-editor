@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QColor, QKeyEvent
+from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent
 from PyQt6.QtWidgets import QDialog
 from ptyx.extensions.extended_python import parse_extended_python_code
 from ptyx.errors import PythonBlockError, ErrorInformation
@@ -267,6 +267,12 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             # self.fillIndicatorRange(shift + row, col, shift + end_row, end_col, COMPILATION_ERROR)
         else:
             self.main_window.statusbar.showMessage(f"{type(error).__name__}: {error}")
+
+    def dragEnterEvent(self, event: QDragEnterEvent):  # type: ignore
+        if self.main_window.file_events_handler.any_dragged_file(event):
+            event.ignore()
+        else:
+            QsciScintilla.dragEnterEvent(self, event)
 
     def autoformat(self) -> None:
         # TODO: display a message in the status bar if autoformat fails.
