@@ -142,6 +142,9 @@ class DocumentsCollection:
     def __iter__(self) -> Iterator[Document]:
         return iter(self._documents)
 
+    def __getitem__(self, index: int) -> Document | None:
+        return self.doc(index)
+
     @property
     def paths(self) -> list[Path]:
         return [doc.path for doc in self._documents if doc.path is not None]
