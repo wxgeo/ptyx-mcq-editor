@@ -109,6 +109,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.action_Open.triggered.connect(lambda: handler.open_doc(side=None))
         self.action_Save.triggered.connect(lambda: handler.save_doc(side=None, index=None))
         self.actionSave_as.triggered.connect(lambda: handler.save_doc_as(side=None, index=None))
+        self.actionSave_copy.triggered.connect(lambda: handler.save_doc_copy(side=None, index=None))
         self.action_Close.triggered.connect(lambda: handler.close_doc(side=None, index=None))
         self.actionN_ew_Session.triggered.connect(lambda: handler.new_session())
         self.menuFichier.aboutToShow.connect(self.update_recent_files_menu)

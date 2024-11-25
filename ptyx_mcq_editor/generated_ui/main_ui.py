@@ -234,6 +234,8 @@ class Ui_MainWindow(object):
         self.action_Launch_scan.setObjectName("action_Launch_scan")
         self.actionFormat_python_code = QtGui.QAction(parent=MainWindow)
         self.actionFormat_python_code.setObjectName("actionFormat_python_code")
+        self.actionSave_copy = QtGui.QAction(parent=MainWindow)
+        self.actionSave_copy.setObjectName("actionSave_copy")
         self.menu_Recent_Files.addAction(self.actionNone)
         self.menu_New.addAction(self.action_Empty_file)
         self.menu_New.addAction(self.action_Mcq_ptyx_file)
@@ -242,6 +244,7 @@ class Ui_MainWindow(object):
         self.menuFichier.addAction(self.action_Open)
         self.menuFichier.addAction(self.action_Save)
         self.menuFichier.addAction(self.actionSave_as)
+        self.menuFichier.addAction(self.actionSave_copy)
         self.menuFichier.addAction(self.action_Close)
         self.menuFichier.addSeparator()
         self.menuFichier.addAction(self.actionN_ew_Session)
@@ -361,6 +364,8 @@ class Ui_MainWindow(object):
         self.action_Launch_scan.setText(_translate("MainWindow", "&Launch scan"))
         self.actionFormat_python_code.setText(_translate("MainWindow", "Format python code"))
         self.actionFormat_python_code.setShortcut(_translate("MainWindow", "Ctrl+Shift+F"))
+        self.actionSave_copy.setText(_translate("MainWindow", "Save cop&y"))
+        self.actionSave_copy.setShortcut(_translate("MainWindow", "Ctrl+Alt+Shift+S"))
 from ptyx_mcq_editor.editor.find_and_replace import FindAndReplaceWidget
 from ptyx_mcq_editor.files_book import FilesBook
 from ptyx_mcq_editor.preview.tab_widget import CompilationTabs

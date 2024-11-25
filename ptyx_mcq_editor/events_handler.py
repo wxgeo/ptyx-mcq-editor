@@ -284,12 +284,22 @@ class FileEventsHandler(QObject):
         return self.save_doc_as(side, index, doc.path)
 
     @update_ui
+    def save_doc_copy(self, side: Side = None, index: int = None, path: Path = None) -> bool:
+        doc = self.settings.docs(side).doc(index)
+        if doc is None:
+            print("No doc to save!")
+            return False
+        return self.save_doc_as(side, index, path, is_copy=True)
+
+    @update_ui
     def change_doc_state(self, doc: Document, is_saved: bool) -> bool:
         doc.is_saved = is_saved
         return True
 
     @update_ui
-    def save_doc_as(self, side: Side = None, index: int = None, path: Path = None) -> bool:
+    def save_doc_as(
+        self, side: Side = None, index: int = None, path: Path = None, is_copy: bool = False
+    ) -> bool:
         """Save document. Return True if document was saved, else False."""
         if index is None:
             index = self.settings.docs(side).current_index
@@ -309,7 +319,7 @@ class FileEventsHandler(QObject):
             while not saved and not canceled:
                 assert isinstance(tab.editor, EditorWidget)
                 if path is None:
-                    path = self.save_file_dialog()
+                    path = self.save_file_dialog(title="Save copy" if is_copy else "Save as...")
                     if path is None:
                         # User cancelled dialog
                         print("save_file action canceled.")
@@ -323,7 +333,7 @@ class FileEventsHandler(QObject):
                 if not canceled:
                     assert path is not None
                     try:
-                        doc.write(tab.editor.text(), path=path)
+                        doc.write(tab.editor.text(), path=path, is_copy=is_copy)
                         tab.editor.on_save()
                         saved = True
                     except (IOError, DocumentHasNoPath, SamePath) as e:
@@ -364,11 +374,11 @@ class FileEventsHandler(QObject):
     #      Dialogs
     # =================
 
-    def save_file_dialog(self) -> Path | None:
+    def save_file_dialog(self, title: str) -> Path | None:
         # noinspection PyTypeChecker
         path_str, _ = QFileDialog.getSaveFileName(
             self.main_window,
-            "Save as...",
+            title,
             str(self.settings.current_directory),
             ";;".join(FILES_FILTER),
             FILES_FILTER[0],

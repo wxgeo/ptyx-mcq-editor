@@ -77,7 +77,7 @@ class Document:
         name = self.path.name if self.path is not None else f"New document {self.doc_id}"
         return name if self.is_saved else "* " + name
 
-    def write(self, content: str, path: Path = None) -> None:
+    def write(self, content: str, path: Path = None, is_copy: bool = False) -> None:
         """Write provided document content on given path.
 
         Given path (if any) is stored for next time.
@@ -85,6 +85,8 @@ class Document:
 
         If no path is provided and none has been given before, raise `DocumentHasNoPath` error.
         Any kind of `OSError` might also be raised, notably `FileNotFoundError` if path is invalid.
+
+        If `is_copy` is `True`, the document path will not change.
         """
         if path is None:
             path = self._path
@@ -92,7 +94,8 @@ class Document:
             # Two opened documents can't have the same path.
             if any(path == doc.path for doc in self.__class__.all_docs.values() if doc is not self):
                 raise SamePath("Can't save the document with the same path as an already opened one.")
-            self._path = path
+            if not is_copy:
+                self._path = path
         if path is None:
             raise DocumentHasNoPath("Can't save document, no path set.")
         with open(path, "w", encoding="utf8") as f:
