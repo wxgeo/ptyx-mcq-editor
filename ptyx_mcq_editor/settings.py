@@ -77,6 +77,26 @@ class Document:
         name = self.path.name if self.path is not None else f"New document {self.doc_id}"
         return name if self.is_saved else "* " + name
 
+    def rename(self, path: Path) -> None:
+        """Rename the document.
+
+        If the document is saved on disk, then the file will be effectively renamed.
+        Else, only the path of the unsaved document will change.
+
+        Raise `SamePath` error if the path matches any already opened document.
+        """
+        self._assert_unicity(path)
+        if self.path is not None:
+            # Rename the corresponding file.
+            self.path.rename(path)
+        # Update the document's path.
+        self._path = path
+
+    def _assert_unicity(self, path: Path) -> None:
+        """Raise a `SamePath` error if the path matches an already opened document."""
+        if any(path == doc.path for doc in self.__class__.all_docs.values() if doc is not self):
+            raise SamePath("Can't save the document with the same path as an already opened one.")
+
     def write(self, content: str, path: Path = None, is_copy: bool = False) -> None:
         """Write provided document content on given path.
 
@@ -92,8 +112,7 @@ class Document:
             path = self._path
         else:
             # Two opened documents can't have the same path.
-            if any(path == doc.path for doc in self.__class__.all_docs.values() if doc is not self):
-                raise SamePath("Can't save the document with the same path as an already opened one.")
+            self._assert_unicity(path)
             if not is_copy:
                 self._path = path
         if path is None:
@@ -102,7 +121,7 @@ class Document:
             f.write(content)
         self._is_saved = True
 
-    def destroy(self) -> None:
+    def on_close(self) -> None:
         self.__class__.all_docs.pop(self.doc_id)
 
 
@@ -231,7 +250,7 @@ class DocumentsCollection:
             if index is None:
                 return None
         doc = self.pop_doc(index)
-        doc.destroy()
+        doc.on_close()
         return doc.path
 
     def as_dict(self) -> dict[str, Any]:

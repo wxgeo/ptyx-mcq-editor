@@ -1,3 +1,4 @@
+from enum import Enum
 from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Sequence, Callable
@@ -28,6 +29,12 @@ FILES_FILTER = (
     "pTyX Files (*.ptyx)",
     "All Files (*.*)",
 )
+
+
+class SaveMode(Enum):
+    NORMAL = 0
+    COPY = 1
+    RENAME = 2
 
 
 def update_ui(f: Callable[..., bool]) -> Callable[..., bool]:
@@ -278,18 +285,15 @@ class FileEventsHandler(QObject):
     @update_ui
     def save_doc(self, side: Side = None, index: int = None) -> bool:
         doc = self.settings.docs(side).doc(index)
-        if doc is None:
-            print("No doc to save!")
-            return False
-        return self.save_doc_as(side, index, doc.path)
+        return self.save_doc_as(side, index, None if doc is None else doc.path)
 
     @update_ui
     def save_doc_copy(self, side: Side = None, index: int = None, path: Path = None) -> bool:
-        doc = self.settings.docs(side).doc(index)
-        if doc is None:
-            print("No doc to save!")
-            return False
-        return self.save_doc_as(side, index, path, is_copy=True)
+        return self.save_doc_as(side, index, path, mode=SaveMode.COPY)
+
+    @update_ui
+    def rename_doc(self, side: Side = None, index: int = None, path: Path = None) -> bool:
+        return self.save_doc_as(side, index, path, mode=SaveMode.RENAME)
 
     @update_ui
     def change_doc_state(self, doc: Document, is_saved: bool) -> bool:
@@ -298,7 +302,12 @@ class FileEventsHandler(QObject):
 
     @update_ui
     def save_doc_as(
-        self, side: Side = None, index: int = None, path: Path = None, is_copy: bool = False
+        self,
+        side: Side = None,
+        index: int = None,
+        path: Path = None,
+        *,
+        mode: SaveMode = SaveMode.NORMAL,
     ) -> bool:
         """Save document. Return True if document was saved, else False."""
         if index is None:
@@ -319,10 +328,19 @@ class FileEventsHandler(QObject):
             while not saved and not canceled:
                 assert isinstance(tab.editor, EditorWidget)
                 if path is None:
-                    path = self.save_file_dialog(title="Save copy" if is_copy else "Save as...")
+                    match mode:
+                        case SaveMode.NORMAL:
+                            title = "Save as..."
+                        case SaveMode.COPY:
+                            title = "Save copy"
+                        case SaveMode.RENAME:
+                            title = "Rename as..."
+                        case _:
+                            raise NotImplementedError
+                    path = self.save_file_dialog(title)
                     if path is None:
                         # User cancelled dialog
-                        print("save_file action canceled.")
+                        print(f"Save action canceled ({mode}).")
                         canceled = True
                     elif path.suffix == "":
                         # Automatically add suffix.
@@ -333,7 +351,9 @@ class FileEventsHandler(QObject):
                 if not canceled:
                     assert path is not None
                     try:
-                        doc.write(tab.editor.text(), path=path, is_copy=is_copy)
+                        if mode == SaveMode.RENAME:
+                            doc.rename(path)
+                        doc.write(tab.editor.text(), path=path, is_copy=(mode == SaveMode.COPY))
                         tab.editor.on_save()
                         saved = True
                     except (IOError, DocumentHasNoPath, SamePath) as e:
