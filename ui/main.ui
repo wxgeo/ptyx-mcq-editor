@@ -43,7 +43,7 @@
      <x>0</x>
      <y>0</y>
      <width>1509</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFichier">
@@ -129,7 +129,6 @@
      <addaction name="action_Open_file_from_current_import_line"/>
     </widget>
     <addaction name="actionComment"/>
-    <addaction name="menuImports"/>
     <addaction name="actionFormat_python_code"/>
    </widget>
    <widget class="QMenu" name="menuScan">
@@ -138,9 +137,15 @@
     </property>
     <addaction name="action_Launch_scan"/>
    </widget>
+   <widget class="QMenu" name="menuImports_2">
+    <property name="title">
+     <string>Imports</string>
+    </property>
+   </widget>
    <addaction name="menuFichier"/>
    <addaction name="menu_Edit"/>
    <addaction name="menu_Code"/>
+   <addaction name="menuImports"/>
    <addaction name="menuCompilation"/>
    <addaction name="menuScan"/>
    <addaction name="menu_Tools"/>
