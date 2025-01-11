@@ -18,9 +18,9 @@ mcq-editor = "ptyx_mcq_editor.app:main"
 [tool.poetry.dependencies]
 python = "^3.10"
 pyqt6-qscintilla = "^2.14.1"
-ptyx-mcq = "^28.0"
+ptyx-mcq = "^30.0"
 tomli-w = "^1.0.0"
-ruff = "^0.7.2"
+ruff = "^0.9.1"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"
@@ -36,6 +36,8 @@ testpaths = [
 ]
 filterwarnings = [
     'ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning',
+    'ignore:builtin type SwigPyPacked has no __module__ attribute:DeprecationWarning',
+    'ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning',
 ]
 
 [tool.black]
