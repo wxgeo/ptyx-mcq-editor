@@ -14,7 +14,7 @@ from ptyx.extensions.extended_python import (
 from ptyx.shell import red
 
 
-def ruff_check(code: str, select="E999,E101,F", ignore="F821") -> list[dict[str, Any]]:
+def ruff_check(code: str, select="E101,F", ignore="F821") -> list[dict[str, Any]]:
     # https://github.com/astral-sh/ruff/issues/8401#issuecomment-1788806462
 
     # Checker example
@@ -22,7 +22,7 @@ def ruff_check(code: str, select="E999,E101,F", ignore="F821") -> list[dict[str,
         ["ruff", "check", f"--select={select}", f"--ignore={ignore}", "--output-format=json", "-"],
         input=code,
         stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,  # remove this for debugging!
         encoding="utf-8",
     )
     # proc.returncode  # <- 1 if bad
