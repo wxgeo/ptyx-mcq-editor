@@ -204,7 +204,8 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
 
     def replace_all(self) -> None:
         if self.current_mcq_editor is not None:
-            self.current_mcq_editor.setCursorPosition(0, 0)
+            # Do NOT reset cursor position (it would discard selection!)
+            # self.current_mcq_editor.setCursorPosition(0, 0)
             self.current_mcq_editor.SendScintilla(QsciScintilla.SCI_BEGINUNDOACTION)
             while self.find_and_replace(action=SearchAction.REPLACE):
                 pass
@@ -245,6 +246,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
 
                 # https://brdocumentation.github.io/qscintilla/classQsciScintilla.html#a04780d47f799c56b6af0a10b91875045
                 if selection_only:
+                    print("Selection range:", self.selection_range())
                     return self.current_mcq_editor.findFirstInSelection(
                         to_find, is_regex, case_sensitive, whole_words, forward=forward
                     )
