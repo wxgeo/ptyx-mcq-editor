@@ -11,7 +11,7 @@ from typing import TypedDict, NotRequired
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
-from ptyx.compilation import make_files, MultipleFilesCompilationInfo
+from ptyx.compilation import make_files, MultipleFilesCompilationInfo, CompilationProgress
 from ptyx.errors import PtyxDocumentCompilationError
 from ptyx.shell import red, yellow, print_info
 from ptyx_mcq.make.make_command import DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS, generate_config_file
@@ -34,12 +34,17 @@ class CompilerWorkerInfo(TypedDict):
 
 
 def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType) -> None:
-    """Compile code from another process, using queue to give back information."""
+    """Compile code from another process, using queue to give back information to the main process."""
+
+    def feedback(progress: CompilationProgress):
+        print(f"{progress.count}/{progress.target}", end="\r")
+
     try:
         compilation_info, compiler = make_files(
             ptyx_filename,
             number_of_documents=number_of_documents,
             options=DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS,
+            feedback=feedback,
         )
         # Don't forget to generate config file!
         generate_config_file(compiler)

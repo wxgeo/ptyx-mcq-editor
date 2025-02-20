@@ -1,6 +1,7 @@
 import ast
 import traceback
 from enum import IntEnum
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PyQt6.Qsci import QsciScintilla
@@ -8,7 +9,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent
 from PyQt6.QtWidgets import QDialog
 from ptyx.extensions.extended_python import parse_extended_python_code
-from ptyx.errors import PythonBlockError, ErrorInformation
+from ptyx.errors import PythonBlockError, ErrorInformation, PythonCodeError
 
 from ptyx_mcq_editor.editor.lexer import MyLexer, Mode
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
@@ -241,32 +242,82 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         and a message will be displayed in the status bar too.
         """
         self.main_window.statusbar.setStyleSheet("color: red;font-weight: bold")
-        if isinstance(error, PythonBlockError):
-            shift = int(error.label) - 2
+        current_doc_path = self.parent().doc.path.resolve()
+        if isinstance(error, PythonCodeError):
             info = error.info
             self._last_error_message = info.message
-            self.main_window.statusbar.showMessage(f"Compilation failed: {info.message}.")
+            file_path = Path(error.ptyx_traceback[-1][0]) if error.ptyx_traceback else None
+            self.main_window.statusbar.showMessage(
+                f"Compilation failed: {info.message}."
+                + ("" if file_path is None else f" (File: '{file_path.name}')")
+            )
             print(info)
-            row = 0 if info.row is None else info.row
-            col = 0 if info.col is None else info.col
-            end_row = row if info.end_row is None else info.end_row
-            end_col = col if info.end_col is None else info.end_col
-            row, end_row = min(row, end_row), max(row, end_row)
-            col, end_col = min(col, end_col), max(col, end_col)
-            line_length = len(self.text(row))
-            col = min(line_length - 1, col)
-            end_col = max(col + 1, end_col)
-            print(shift + row, col, shift + end_row, end_col)
-            # Assign a value to the text
-            # Now apply the indicator-style on the chosen text
-            start_pos = self.positionFromLineIndex(shift + row, col)
-            end_pos = self.positionFromLineIndex(shift + end_row, end_col)
-            self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, Indicator.COMPILATION_ERROR)
-            self.SendScintilla(QsciScintilla.SCI_SETINDICATORVALUE, Indicator.COMPILATION_ERROR)
-            self.SendScintilla(QsciScintilla.SCI_INDICATORFILLRANGE, start_pos, end_pos - start_pos)
-            # self.fillIndicatorRange(shift + row, col, shift + end_row, end_col, COMPILATION_ERROR)
+            # To highlight error, we have to be sure that the error row and column are known.
+            # We must also verify that the error occurred in the current document, and not in an imported one.
+
+            if (
+                isinstance(error, PythonBlockError)
+                and error.label.isascii()
+                and error.label.isdigit()
+                and (
+                    file_path is None
+                    or self.parent().doc.path is None
+                    or current_doc_path == file_path.resolve()
+                )
+            ):
+                shift = int(error.label) - 2
+                row = 0 if info.row is None else info.row
+                col = 0 if info.col is None else info.col
+                end_row = row if info.end_row is None else info.end_row
+                end_col = col if info.end_col is None else info.end_col
+                row, end_row = min(row, end_row), max(row, end_row)
+                row += shift
+                end_row += shift
+                col, end_col = min(col, end_col), max(col, end_col)
+                line_length = len(self.text(row))
+                col = min(line_length - 1, col)
+                end_col = max(col + 1, end_col)
+                self._highlight_error(row, col, end_row, end_col)
+            elif (
+                file_path is not None
+                and self.parent().doc.path is not None
+                and current_doc_path != file_path.resolve()
+            ):
+                # Highlight the import line, if the error is in an imported document.
+                pick_next_line_num = False
+                position = None
+                for path, position in error.ptyx_traceback:
+                    if Path(path).resolve() == self.parent().doc.path.resolve():
+                        pick_next_line_num = True
+                    if pick_next_line_num:
+                        break
+                if position is not None:
+                    # Skip comments.
+                    line_num = None
+                    i = 0
+                    for line_num, line in enumerate(self.text().split("\n")):
+                        if not line.startswith("# "):
+                            i += 1
+                        if i > position:
+                            break
+                    if line_num is not None:
+                        self._highlight_error(line_num)
         else:
             self.main_window.statusbar.showMessage(f"{type(error).__name__}: {error}")
+
+    def _highlight_error(self, row: int, col: int = 0, end_row: int | None = None, end_col: int = -1) -> None:
+        if end_row is None:
+            end_row = row
+        if end_col == -1:
+            end_col = len(self.text(row)) - 1
+        print("Highlight error:", row, col, end_row, end_col)
+        # Now apply the indicator-style on the chosen text
+        start_pos = self.positionFromLineIndex(row, col)
+        end_pos = self.positionFromLineIndex(end_row, end_col)
+        self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, Indicator.COMPILATION_ERROR)
+        self.SendScintilla(QsciScintilla.SCI_SETINDICATORVALUE, Indicator.COMPILATION_ERROR)
+        self.SendScintilla(QsciScintilla.SCI_INDICATORFILLRANGE, start_pos, end_pos - start_pos)
+        # self.fillIndicatorRange(shift + row, col, shift + end_row, end_col, COMPILATION_ERROR)
 
     def dragEnterEvent(self, event: QDragEnterEvent):  # type: ignore
         if self.main_window.file_events_handler.any_dragged_file(event):
