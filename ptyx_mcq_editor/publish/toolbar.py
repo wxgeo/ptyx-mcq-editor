@@ -61,6 +61,10 @@ class PublishToolBar(QToolBar, EnhancedWidget):
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(0)
         self.progress_bar_action.setVisible(False)
+        parent.file_events_handler.ui_updated.connect(self.update)
+
+    def update(self):
+        self.setEnabled(self.main_window.settings.current_doc_path.suffix == ".ptyx")
 
     def publish(self):
         doc_path = self.main_window.settings.current_doc_path

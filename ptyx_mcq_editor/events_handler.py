@@ -93,13 +93,14 @@ class AskForSavingDialog(QDialog, ask_for_saving_ui.Ui_Dialog):
 
 
 class FileEventsHandler(QObject):
-    file_missing = pyqtSignal(str, name="file_missing")
+    # file_missing = pyqtSignal(str, name="file_missing")  # TODO: Never used?
+    ui_updated = pyqtSignal(name="ui_updates")
 
     def __init__(self, main_window: "McqEditorMainWindow"):
         super().__init__(parent=main_window)
         self.main_window: Final = main_window
         self.freeze_update_ui: bool = False  # See update_ui() decorator docstring.
-        self.file_missing.connect(self.create_missing_file)
+        # self.file_missing.connect(self.create_missing_file)
 
     @update_ui
     def finalize(self, paths: Sequence[Path] = ()) -> bool:
@@ -187,6 +188,8 @@ class FileEventsHandler(QObject):
         else:
             self.main_window.setWindowTitle(param.WINDOW_TITLE)
         self.update_status_message()
+        self.ui_updated.emit()
+        print("UI updated.")
 
     # ----------------------------------------------
     #      Settings synchronization on events
