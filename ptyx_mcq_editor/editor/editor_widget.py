@@ -97,6 +97,7 @@ MARGIN_COLOR = QColor("#ff888888")
 class EditorWidget(QsciScintilla, EnhancedWidget):
     def __init__(self, parent: "EditorTab"):
         super().__init__(parent)
+        self._parent_ = parent
         self.status_message: str = ""
         self._directives_lines: list[int] = []
         self._modifiers = Qt.KeyboardModifier.NoModifier
@@ -242,11 +243,16 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         and a message will be displayed in the status bar too.
         """
         self.main_window.statusbar.setStyleSheet("color: red;font-weight: bold")
-        current_doc_path = self.parent().doc.path.resolve()
+        current_doc_path = self._parent_.doc.path
+        if current_doc_path is not None:
+            current_doc_path = current_doc_path.resolve()
         if isinstance(error, PythonCodeError):
             info = error.info
             self._last_error_message = info.message
-            file_path = Path(error.ptyx_traceback[-1][0]) if error.ptyx_traceback else None
+            file_path = None
+            if error.ptyx_traceback:
+                if (localisation := error.ptyx_traceback[-1][0]) is not None:
+                    file_path = Path(localisation)
             self.main_window.statusbar.showMessage(
                 f"Compilation failed: {info.message}."
                 + ("" if file_path is None else f" (File: '{file_path.name}')")
@@ -261,7 +267,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 and error.label.isdigit()
                 and (
                     file_path is None
-                    or self.parent().doc.path is None
+                    or self._parent_.doc.path is None
                     or current_doc_path == file_path.resolve()
                 )
             ):
@@ -280,14 +286,15 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 self._highlight_error(row, col, end_row, end_col)
             elif (
                 file_path is not None
-                and self.parent().doc.path is not None
+                and self._parent_.doc.path is not None
                 and current_doc_path != file_path.resolve()
+                and error.ptyx_traceback is not None
             ):
                 # Highlight the import line, if the error is in an imported document.
                 pick_next_line_num = False
                 position = None
                 for path, position in error.ptyx_traceback:
-                    if Path(path).resolve() == self.parent().doc.path.resolve():
+                    if path is not None and Path(path).resolve() == self._parent_.doc.path.resolve():
                         pick_next_line_num = True
                     if pick_next_line_num:
                         break
