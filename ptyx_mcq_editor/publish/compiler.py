@@ -44,7 +44,7 @@ def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType
             ptyx_filename,
             number_of_documents=number_of_documents,
             options=DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS,
-            feedback=feedback,
+            feedback_func=feedback,
         )
         # Don't forget to generate config file!
         generate_config_file(compiler)
@@ -90,7 +90,7 @@ class CompilerWorker(QObject):
 
     finished = pyqtSignal(dict, name="finished")
     process_started = pyqtSignal(ProcessInfo, name="process_started")
-    # progress = pyqtSignal(int)
+    progress_update = pyqtSignal(CompilationProgress, name="progress_update")
 
     # def compile_latex(self):
     #     latex_file = self.get_temp_path("tex")
@@ -151,7 +151,9 @@ class CompilerWorker(QObject):
             # process.join()  <- So, don't do this!
             print(f"End of process {process.pid}")
             while isinstance(retrieved := queue.get(), CompilationProgress):
-                print(yellow(f"{retrieved.count}/{retrieved.target} ({retrieved.state})"))
+                assert isinstance(retrieved, CompilationProgress)  # for PyCharm
+                print(yellow(f"{retrieved.compiled_pdf_docs}/{retrieved.target} ({retrieved.state})"))
+                self.progress_update.emit(retrieved)
         match retrieved:
             case MultipleFilesCompilationInfo() as info:
                 return_data["compilation_info"] = info
