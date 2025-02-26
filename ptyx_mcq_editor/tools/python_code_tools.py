@@ -11,7 +11,13 @@ from ptyx.extensions.extended_python import (
     parse_extended_python_line,
 )
 
-from ptyx.shell import red
+from ptyx.shell import red, yellow
+
+try:
+    RUFF_VERSION = subprocess.run(["ruff", "--version"], encoding="utf8", stdout=subprocess.PIPE).stdout
+except Exception as e:
+    RUFF_VERSION = "?"
+    print(e)
 
 
 def ruff_check(code: str, select="E101,F", ignore="F821") -> list[dict[str, Any]]:
@@ -30,12 +36,14 @@ def ruff_check(code: str, select="E101,F", ignore="F821") -> list[dict[str, Any]
     try:
         js = json.loads(output)
     except json.JSONDecodeError as e:
-        print(red("Error: invalid ruff output."))
+        print(red("\nError: invalid ruff output."))
+        print(yellow(f"Ruff version: {RUFF_VERSION}"))
         print("--------------")
         print(" Ruff output: ")
         print("==============")
         print(proc.stdout)
         print("--------------")
+        print()
         traceback.print_exception(e)
         js = {}
     return js
