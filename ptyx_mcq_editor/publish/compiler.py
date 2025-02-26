@@ -37,7 +37,7 @@ def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType
     """Compile code from another process, using queue to give back information to the main process."""
 
     def feedback(progress: CompilationProgress):
-        print(f"{progress.count}/{progress.target}", end="\r")
+        queue.put(progress)
 
     try:
         compilation_info, compiler = make_files(
@@ -150,7 +150,9 @@ class CompilerWorker(QObject):
             # https://stackoverflow.com/questions/31665328/python-3-multiprocessing-queue-deadlock-when-calling-join-before-the-queue-is-em
             # process.join()  <- So, don't do this!
             print(f"End of process {process.pid}")
-        match queue.get():
+            while isinstance(retrieved := queue.get(), CompilationProgress):
+                print(yellow(f"{retrieved.count}/{retrieved.target} ({retrieved.state})"))
+        match retrieved:
             case MultipleFilesCompilationInfo() as info:
                 return_data["compilation_info"] = info
             case BaseException() as e:
