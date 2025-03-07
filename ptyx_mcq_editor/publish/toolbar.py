@@ -1,8 +1,11 @@
+import os
+import time
 import typing
 import webbrowser
 from pathlib import Path
 from typing import cast, TYPE_CHECKING
 
+import psutil
 from PyQt6.QtCore import QThread
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QToolBar, QSpinBox, QLabel, QPushButton, QWidget, QProgressBar
@@ -81,8 +84,9 @@ class PublishToolBar(QToolBar, EnhancedWidget):
         if doc_path.suffix != ".ptyx":
             return
         if self.compilation_is_running:
-            return
-        self._run_compilation(doc_path=doc_path, _use_another_thread=True)
+            self.abort_thread()
+        else:
+            self._run_compilation(doc_path=doc_path, _use_another_thread=True)
 
     def open_pdf(self) -> None:
         if self.last_compiled_doc_path is not None:
@@ -189,6 +193,13 @@ class PublishToolBar(QToolBar, EnhancedWidget):
         process = self.current_process_info.process
         assert process is not None
         id_ = process.pid
+        for child in psutil.Process(id_).children(recursive=True):
+            child.terminate()
+        time.sleep(0.2)
+        for child in psutil.Process(id_).children(recursive=True):
+            child.kill()
+        process.terminate()
+        time.sleep(0.2)
         process.kill()
         queue = self.current_process_info.queue
         assert queue is not None

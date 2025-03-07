@@ -21,6 +21,7 @@ pyqt6-qscintilla = "^2.14.1"
 ptyx-mcq = "^30.0"
 tomli-w = "^1.0.0"
 ruff = "^0.9.1"
+psutil = "^7.0.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"
