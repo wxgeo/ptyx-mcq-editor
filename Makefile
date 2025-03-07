@@ -12,5 +12,8 @@ fix:
 help:
 	@cat Makefile
 
+lock:
+	git commit poetry.lock -m "dev: update poetry.lock"
+
 .PHONY: ui help
 
