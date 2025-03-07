@@ -13,7 +13,7 @@ from ptyx.compilation import compile_latex_to_pdf, SingleFileCompilationInfo
 from ptyx.errors import PtyxDocumentCompilationError
 from ptyx.extensions.extended_python import main
 from ptyx.latex_generator import Compiler
-from ptyx.shell import red, yellow
+from ptyx.pretty_print import red, yellow
 
 from ptyx_mcq.make.exercises_parsing import wrap_exercise
 from ptyx_mcq.tools.misc import CaptureLog

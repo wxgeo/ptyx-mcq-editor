@@ -1,4 +1,3 @@
-import os
 import time
 import typing
 import webbrowser
@@ -71,8 +70,7 @@ class PublishToolBar(QToolBar, EnhancedWidget):
     if TYPE_CHECKING:
         # Override signature of method addWidget(), which always return a QAction instance in practice.
         # noinspection PyMethodOverriding
-        def addWidget(self, widget: QWidget | None) -> QAction:
-            ...
+        def addWidget(self, widget: QWidget | None) -> QAction: ...
 
     def on_update(self) -> None:
         self.setEnabled(self.main_window.settings.current_doc_path.suffix == ".ptyx")

@@ -23,6 +23,7 @@ tomli-w = "^1.0.0"
 ruff = "^0.9.1"
 psutil = "^7.0.0"
 
+
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.6.1"
 ptyx-mcq = {path = "../ptyx-mcq", develop = true}
@@ -30,6 +31,7 @@ ptyx = {path = "../ptyx", develop = true}
 black = ">=24"
 tox = "^4.14"
 pytest = ">=7.4.3"
+types-psutil = "^7.0.0.20250218"
 
 [tool.pytest.ini_options]
 testpaths = [

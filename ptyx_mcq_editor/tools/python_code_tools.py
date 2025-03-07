@@ -11,7 +11,7 @@ from ptyx.extensions.extended_python import (
     parse_extended_python_line,
 )
 
-from ptyx.shell import red, yellow
+from ptyx.pretty_print import red, yellow
 
 try:
     RUFF_VERSION = subprocess.run(["ruff", "--version"], encoding="utf8", stdout=subprocess.PIPE).stdout
