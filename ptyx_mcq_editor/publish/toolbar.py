@@ -73,7 +73,8 @@ class PublishToolBar(QToolBar, EnhancedWidget):
         def addWidget(self, widget: QWidget | None) -> QAction: ...
 
     def on_update(self) -> None:
-        self.setEnabled(self.main_window.settings.current_doc_path.suffix == ".ptyx")
+        current_path = self.main_window.settings.current_doc_path
+        self.setEnabled(current_path is not None and current_path.suffix == ".ptyx")
 
     def publish(self) -> None:
         doc_path = self.main_window.settings.current_doc_path
