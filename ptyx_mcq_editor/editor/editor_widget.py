@@ -1,4 +1,5 @@
 import ast
+import re
 import traceback
 from enum import IntEnum
 from pathlib import Path
@@ -7,7 +8,7 @@ from typing import TYPE_CHECKING
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent
-from PyQt6.QtWidgets import QDialog
+from PyQt6.QtWidgets import QDialog, QFileDialog
 from ptyx.extensions.extended_python import parse_extended_python_code
 from ptyx.errors import PythonBlockError, ErrorInformation, PythonCodeError
 
@@ -89,6 +90,8 @@ class Indicator(IntEnum):
     SEARCH_MARKER_ID = 0
     INCLUDE_DIRECTIVES_ID = 1
     COMPILATION_ERROR = 2
+    VALID_STUDENTS_IDS_PATH = 3
+    INVALID_STUDENTS_IDS_PATH = 4
 
 
 MARGIN_COLOR = QColor("#ff888888")
@@ -103,6 +106,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self._modifiers = Qt.KeyboardModifier.NoModifier
         self._last_error_message = ""
         self._errors_info: dict[int, ErrorInformation] = {}
+        self.student_ids_path: Path | None = None
 
         self.setUtf8(True)  # Set encoding to UTF-8
         font = QFont()
@@ -163,6 +167,19 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), Indicator.INCLUDE_DIRECTIVES_ID)
         self.setIndicatorHoverStyle(
             QsciScintilla.IndicatorStyle.FullBoxIndicator, Indicator.INCLUDE_DIRECTIVES_ID
+        )
+        self.indicatorDefine(QsciScintilla.IndicatorStyle.DotBoxIndicator, Indicator.VALID_STUDENTS_IDS_PATH)
+        self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), Indicator.VALID_STUDENTS_IDS_PATH)
+        self.setIndicatorHoverStyle(
+            QsciScintilla.IndicatorStyle.FullBoxIndicator, Indicator.VALID_STUDENTS_IDS_PATH
+        )
+        self.indicatorDefine(
+            QsciScintilla.IndicatorStyle.TextColorIndicator, Indicator.INVALID_STUDENTS_IDS_PATH
+        )
+        self.setIndicatorForegroundColor(QColor("#dc143c"), Indicator.INVALID_STUDENTS_IDS_PATH)
+        # self.setIndicatorHoverForegroundColor(QColor("#dc143c"), Indicator.INVALID_STUDENTS_IDS_PATH)
+        self.setIndicatorHoverStyle(
+            QsciScintilla.IndicatorStyle.BoxIndicator, Indicator.INVALID_STUDENTS_IDS_PATH
         )
         self.textChanged.connect(self.on_text_changed)
 
@@ -418,12 +435,37 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         return self.text(line)
 
     def update_include_indicators(self) -> None:
+        """
+        Create Scintilla indicators for include directives.
+
+        Those indicators can then be clicked to get the corresponding files.
+        """
         n_includes = n_disabled_includes = 0
         self._directives_lines.clear()
         i: int
         line: str
+        # TODO: once a real pTyX code parser is implemented for an accurate syntax highlighting,
+        #  it should be used to detect accurately include directives as well.
+        header_started = header_ended = False
         for i, line in enumerate(self.text().split("\n")):
-            if line.startswith("-- "):
+            if line.startswith("===") and all(c == "=" for c in line):
+                if not header_started:
+                    header_started = True
+                else:
+                    header_ended = True
+            if (
+                header_started
+                and not header_ended
+                and (m := re.fullmatch(r"(ids\s*=\s*)(.+)", line)) is not None
+            ):
+                self.student_ids_path = path = Path(m.group(2))
+                col = len(m.group(1))
+                if path.is_file():
+                    self.fillIndicatorRange(i, col, i, len(line), Indicator.VALID_STUDENTS_IDS_PATH)
+                else:
+                    self.fillIndicatorRange(i, col, i, len(line), Indicator.INVALID_STUDENTS_IDS_PATH)
+
+            elif line.startswith("-- "):
                 if not line[3:].lstrip().startswith("DIR:"):
                     self.fillIndicatorRange(i, 3, i, len(line), Indicator.INCLUDE_DIRECTIVES_ID)
                     n_includes += 1
@@ -442,17 +484,34 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
     def _save_modifiers(self, line, _, keys):
         self._modifiers = keys
 
+    def is_indicator_applied(self, line: int, index: int, *indicators: Indicator) -> bool:
+        """Test if any of the given indicators is applied at specified line and index."""
+        position = self.positionFromLineIndex(line, index)
+        print(position, indicators)
+        for indicator in indicators:
+            value = self.SendScintilla(QsciScintilla.SCI_INDICATORVALUEAT, indicator, position)
+            if value > 0:
+                return True
+        return False
+
     def on_click(self, line: int, index: int, keys: Qt.KeyboardModifier) -> None:
         """Action executed when user clicks on a Qscintilla indicator."""
         position = self.positionFromLineIndex(line, index)
-        value = self.SendScintilla(QsciScintilla.SCI_INDICATORVALUEAT, Indicator.COMPILATION_ERROR, position)
-        if value == Indicator.COMPILATION_ERROR:
+        ctrl_pressed = self._modifiers & Qt.KeyboardModifier.ControlModifier
+        shift_pressed = self._modifiers & Qt.KeyboardModifier.ShiftModifier
+        if self.is_indicator_applied(line, index, Indicator.COMPILATION_ERROR):
             self.SendScintilla(
                 QsciScintilla.SCI_CALLTIPSHOW, position, self._last_error_message.encode("utf8")
             )
+        elif self.is_indicator_applied(
+            line, index, Indicator.VALID_STUDENTS_IDS_PATH, Indicator.INVALID_STUDENTS_IDS_PATH
+        ):
+            if shift_pressed:
+                if self.student_ids_path is not None and self.student_ids_path.is_file():
+                    self.main_window.file_events_handler.open_doc(paths=[self.student_ids_path])
+            else:
+                self.selectStudentsIdsFile()
         else:
-            ctrl_pressed = self._modifiers & Qt.KeyboardModifier.ControlModifier
-            shift_pressed = self._modifiers & Qt.KeyboardModifier.ShiftModifier
             try:
                 self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
                     current_line=line,
@@ -461,9 +520,43 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 )
             except IOError:
                 traceback.print_exc()
-            if shift_pressed:
-                # Scintilla select text as a side effect when clicking with shift key pressed.
-                self.unselect()
+        if shift_pressed:
+            # Scintilla select text as a side effect when clicking with shift key pressed.
+            self.unselect()
+
+    def replace_line(self, line: int, new_text: str) -> None:
+        """Replace a specific range of text in the document."""
+        start_pos = self.positionFromLineIndex(line, 0)
+        end_pos = self.positionFromLineIndex(line, self.lineLength(line))
+        self.SendScintilla(QsciScintilla.SCI_SETSELECTION, start_pos, end_pos)
+        self.SendScintilla(QsciScintilla.SCI_REPLACESEL, new_text.encode("utf8"))
+        self.update_include_indicators()
+
+    def selectStudentsIdsFile(self) -> None:
+        """Select a csv file containing the students IDs."""
+        if self.student_ids_path is None:
+            current = ""
+        elif not self.student_ids_path.is_dir():
+            current = str(self.student_ids_path.parent)
+        else:
+            current = str(self.student_ids_path)
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Select a CSV file containing the students names and IDs", current, "CSV File (*.csv)"
+        )
+        if filename:
+            header_started = header_ended = False
+            for i, line in enumerate(self.text().split("\n")):
+                if line.startswith("===") and all(c == "=" for c in line):
+                    if not header_started:
+                        header_started = True
+                    else:
+                        header_ended = True
+                if (
+                    header_started
+                    and not header_ended
+                    and (re.fullmatch(r"(ids\s*=\s*)(.+)", line)) is not None
+                ):
+                    self.replace_line(i, f"ids = {filename}\n")
 
     def deleteAt(self, line: int, col: int, n: int) -> None:
         """Delete `n` (unicode) chars on the given line, starting from given column.
