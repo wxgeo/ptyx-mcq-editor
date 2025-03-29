@@ -15,9 +15,9 @@ from ptyx.pretty_print import red, yellow
 
 try:
     RUFF_VERSION = subprocess.run(["ruff", "--version"], encoding="utf8", stdout=subprocess.PIPE).stdout
-except Exception as e:
+except Exception as _e:
     RUFF_VERSION = "?"
-    print(e)
+    print(_e)
 
 
 def ruff_check(code: str, select="E101,F", ignore="F821") -> list[dict[str, Any]]:
@@ -62,22 +62,29 @@ def check_each_python_block(code: str) -> list[ErrorInformation]:
             else:
                 # Leaving a python block
                 code = "\n".join(lines)
-                errors.extend(
-                    ErrorInformation(
-                        f"<{d['code']}> {d['message']}",
-                        start + d["location"]["row"],
-                        start + d["end_location"]["row"],
-                        d["location"]["column"],
-                        d["end_location"]["column"],
+                for d in ruff_check(code):
+                    message = d["message"]
+                    type_ = ""
+                    if message.startswith("SyntaxError: "):
+                        message = message[13:]
+                        type_ = "SyntaxError"
+                    errors.append(
+                        ErrorInformation(
+                            type_,
+                            f"{message}",
+                            start + d["location"]["row"],
+                            start + d["end_location"]["row"],
+                            d["location"]["column"],
+                            d["end_location"]["column"],
+                            extra={"ruff-error-code": d["code"]},
+                        )
                     )
-                    for d in ruff_check(code)
-                )
                 lines.clear()
         elif inside_python_block:
             try:
                 line = parse_extended_python_line(line)
             except SyntaxError as e:
-                errors.append(ErrorInformation(e.msg, row=start + i))
+                errors.append(ErrorInformation("SyntaxError", e.msg, row=start + i))
             lines.append(line)
     return errors
 

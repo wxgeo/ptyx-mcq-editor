@@ -270,8 +270,9 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             if error.ptyx_traceback:
                 if (localisation := error.ptyx_traceback[-1][0]) is not None:
                     file_path = Path(localisation)
+            error_message = (f"<{info.type}> " if info.type else "") + info.message
             self.main_window.statusbar.showMessage(
-                f"Compilation failed: {info.message}."
+                f"Compilation failed: {error_message}."
                 + ("" if file_path is None else f" (File: '{file_path.name}')")
             )
             print(info)
@@ -288,7 +289,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                     or current_doc_path == file_path.resolve()
                 )
             ):
-                shift = int(error.label) - 2
+                shift = int(error.label) - 1
                 row = 0 if info.row is None else info.row
                 col = 0 if info.col is None else info.col
                 end_row = row if info.end_row is None else info.end_row
@@ -385,9 +386,9 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         print("ok")
         if line in self._errors_info:
             position = self.positionFromLineIndex(line, 0)
-            self.SendScintilla(
-                QsciScintilla.SCI_CALLTIPSHOW, position, self._errors_info[line].message.encode("utf8")
-            )
+            info = self._errors_info[line]
+            msg = (f"{info.type}: " if info.type else "") + info.message
+            self.SendScintilla(QsciScintilla.SCI_CALLTIPSHOW, position, msg.encode("utf8"))
 
     def check_python_code(self):
         self.markerDeleteAll(Marker.ERROR)

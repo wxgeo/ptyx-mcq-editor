@@ -67,10 +67,12 @@ return y
     """
     assert check_each_python_block(code) == [
         ErrorInformation(
-            message="<None> SyntaxError: Expected an indented block after function definition",
+            type="SyntaxError",
+            message="Expected an indented block after function definition",
             row=7,
             end_row=7,
             col=1,
             end_col=2,
+            extra={"ruff-error-code": None},
         )
     ]
