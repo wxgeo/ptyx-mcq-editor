@@ -289,7 +289,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                     or current_doc_path == file_path.resolve()
                 )
             ):
-                shift = int(error.label) - 1
+                shift = int(error.label) - 2
                 row = 0 if info.row is None else info.row
                 col = 0 if info.col is None else info.col
                 end_row = row if info.end_row is None else info.end_row
