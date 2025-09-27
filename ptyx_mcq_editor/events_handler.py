@@ -1,7 +1,7 @@
 from enum import Enum
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, Final, Sequence, Callable
+from typing import TYPE_CHECKING, Final, Sequence, Callable, Iterator
 
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QDragEnterEvent
@@ -72,6 +72,22 @@ def update_ui(f: Callable[..., bool]) -> Callable[..., bool]:
     return wrapper
 
 
+def get_files(paths: Sequence[Path]) -> Iterator[Path]:
+    """Return given paths, replacing any directory with its .ptyx and .ex files (if any).
+
+    Raise `FileNotFoundError` if a path does not exist."""
+    for path in paths:
+        if path.is_dir():
+            for matching_files in path.glob("*.ptyx"):
+                yield matching_files
+            for matching_files in path.glob("*.ex"):
+                yield matching_files
+        elif path.is_file():
+            yield path
+        else:
+            raise FileNotFoundError(f"File '{path}' does not exist.")
+
+
 class AskForSavingDialog(QDialog, ask_for_saving_ui.Ui_Dialog):
     CANCEL = 0
     SAVE = 1
@@ -104,6 +120,7 @@ class FileEventsHandler(QObject):
 
     @update_ui
     def finalize(self, paths: Sequence[Path] = ()) -> bool:
+        """Method launched at the end of the initialization of the editor."""
         if paths:
             self.settings.new_session()
             self.open_doc(paths=paths)
@@ -271,9 +288,8 @@ class FileEventsHandler(QObject):
 
         if side is None:
             side = self.settings.current_side
-        for path in paths:
-            if not path.is_file():
-                raise FileNotFoundError(f"File '{path}' does not exist.")
+
+        for path in get_files(paths):
             try:
                 doc = self.settings.docs(side).add_doc(path=path)
                 # noinspection PyProtectedMember

@@ -34,6 +34,7 @@ class PdfViewer(QtPdfWidgets.QPdfView, EnhancedWidget):
         pdf_path = self._pdf_file_path(doc_path=doc_path)
         if pdf_path is not None and pdf_path.is_file():
             self.doc.load(str(pdf_path))
+            print(pdf_path)
             # print(self.doc.pageCount())
         else:
             self.doc.load(None)
