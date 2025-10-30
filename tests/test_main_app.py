@@ -5,4 +5,4 @@ from ptyx_mcq_editor.app import main
 
 def test_main_app():
     with pytest.raises(SystemExit):
-        main(["--dry-run"])
+        main(["--dry-run"], _verify_env=False)

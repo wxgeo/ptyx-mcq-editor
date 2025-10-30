@@ -34,12 +34,13 @@ def my_excepthook(
     sys.__excepthook__(type_, value, traceback)
 
 
-def main(args: list | None = None) -> None:
+def main(args: list | None = None, _verify_env=True) -> None:
     # Make compilations more reproducible, by disabling PYTHONHASHSEED by default.
-    if not os.getenv("PYTHONHASHSEED"):
-        os.environ["PYTHONHASHSEED"] = "0"
-        os.execv(sys.executable, [sys.executable] + sys.argv)
-    assert os.getenv("PYTHONHASHSEED")
+    if _verify_env:
+        if not os.getenv("PYTHONHASHSEED"):
+            os.environ["PYTHONHASHSEED"] = "0"
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+        assert os.getenv("PYTHONHASHSEED")
     print("PYTHONHASHSEED:", os.getenv("PYTHONHASHSEED"))
 
     parser = ArgumentParser(description="Editor for pTyX and MCQ files.")

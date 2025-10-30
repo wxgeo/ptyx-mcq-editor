@@ -12,4 +12,4 @@ def test_desktop_shortcut():
     assert f'\nExec="{SHELL_COMMAND}"' in content
 
     toml = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())
-    assert SHELL_COMMAND in list(toml["tool"]["poetry"]["scripts"])
+    assert SHELL_COMMAND in list(toml["project"]["scripts"])
