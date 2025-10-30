@@ -31,10 +31,10 @@ version:
 update-version:
     {{uv}} run semantic-release version
 	
-build: update-version
+build-new-version: update-version
     {{uv}} build
     
-publish: build
+publish: build-new-version
     {{uv}} publish
 	
 fix:
@@ -43,3 +43,6 @@ fix:
     
 lock:
     git commit uv.lock -m "dev: update uv.lock"
+
+ui:
+    ./.build_ui
