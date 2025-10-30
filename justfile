@@ -25,6 +25,10 @@ pytest:
     
 test: ruff mypy pytest
 
+push:
+    git push
+    git push --tags
+    
 version:
     {{uv}} run semantic-release --noop version
 
@@ -36,7 +40,7 @@ build-new-version: update-version
     
 publish: build-new-version
     {{uv}} publish
-	
+
 fix:
     {{uv}} run black .
     {{uv}} run ruff check --fix {{project}} tests
