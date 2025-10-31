@@ -6,7 +6,7 @@ from PyQt6 import QtWidgets
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtWidgets import QCheckBox, QPushButton, QLabel, QLineEdit
 
-from ptyx_mcq_editor.editor.editor_widget import Indicator, EditorWidget
+from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 
 if TYPE_CHECKING:
@@ -111,10 +111,7 @@ class FindAndReplaceWidget(QtWidgets.QDockWidget, EnhancedWidget):
     def clear_search_indicators(self) -> None:
         if self.current_mcq_editor is None:
             return
-        last_line = self.current_mcq_editor.lines() - 1
-        self.current_mcq_editor.clearIndicatorRange(
-            0, 0, last_line, len(self.current_mcq_editor.text(last_line)) - 1, Indicator.SEARCH_MARKER_ID
-        )
+        self.current_mcq_editor.indicators.search_marker.clear()
 
     def reset_search(self) -> None:
         if self.current_mcq_editor is None:

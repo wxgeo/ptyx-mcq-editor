@@ -1,6 +1,5 @@
 import ast
 import re
-import traceback
 from enum import IntEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -12,10 +11,12 @@ from PyQt6.QtWidgets import QDialog, QFileDialog
 from ptyx.extensions.extended_python import parse_extended_python_code
 from ptyx.errors import PythonBlockError, ErrorInformation, PythonCodeError
 
+from ptyx_mcq_editor.editor.indicator_handlers import Indicators
 from ptyx_mcq_editor.editor.lexer import MyLexer, Mode
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 from ptyx_mcq_editor.generated_ui import dbg_send_scintilla_messages_ui
 from ptyx_mcq_editor.tools.python_code_tools import format_each_python_block, check_each_python_block
+
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_tab import EditorTab
@@ -86,12 +87,12 @@ class Marker(IntEnum):
     NEW = 1
 
 
-class Indicator(IntEnum):
-    SEARCH_MARKER_ID = 0
-    INCLUDE_DIRECTIVES_ID = 1
-    COMPILATION_ERROR = 2
-    VALID_STUDENTS_IDS_PATH = 3
-    INVALID_STUDENTS_IDS_PATH = 4
+# class Indicator(IntEnum):
+#     SEARCH_MARKER_ID = 0
+#     INCLUDE_DIRECTIVES_ID = 1
+#     COMPILATION_ERROR = 2
+#     VALID_STUDENTS_IDS_PATH = 3
+#     INVALID_STUDENTS_IDS_PATH = 4
 
 
 MARGIN_COLOR = QColor("#ff888888")
@@ -155,44 +156,38 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self._lexer = MyLexer(self)
         self.setLexer(self._lexer)
 
-        # Marker use to highlight all search results
-        self.SendScintilla(
-            QsciScintilla.SCI_INDICSETSTYLE, Indicator.SEARCH_MARKER_ID, QsciScintilla.INDIC_FULLBOX
-        )
-        self.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, Indicator.SEARCH_MARKER_ID, 100)
-        self.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, Indicator.SEARCH_MARKER_ID, 200)
-        self.SendScintilla(QsciScintilla.SCI_INDICSETFORE, Indicator.SEARCH_MARKER_ID, QColor("#67d0eb"))
-
-        self.indicatorDefine(QsciScintilla.IndicatorStyle.DotBoxIndicator, Indicator.INCLUDE_DIRECTIVES_ID)
-        self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), Indicator.INCLUDE_DIRECTIVES_ID)
-        self.setIndicatorHoverStyle(
-            QsciScintilla.IndicatorStyle.FullBoxIndicator, Indicator.INCLUDE_DIRECTIVES_ID
-        )
-        self.indicatorDefine(QsciScintilla.IndicatorStyle.DotBoxIndicator, Indicator.VALID_STUDENTS_IDS_PATH)
-        self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), Indicator.VALID_STUDENTS_IDS_PATH)
-        self.setIndicatorHoverStyle(
-            QsciScintilla.IndicatorStyle.FullBoxIndicator, Indicator.VALID_STUDENTS_IDS_PATH
-        )
-        self.indicatorDefine(
-            QsciScintilla.IndicatorStyle.TextColorIndicator, Indicator.INVALID_STUDENTS_IDS_PATH
-        )
-        self.setIndicatorForegroundColor(QColor("#dc143c"), Indicator.INVALID_STUDENTS_IDS_PATH)
-        # self.setIndicatorHoverForegroundColor(QColor("#dc143c"), Indicator.INVALID_STUDENTS_IDS_PATH)
-        self.setIndicatorHoverStyle(
-            QsciScintilla.IndicatorStyle.BoxIndicator, Indicator.INVALID_STUDENTS_IDS_PATH
-        )
+        self.indicators = Indicators(self)
+        # for indicator in Indicator.indicators_list:
+        #     indicator(self)
+        # self.SendScintilla(
+        #     QsciScintilla.SCI_INDICSETSTYLE, Indicator.SEARCH_MARKER_ID, QsciScintilla.INDIC_FULLBOX
+        # )
+        # self.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, Indicator.SEARCH_MARKER_ID, 100)
+        # self.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, Indicator.SEARCH_MARKER_ID, 200)
+        # self.SendScintilla(QsciScintilla.SCI_INDICSETFORE, Indicator.SEARCH_MARKER_ID, QColor("#67d0eb"))
+        #
+        # self.indicatorDefine(QsciScintilla.IndicatorStyle.DotBoxIndicator, Indicator.INCLUDE_DIRECTIVES_ID)
+        # self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), Indicator.INCLUDE_DIRECTIVES_ID)
+        # self.setIndicatorHoverStyle(
+        #     QsciScintilla.IndicatorStyle.FullBoxIndicator, Indicator.INCLUDE_DIRECTIVES_ID
+        # )
+        # self.indicatorDefine(QsciScintilla.IndicatorStyle.DotBoxIndicator, Indicator.VALID_STUDENTS_IDS_PATH)
+        # self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), Indicator.VALID_STUDENTS_IDS_PATH)
+        # self.setIndicatorHoverStyle(
+        #     QsciScintilla.IndicatorStyle.FullBoxIndicator, Indicator.VALID_STUDENTS_IDS_PATH
+        # )
+        # self.indicatorDefine(
+        #     QsciScintilla.IndicatorStyle.TextColorIndicator, Indicator.INVALID_STUDENTS_IDS_PATH
+        # )
+        # self.setIndicatorForegroundColor(QColor("#dc143c"), Indicator.INVALID_STUDENTS_IDS_PATH)
+        # # self.setIndicatorHoverForegroundColor(QColor("#dc143c"), Indicator.INVALID_STUDENTS_IDS_PATH)
+        # self.setIndicatorHoverStyle(
+        #     QsciScintilla.IndicatorStyle.BoxIndicator, Indicator.INVALID_STUDENTS_IDS_PATH
+        # )
         self.textChanged.connect(self.on_text_changed)
 
-        # Don't use directly QScintilla.indicatorClicked signal to handle indicators,
-        # since it leads to an occasional severe bug with a selection
-        # anchor impossible to remove (I couldn't figure out why...).
-        # However, we have to use it to get key modifiers, since QScintilla.indicatorReleased
-        # won't get them.
-        self.indicatorClicked.connect(self._save_modifiers)
-        self.indicatorReleased.connect(self.on_click)
-
-        self.indicatorDefine(QsciScintilla.IndicatorStyle.SquiggleIndicator, Indicator.COMPILATION_ERROR)
-        self.setIndicatorHoverForegroundColor(QColor("#cc0000"), Indicator.COMPILATION_ERROR)
+        # self.indicatorDefine(QsciScintilla.IndicatorStyle.SquiggleIndicator, Indicator.COMPILATION_ERROR)
+        # self.setIndicatorHoverForegroundColor(QColor("#cc0000"), Indicator.COMPILATION_ERROR)
 
         self.markerDefine("|", Marker.ERROR)
         self.setMarkerBackgroundColor(QColor("red"), Marker.ERROR)
@@ -337,12 +332,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             end_col = len(self.text(row)) - 1
         print("Highlight error:", row, col, end_row, end_col)
         # Now apply the indicator-style on the chosen text
-        start_pos = self.positionFromLineIndex(row, col)
-        end_pos = self.positionFromLineIndex(end_row, end_col)
-        self.SendScintilla(QsciScintilla.SCI_SETINDICATORCURRENT, Indicator.COMPILATION_ERROR)
-        self.SendScintilla(QsciScintilla.SCI_SETINDICATORVALUE, Indicator.COMPILATION_ERROR)
-        self.SendScintilla(QsciScintilla.SCI_INDICATORFILLRANGE, start_pos, end_pos - start_pos)
-        # self.fillIndicatorRange(shift + row, col, shift + end_row, end_col, COMPILATION_ERROR)
+        self.indicators.compilation_error.apply(row, col, end_row, end_col)
 
     def dragEnterEvent(self, event: QDragEnterEvent):  # type: ignore
         if self.main_window.file_events_handler.any_dragged_file(event):
@@ -353,7 +343,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
     def autoformat(self) -> None:
         # TODO: display a message in the status bar if autoformat fails.
         #  For that, `format_each_python_block()` should return a status code.
-        # Don't use `self.setText()`, as it would clear undo/redo history.
+        # Don't use `QScintilla.setText()`, as it would clear undo/redo history.
         self.setText(format_each_python_block(self.text()), preserve_history=True)
 
     def setText(self, text: str, preserve_history=False):
@@ -404,9 +394,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.SendScintilla(QsciScintilla.SCI_SETSAVEPOINT)
 
     def clear_indicators(self) -> None:
-        last = self.lines() - 1
-        for indicator in (Indicator.INCLUDE_DIRECTIVES_ID, Indicator.COMPILATION_ERROR):
-            self.clearIndicatorRange(0, 0, last, len(self.text(last)), indicator)
+        self.indicators.include_directive.clear()
+        self.indicators.compilation_error.clear()
 
     def dbg_send_scintilla_command(self) -> None:
         dialog = QDialog(self)
@@ -461,19 +450,21 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             ):
                 self.student_ids_path = path = Path(m.group(2))
                 col = len(m.group(1))
+                self.indicators.valid_students_path.clear()
+                self.indicators.wrong_students_path.clear()
                 if path.is_file():
-                    self.fillIndicatorRange(i, col, i, len(line), Indicator.VALID_STUDENTS_IDS_PATH)
+                    self.indicators.valid_students_path.apply(i, col, i, len(line))
                 else:
-                    self.fillIndicatorRange(i, col, i, len(line), Indicator.INVALID_STUDENTS_IDS_PATH)
+                    self.indicators.wrong_students_path.apply(i, col, i, len(line))
 
             elif line.startswith("-- "):
                 if not line[3:].lstrip().startswith("DIR:"):
-                    self.fillIndicatorRange(i, 3, i, len(line), Indicator.INCLUDE_DIRECTIVES_ID)
+                    self.indicators.include_directive.apply(i, 3, i, len(line))
                     n_includes += 1
                 self._directives_lines.append(i)
             elif line.startswith("!-- "):
                 if not line[4:].lstrip().startswith("DIR:"):
-                    self.fillIndicatorRange(i, 4, i, len(line), Indicator.INCLUDE_DIRECTIVES_ID)
+                    self.indicators.include_directive.apply(i, 4, i, len(line))
                     n_disabled_includes += 1
                 self._directives_lines.append(i)
         if n_includes > 0 or n_disabled_includes > 0:
@@ -481,49 +472,6 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         else:
             self.status_message = ""
         self.main_window.file_events_handler.update_status_message()
-
-    def _save_modifiers(self, line, _, keys):
-        self._modifiers = keys
-
-    def is_indicator_applied(self, line: int, index: int, *indicators: Indicator) -> bool:
-        """Test if any of the given indicators is applied at specified line and index."""
-        position = self.positionFromLineIndex(line, index)
-        print(position, indicators)
-        for indicator in indicators:
-            value = self.SendScintilla(QsciScintilla.SCI_INDICATORVALUEAT, indicator, position)
-            if value > 0:
-                return True
-        return False
-
-    def on_click(self, line: int, index: int, keys: Qt.KeyboardModifier) -> None:
-        """Action executed when user clicks on a Qscintilla indicator."""
-        position = self.positionFromLineIndex(line, index)
-        ctrl_pressed = self._modifiers & Qt.KeyboardModifier.ControlModifier
-        shift_pressed = self._modifiers & Qt.KeyboardModifier.ShiftModifier
-        if self.is_indicator_applied(line, index, Indicator.COMPILATION_ERROR):
-            self.SendScintilla(
-                QsciScintilla.SCI_CALLTIPSHOW, position, self._last_error_message.encode("utf8")
-            )
-        elif self.is_indicator_applied(
-            line, index, Indicator.VALID_STUDENTS_IDS_PATH, Indicator.INVALID_STUDENTS_IDS_PATH
-        ):
-            if shift_pressed:
-                if self.student_ids_path is not None and self.student_ids_path.is_file():
-                    self.main_window.file_events_handler.open_doc(paths=[self.student_ids_path])
-            else:
-                self.selectStudentsIdsFile()
-        else:
-            try:
-                self.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
-                    current_line=line,
-                    background=not shift_pressed,
-                    preview_only=not ctrl_pressed and not shift_pressed,
-                )
-            except IOError:
-                traceback.print_exc()
-        if shift_pressed:
-            # Scintilla select text as a side effect when clicking with shift key pressed.
-            self.unselect()
 
     def replace_line(self, line: int, new_text: str) -> None:
         """Replace a specific range of text in the document."""
