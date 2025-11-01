@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PyQt6.Qsci import QsciScintilla
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent, QMouseEvent
 from PyQt6.QtWidgets import QDialog, QFileDialog
 from ptyx.extensions.extended_python import parse_extended_python_code
 from ptyx.errors import PythonBlockError, ErrorInformation, PythonCodeError
@@ -99,12 +99,15 @@ MARGIN_COLOR = QColor("#ff888888")
 
 
 class EditorWidget(QsciScintilla, EnhancedWidget):
+    """Code editor based on QScintilla."""
+
+    charHovered = pyqtSignal(int, int, name="charHovered")
+
     def __init__(self, parent: "EditorTab"):
         super().__init__(parent)
         self._parent_ = parent
         self.status_message: str = ""
         self._directives_lines: list[int] = []
-        self._modifiers = Qt.KeyboardModifier.NoModifier
         self._last_error_message = ""
         self._errors_info: dict[int, ErrorInformation] = {}
         self.student_ids_path: Path | None = None
@@ -157,43 +160,18 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.setLexer(self._lexer)
 
         self.indicators = Indicators(self)
-        # for indicator in Indicator.indicators_list:
-        #     indicator(self)
-        # self.SendScintilla(
-        #     QsciScintilla.SCI_INDICSETSTYLE, Indicator.SEARCH_MARKER_ID, QsciScintilla.INDIC_FULLBOX
-        # )
-        # self.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, Indicator.SEARCH_MARKER_ID, 100)
-        # self.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, Indicator.SEARCH_MARKER_ID, 200)
-        # self.SendScintilla(QsciScintilla.SCI_INDICSETFORE, Indicator.SEARCH_MARKER_ID, QColor("#67d0eb"))
-        #
-        # self.indicatorDefine(QsciScintilla.IndicatorStyle.DotBoxIndicator, Indicator.INCLUDE_DIRECTIVES_ID)
-        # self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), Indicator.INCLUDE_DIRECTIVES_ID)
-        # self.setIndicatorHoverStyle(
-        #     QsciScintilla.IndicatorStyle.FullBoxIndicator, Indicator.INCLUDE_DIRECTIVES_ID
-        # )
-        # self.indicatorDefine(QsciScintilla.IndicatorStyle.DotBoxIndicator, Indicator.VALID_STUDENTS_IDS_PATH)
-        # self.setIndicatorHoverForegroundColor(QColor("#67d0eb"), Indicator.VALID_STUDENTS_IDS_PATH)
-        # self.setIndicatorHoverStyle(
-        #     QsciScintilla.IndicatorStyle.FullBoxIndicator, Indicator.VALID_STUDENTS_IDS_PATH
-        # )
-        # self.indicatorDefine(
-        #     QsciScintilla.IndicatorStyle.TextColorIndicator, Indicator.INVALID_STUDENTS_IDS_PATH
-        # )
-        # self.setIndicatorForegroundColor(QColor("#dc143c"), Indicator.INVALID_STUDENTS_IDS_PATH)
-        # # self.setIndicatorHoverForegroundColor(QColor("#dc143c"), Indicator.INVALID_STUDENTS_IDS_PATH)
-        # self.setIndicatorHoverStyle(
-        #     QsciScintilla.IndicatorStyle.BoxIndicator, Indicator.INVALID_STUDENTS_IDS_PATH
-        # )
-        self.textChanged.connect(self.on_text_changed)
 
-        # self.indicatorDefine(QsciScintilla.IndicatorStyle.SquiggleIndicator, Indicator.COMPILATION_ERROR)
-        # self.setIndicatorHoverForegroundColor(QColor("#cc0000"), Indicator.COMPILATION_ERROR)
+        self.charHovered.connect(self.indicators.on_hover)
+
+        # noinspection PyUnresolvedReferences
+        self.textChanged.connect(self.on_text_changed)
 
         self.markerDefine("|", Marker.ERROR)
         self.setMarkerBackgroundColor(QColor("red"), Marker.ERROR)
         self.setMarkerForegroundColor(QColor("red"), Marker.ERROR)
         self.setMarginSensitivity(0, True)
         self.setMarginSensitivity(1, True)
+        # noinspection PyUnresolvedReferences
         self.marginClicked.connect(self.on_margin_clicked)
 
         self.markerDefine("N", Marker.NEW)
@@ -243,6 +221,19 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         else:
             # Default action.
             super().keyPressEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        # Close any existing Calltip.
+        self.SendScintilla(QsciScintilla.SCI_CALLTIPCANCEL)
+        # Step 1: Get mouse coordinates
+        point = event.position()
+        x = round(point.x())
+        y = round(point.y())
+        position = self.SendScintilla(QsciScintilla.SCI_POSITIONFROMPOINTCLOSE, x, y)
+        # `position` will contain -1 if the mouse's pointer is outside the window or not over the text,
+        # else it will be the corresponding position in the text.
+        if position != -1:
+            self.charHovered.emit(*self.lineIndexFromPosition(position))
 
     def is_python_block_code(self, line: int, index: int) -> bool:
         """Return `True` iff we are inside a python block code, yet not in a python string."""
@@ -489,6 +480,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             current = str(self.student_ids_path.parent)
         else:
             current = str(self.student_ids_path)
+        # noinspection PyTypeChecker
         filename, _ = QFileDialog.getOpenFileName(
             self, "Select a CSV file containing the students names and IDs", current, "CSV File (*.csv)"
         )

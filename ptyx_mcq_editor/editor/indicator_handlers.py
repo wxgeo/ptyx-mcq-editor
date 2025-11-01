@@ -5,23 +5,26 @@ This module defines static classes providing specific indicators data and method
 import traceback
 from abc import ABC
 from dataclasses import dataclass, asdict
+from enum import Enum
 
-from typing import ClassVar, TYPE_CHECKING, Iterator
+from typing import ClassVar, TYPE_CHECKING, Iterator, Literal
 
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 
-
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_widget import EditorWidget
+
+# Monkey patching QScintilla:
+QsciScintilla.SCI_INDICSETSTROKEWIDTH = 2664
 
 
 @dataclass
 class IndicatorStyling:
     style: int
     fore: QColor | None = None
-    stroke_width: int | None = None
+    stroke_width: int | None = None  # Not supported by current QScintilla version (11/2025)
     alpha: int | None = None  # The alpha value ranges from 0 (completely transparent) to 255 (fully opaque).
     outline_alpha: int | None = None  # idem
     under: bool | None = None
@@ -57,11 +60,14 @@ class Indicator(ABC):
                 # Apply indicator style.
                 self.editor.SendScintilla(sci_code, self.num, property_value)
 
-    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> None:
-        pass
+    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
+        return False
 
-    def on_right_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> None:
-        pass
+    def on_right_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
+        return False
+
+    def on_hover(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
+        return False
 
     def is_present_at(self, position: int) -> bool:
         """Test if indicator is at the given position."""
@@ -109,7 +115,7 @@ class IncludeDirective(Indicator):
         hover_style=QsciScintilla.INDIC_FULLBOX,
     )
 
-    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> None:
+    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
         try:
             self.editor.main_window.file_events_handler.open_file_from_current_ptyx_import_directive(
                 current_line=line,
@@ -118,21 +124,24 @@ class IncludeDirective(Indicator):
             )
         except IOError:
             traceback.print_exc()
+        return True
 
 
 class CompilationError(Indicator):
     """Underline python code resulting in compilation errors."""
 
     styling = IndicatorStyling(
-        style=QsciScintilla.INDIC_SQUIGGLE,
-        hover_fore=QColor("#cc0000"),
+        style=QsciScintilla.INDIC_SQUIGGLEPIXMAP,
+        fore=QColor("red"),
+        # stroke_width=200,  # Not supported by current QScintilla version
     )
 
-    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> None:
+    def on_hover(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
         position = self.editor.positionFromLineIndex(line, index)
         self.editor.SendScintilla(
             QsciScintilla.SCI_CALLTIPSHOW, position, self.editor._last_error_message.encode("utf8")
         )
+        return True
 
 
 class ValidStudentsPath(Indicator):
@@ -144,12 +153,13 @@ class ValidStudentsPath(Indicator):
         hover_style=QsciScintilla.INDIC_FULLBOX,
     )
 
-    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> None:
+    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
         if shift_pressed:
             if self.editor.student_ids_path is not None and self.editor.student_ids_path.is_file():
                 self.editor.main_window.file_events_handler.open_doc(paths=[self.editor.student_ids_path])
         else:
             self.editor.selectStudentsIdsFile()
+        return True
 
 
 class WrongStudentsPath(Indicator):
@@ -159,12 +169,13 @@ class WrongStudentsPath(Indicator):
         hover_style=QsciScintilla.INDIC_BOX,
     )
 
-    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> None:
+    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
         if shift_pressed:
             if self.editor.student_ids_path is not None and self.editor.student_ids_path.is_file():
                 self.editor.main_window.file_events_handler.open_doc(paths=[self.editor.student_ids_path])
         else:
             self.editor.selectStudentsIdsFile()
+        return True
 
 
 # class Indicator(Enum):
@@ -173,6 +184,12 @@ class WrongStudentsPath(Indicator):
 #     COMPILATION_ERROR = 2
 #     VALID_STUDENTS_IDS_PATH = 3
 #     INVALID_STUDENTS_IDS_PATH = 4
+
+
+class Action(Enum):
+    left_click = 0
+    right_click = 1
+    hover = 2
 
 
 class Indicators:
@@ -199,6 +216,7 @@ class Indicators:
         # anchor impossible to remove (I couldn't figure out why...).
         # However, we have to use it to get key modifiers, since QScintilla.indicatorReleased
         # won't get them.
+        self._modifiers = Qt.KeyboardModifier.NoModifier
         self.editor.indicatorClicked.connect(self._save_modifiers)
         self.editor.indicatorReleased.connect(self.on_left_click)
 
@@ -211,32 +229,37 @@ class Indicators:
     def _save_modifiers(self, line, _, keys):
         self._modifiers = keys
 
-    # def is_indicator_applied(self, line: int, index: int, *indicators: Indicator) -> bool:
-    #     """Test if any of the given indicators is applied at specified line and index."""
-    #     position = self.editor.positionFromLineIndex(line, index)
-    #     print(position, indicators)
-    #     for indicator in indicators:
-    #         value = self.editor.SendScintilla(QsciScintilla.SCI_INDICATORVALUEAT, indicator, position)
-    #         if value > 0:
-    #             return True
-    #     return False
+    def on_event(
+        self, line: int, index: int, *, redirect_to: Literal["on_left_click", "on_right_click", "on_hover"]
+    ) -> bool:
+        """
+        Action executed when user potentially interacts with a Qscintilla indicator.
 
-    # def is_indicator_at(self, indicator: Indicator, position: int) -> bool:
-    #     return self.editor.SendScintilla(QsciScintilla.SCI_INDICATORVALUEAT, indicator.num, position) > 0
-
-    def on_left_click(self, line: int, index: int, keys: Qt.KeyboardModifier) -> None:
-        """Action executed when user clicks on a Qscintilla indicator."""
-        print("Indicator left-clicked.")
+        Return `True` if any indicator handler was effectively called, `False` else.
+        """
+        # print(f"Indicator action: <{redirect_to}>.")
         position = self.editor.positionFromLineIndex(line, index)
         ctrl_pressed = self._modifiers & Qt.KeyboardModifier.ControlModifier
         shift_pressed = self._modifiers & Qt.KeyboardModifier.ShiftModifier
+        handler_called = False
         for indicator in self:
             if indicator.is_present_at(position):
                 print(indicator.__class__.__name__, "detected.")
-                indicator.on_left_click(
+                getattr(indicator, redirect_to)(
                     line=line, index=index, ctrl_pressed=ctrl_pressed, shift_pressed=shift_pressed
                 )
+                handler_called = True
 
-        if shift_pressed:
+        if redirect_to == "on_left_click" and shift_pressed:
             # Scintilla select text as a side effect when clicking with shift key pressed.
             self.editor.unselect()
+        return handler_called
+
+    def on_left_click(self, line: int, index: int, keys: Qt.KeyboardModifier) -> bool:
+        return self.on_event(line, index, redirect_to="on_left_click")
+
+    def on_right_click(self, line: int, index: int) -> bool:
+        return self.on_event(line, index, redirect_to="on_right_click")
+
+    def on_hover(self, line: int, index: int) -> bool:
+        return self.on_event(line, index, redirect_to="on_hover")
