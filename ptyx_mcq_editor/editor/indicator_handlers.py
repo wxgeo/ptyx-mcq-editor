@@ -6,18 +6,20 @@ import traceback
 from abc import ABC
 from dataclasses import dataclass, asdict
 from enum import Enum
+from functools import partial
 
 from typing import ClassVar, TYPE_CHECKING, Iterator, Literal
 
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QCursor
+from PyQt6.QtWidgets import QMenu
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 
 # Monkey patching QScintilla:
-QsciScintilla.SCI_INDICSETSTROKEWIDTH = 2664
+QsciScintilla.SCI_INDICSETSTROKEWIDTH = 2751  # type: ignore
 
 
 @dataclass
@@ -48,9 +50,10 @@ class Indicator(ABC):
     styling: ClassVar[IndicatorStyling]
 
     def __init_subclass__(cls: type["Indicator"], **kwargs):
-        cls.num = len(Indicator.indicators_list)
-        Indicator.indicators_list.append(cls)
-        setattr(Indicator, cls.__name__, cls)
+        if cls.__name__[0] != "_":
+            cls.num = len(Indicator.indicators_list)
+            Indicator.indicators_list.append(cls)
+            setattr(Indicator, cls.__name__, cls)
 
     def __init__(self, editor: "EditorWidget"):
         self.editor = editor
@@ -126,6 +129,22 @@ class IncludeDirective(Indicator):
             traceback.print_exc()
         return True
 
+    def on_right_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
+        open_file = partial(
+            self.editor.main_window.file_events_handler.open_file_from_current_ptyx_import_directive,
+            current_line=line,
+        )
+        menu = QMenu(self.editor)
+        menu.addAction("Preview\t(Left-Click)").triggered.connect(lambda _: open_file(preview_only=True))  # type: ignore
+        menu.addSeparator()  # visual separation
+        menu.addAction("Open\t(Shift+Left-Click)").triggered.connect(lambda _: open_file(background=False))  # type: ignore
+        menu.addAction("Open in background\t(Ctrl+Left-Click)").triggered.connect(  # type: ignore
+            lambda _: open_file(background=True)
+        )
+        # noinspection PyArgumentList
+        menu.exec(QCursor.pos())
+        return True
+
 
 class CompilationError(Indicator):
     """Underline python code resulting in compilation errors."""
@@ -133,18 +152,43 @@ class CompilationError(Indicator):
     styling = IndicatorStyling(
         style=QsciScintilla.INDIC_SQUIGGLEPIXMAP,
         fore=QColor("red"),
-        # stroke_width=200,  # Not supported by current QScintilla version
+        stroke_width=200,  # Not supported by current QScintilla version?
     )
 
     def on_hover(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
         position = self.editor.positionFromLineIndex(line, index)
         self.editor.SendScintilla(
-            QsciScintilla.SCI_CALLTIPSHOW, position, self.editor._last_error_message.encode("utf8")
+            QsciScintilla.SCI_CALLTIPSHOW, position, self.editor.last_error_message.encode("utf8")
         )
         return True
 
 
-class ValidStudentsPath(Indicator):
+class _StudentsPath(Indicator):
+
+    def _open_file(self) -> None:
+        if self.editor.student_ids_path is not None and self.editor.student_ids_path.is_file():
+            self.editor.main_window.file_events_handler.open_doc(paths=[self.editor.student_ids_path])
+
+    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
+        if shift_pressed:
+            self._open_file()
+        else:
+            self.editor.selectStudentsIdsFile()
+        return True
+
+    def on_right_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
+        menu = QMenu(self.editor)
+        menu.addAction("Select file\t(Left-Click)").triggered.connect(  # type: ignore
+            lambda _: self.editor.selectStudentsIdsFile()
+        )
+        menu.addSeparator()  # visual separation
+        menu.addAction("Open\t(Shift+Left-Click)").triggered.connect(lambda _: self._open_file())  # type: ignore
+        # noinspection PyArgumentList
+        menu.exec(QCursor.pos())
+        return True
+
+
+class ValidStudentsPath(_StudentsPath):
     """Indicator for the path of CSV file containing all students IDs."""
 
     styling = IndicatorStyling(
@@ -153,29 +197,22 @@ class ValidStudentsPath(Indicator):
         hover_style=QsciScintilla.INDIC_FULLBOX,
     )
 
-    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
-        if shift_pressed:
-            if self.editor.student_ids_path is not None and self.editor.student_ids_path.is_file():
-                self.editor.main_window.file_events_handler.open_doc(paths=[self.editor.student_ids_path])
-        else:
-            self.editor.selectStudentsIdsFile()
+    def on_hover(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
+        position = self.editor.positionFromLineIndex(line, index)
+        self.editor.SendScintilla(
+            QsciScintilla.SCI_CALLTIPSHOW,
+            position,
+            self.editor.students_info.encode("utf8"),
+        )
         return True
 
 
-class WrongStudentsPath(Indicator):
+class WrongStudentsPath(_StudentsPath):
     styling = IndicatorStyling(
         style=QsciScintilla.INDIC_TEXTFORE,
         fore=QColor("#dc143c"),
         hover_style=QsciScintilla.INDIC_BOX,
     )
-
-    def on_left_click(self, line: int, index: int, ctrl_pressed=False, shift_pressed=False) -> bool:
-        if shift_pressed:
-            if self.editor.student_ids_path is not None and self.editor.student_ids_path.is_file():
-                self.editor.main_window.file_events_handler.open_doc(paths=[self.editor.student_ids_path])
-        else:
-            self.editor.selectStudentsIdsFile()
-        return True
 
 
 # class Indicator(Enum):
@@ -215,10 +252,15 @@ class Indicators:
         # since it leads to an occasional severe bug with a selection
         # anchor impossible to remove (I couldn't figure out why...).
         # However, we have to use it to get key modifiers, since QScintilla.indicatorReleased
-        # won't get them.
+        # is buggy and always send `KeyboardModifier.NoModifier`, whatever key is pressed!
+        # So, using QScintilla.indicatorClicked, we retrieve key modifiers, then we store it
+        # to use it with QScintilla.indicatorReleased. A bit hacky, but it works...
+        # See also: https://sourceforge.net/p/scintilla/bugs/2254/, yet marked as resolved.
         self._modifiers = Qt.KeyboardModifier.NoModifier
+        # noinspection PyUnresolvedReferences
         self.editor.indicatorClicked.connect(self._save_modifiers)
-        self.editor.indicatorReleased.connect(self.on_left_click)
+        # noinspection PyUnresolvedReferences
+        self.editor.indicatorReleased.connect(lambda line, index, keys: self.on_left_click(line, index))
 
     def __iter__(self) -> Iterator[Indicator]:
         return iter(self.indicators_by_num.values())
@@ -226,7 +268,7 @@ class Indicators:
     # def find(self, num: int) -> Indicator:
     #     return self._reverse_search[num]
 
-    def _save_modifiers(self, line, _, keys):
+    def _save_modifiers(self, _, __, keys):
         self._modifiers = keys
 
     def on_event(
@@ -244,7 +286,7 @@ class Indicators:
         handler_called = False
         for indicator in self:
             if indicator.is_present_at(position):
-                print(indicator.__class__.__name__, "detected.")
+                # print(indicator.__class__.__name__, "detected.")
                 getattr(indicator, redirect_to)(
                     line=line, index=index, ctrl_pressed=ctrl_pressed, shift_pressed=shift_pressed
                 )
@@ -255,7 +297,7 @@ class Indicators:
             self.editor.unselect()
         return handler_called
 
-    def on_left_click(self, line: int, index: int, keys: Qt.KeyboardModifier) -> bool:
+    def on_left_click(self, line: int, index: int) -> bool:
         return self.on_event(line, index, redirect_to="on_left_click")
 
     def on_right_click(self, line: int, index: int) -> bool:

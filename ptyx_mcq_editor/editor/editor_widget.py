@@ -108,9 +108,10 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self._parent_ = parent
         self.status_message: str = ""
         self._directives_lines: list[int] = []
-        self._last_error_message = ""
+        self.last_error_message = ""
         self._errors_info: dict[int, ErrorInformation] = {}
         self.student_ids_path: Path | None = None
+        self.students_info: str = ""
 
         self.setUtf8(True)  # Set encoding to UTF-8
         font = QFont()
@@ -222,18 +223,28 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             # Default action.
             super().keyPressEvent(event)
 
-    def mouseMoveEvent(self, event: QMouseEvent):
+    def mouseMoveEvent(self, event: QMouseEvent | None) -> None:
+        assert event is not None
         # Close any existing Calltip.
         self.SendScintilla(QsciScintilla.SCI_CALLTIPCANCEL)
         # Step 1: Get mouse coordinates
-        point = event.position()
-        x = round(point.x())
-        y = round(point.y())
+        point = event.pos()
+        x = point.x()
+        y = point.y()
         position = self.SendScintilla(QsciScintilla.SCI_POSITIONFROMPOINTCLOSE, x, y)
         # `position` will contain -1 if the mouse's pointer is outside the window or not over the text,
         # else it will be the corresponding position in the text.
         if position != -1:
             self.charHovered.emit(*self.lineIndexFromPosition(position))
+        super().mouseMoveEvent(event)
+
+    def contextMenuEvent(self, event):
+        point = event.pos()
+        x = point.x()
+        y = point.y()
+        position = self.SendScintilla(QsciScintilla.SCI_POSITIONFROMPOINTCLOSE, x, y)
+        if not self.indicators.on_right_click(*self.lineIndexFromPosition(position)):
+            super().contextMenuEvent(event)
 
     def is_python_block_code(self, line: int, index: int) -> bool:
         """Return `True` iff we are inside a python block code, yet not in a python string."""
@@ -251,7 +262,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             current_doc_path = current_doc_path.resolve()
         if isinstance(error, PythonCodeError):
             info = error.info
-            self._last_error_message = info.message
+            self.last_error_message = info.message
             file_path = None
             if error.ptyx_traceback:
                 if (localisation := error.ptyx_traceback[-1][0]) is not None:
@@ -415,6 +426,27 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         line = self.getCursorPosition()[0]
         return self.text(line)
 
+    def _update_students_info(self) -> None:
+        """
+        Update `self.students_info` by reading the CSV file located at `self.student_ids_path`.
+        """
+        count = 0
+        first_line = ""
+        file_line = ""
+        if self.student_ids_path is not None and self.student_ids_path.is_file():
+            with open(self.student_ids_path) as f:
+                for file_line in f:
+                    if file_line := file_line.strip():
+                        count += 1
+                        if first_line == "":
+                            first_line = file_line
+            last_line = file_line
+
+            self.students_info = f"{first_line}\n" if first_line else ""
+            if last_line != first_line:
+                self.students_info += f"⋯\n{file_line}\n"
+            self.students_info += f"{count} students"
+
     def update_include_indicators(self) -> None:
         """
         Create Scintilla indicators for include directives.
@@ -439,14 +471,17 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 and not header_ended
                 and (m := re.fullmatch(r"(ids\s*=\s*)(.+)", line)) is not None
             ):
-                self.student_ids_path = path = Path(m.group(2))
-                col = len(m.group(1))
-                self.indicators.valid_students_path.clear()
-                self.indicators.wrong_students_path.clear()
-                if path.is_file():
-                    self.indicators.valid_students_path.apply(i, col, i, len(line))
-                else:
-                    self.indicators.wrong_students_path.apply(i, col, i, len(line))
+                path = Path(m.group(2))
+                if path != self.student_ids_path:
+                    self.student_ids_path = path
+                    col = len(m.group(1))
+                    self.indicators.valid_students_path.clear()
+                    self.indicators.wrong_students_path.clear()
+                    if path.is_file():
+                        self.indicators.valid_students_path.apply(i, col, i, len(line))
+                        self._update_students_info()
+                    else:
+                        self.indicators.wrong_students_path.apply(i, col, i, len(line))
 
             elif line.startswith("-- "):
                 if not line[3:].lstrip().startswith("DIR:"):
