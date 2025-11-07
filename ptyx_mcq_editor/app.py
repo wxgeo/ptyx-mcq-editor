@@ -13,11 +13,13 @@ from PyQt6.QtCore import QRect, QPoint
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QMessageBox
 from argcomplete import FilesCompleter
+from ptyx.pretty_print import print_success
 
 from ptyx_mcq_editor.main_window import McqEditorMainWindow
 from ptyx_mcq_editor.param import ICON_PATH
 
 from ptyx_mcq_editor.signal_wake_up import SignalWakeupHandler
+from ptyx_mcq_editor.tools.desktop_shortcut import install_desktop_shortcut
 
 
 def my_excepthook(
@@ -53,9 +55,16 @@ def main(args: list | None = None, _verify_env=True) -> None:
     ).completer = FilesCompleter(  # type: ignore
         ("ex", "ptyx")
     )
-    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--install-shortcuts", action="store_true", help="Install desktop icons and shortcuts."
+    )
+    parser.add_argument("--dry-run", action="store_true", help="Used for tests only.")
     argcomplete.autocomplete(parser, always_complete_options=False)
     parsed_args = parser.parse_args(args)
+    if parsed_args.install_shortcuts:
+        install_desktop_shortcut()
+        print_success("Shortcuts for mcq-editor added to desktop.")
+        sys.exit(0)
     try:
         app = QApplication(sys.argv)
         app.setWindowIcon(QIcon(str(ICON_PATH)))
