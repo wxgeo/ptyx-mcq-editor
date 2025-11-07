@@ -10,6 +10,9 @@ default:
 sync:
    {{uv}} run sync
    
+run:
+    {{uv}} tool run --from ptyx-mcq-editor mcq-editor
+   
 doc:
     {{uv}} run make -C doc autodoc
     {{uv}} run make -C doc html
