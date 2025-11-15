@@ -472,16 +472,15 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 and (m := re.fullmatch(r"(ids\s*=\s*)(.+)", line)) is not None
             ):
                 path = Path(m.group(2))
-                if path != self.student_ids_path:
-                    self.student_ids_path = path
-                    col = len(m.group(1))
-                    self.indicators.valid_students_path.clear()
-                    self.indicators.wrong_students_path.clear()
-                    if path.is_file():
-                        self.indicators.valid_students_path.apply(i, col, i, len(line))
-                        self._update_students_info()
-                    else:
-                        self.indicators.wrong_students_path.apply(i, col, i, len(line))
+                self.student_ids_path = path
+                col = len(m.group(1))
+                self.indicators.valid_students_path.clear()
+                self.indicators.wrong_students_path.clear()
+                if path.is_file():
+                    self.indicators.valid_students_path.apply(i, col, i, len(line))
+                    self._update_students_info()
+                else:
+                    self.indicators.wrong_students_path.apply(i, col, i, len(line))
 
             elif line.startswith("-- "):
                 if not line[3:].lstrip().startswith("DIR:"):
