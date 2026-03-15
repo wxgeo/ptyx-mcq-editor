@@ -259,10 +259,20 @@ class MyLexer(QsciLexerCustom):
     def styleText(self, start: int, end: int) -> None:
         """Style portion of text from `start` to `end`.
 
-        Note that `start` and `end` are positions in bytes (not strings).
+        Note that `start` and `end` are positions in bytes (not strings),
+        and are currently not used.
         """
         editor: EditorWidget = self.parent()  # type: ignore
         assert isinstance(editor, QsciScintilla)
+
+        # `start` and `end` values are automatically sent by QScintilla to only update
+        # the part of the text that need to be refreshed.
+        # Well, in theory at least. In practice, QScintilla often underestimate the part
+        # to be refreshed, leading to incorrect styling.
+        # So, since the texts are typically shorts, it's better to refresh all of it,
+        # the styling process is fast enough for that.
+        start, end = 0, editor.SendScintilla(editor.SCI_GETLENGTH)
+
         # 1. Initialize the styling procedure
         # ------------------------------------
         self.startStyling(start)
