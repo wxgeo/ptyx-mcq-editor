@@ -46,11 +46,12 @@ def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType
             options=DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS,
             feedback_func=feedback,
         )
-        # Don't forget to generate config file!
-        generate_config_file(compiler)
-        config_file = ptyx_filename.with_suffix(CONFIG_FILE_EXTENSION)
-        assert config_file.is_file()
-        print_info(f"Configuration file generated: '{config_file}'.")
+        if "mcq" in compiler.loaded_extensions:
+            # Don't forget to generate the config file!
+            generate_config_file(compiler)
+            config_file = ptyx_filename.with_suffix(CONFIG_FILE_EXTENSION)
+            assert config_file.is_file()
+            print_info(f"Configuration file generated: '{config_file}'.")
         queue.put(compilation_info)
     except BaseException as e:
         # An error occurred, we will share it with the main process if we can.
