@@ -38,7 +38,7 @@ dev = [
     "black>=24",
     "pytest>=7.4.3",
     "types-psutil>=7.0.0.20250218,<8",
-    "python-semantic-release==7.28.1",
+    "python-semantic-release>=10",
     "rust-just>=1.43.0",
     "pyqt6-stubs>=20250824",
 ]
@@ -66,7 +66,15 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.semantic_release]
-version_variable = "pyproject.toml:version"
+version_toml = ["pyproject.toml:project.version"]
+build_command = """
+    uv lock --upgrade-package "$PACKAGE_NAME"
+    git add uv.lock
+    uv build
+"""
+
+[semantic_release.remote.token]
+env = "GH_TOKEN"
 
 [tool.mypy]
 implicit_optional = true
