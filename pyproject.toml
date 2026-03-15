@@ -55,7 +55,7 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-root = ""
-module-name= "mcq_editor"
+module-name= "ptyx_mcq_editor"
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
