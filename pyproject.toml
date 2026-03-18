@@ -54,7 +54,7 @@ requires = ["uv_build>=0.9.6,<0.11.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
-module-root = ""
+module-root = "src"
 module-name= "ptyx_mcq_editor"
 
 [tool.semantic_release]
@@ -89,11 +89,11 @@ filterwarnings = [
 
 [tool.black]
 line-length = 110
-extend-exclude = "ptyx_mcq_editor/generated_ui/.*"
+extend-exclude = "src/ptyx_mcq_editor/generated_ui/.*"
 
 [tool.ruff]
 line-length = 110
-extend-exclude = ["ptyx_mcq_editor/generated_ui/"]
+extend-exclude = ["src/ptyx_mcq_editor/generated_ui/"]
 
 
 
