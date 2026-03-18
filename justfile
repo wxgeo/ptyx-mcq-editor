@@ -1,7 +1,9 @@
-project := "ptyx_mcq_editor"
+project := "ptyx-mcq-editor"
 
-import "../justfile"
-import "../justfiles/ui.just"
+import "../justfiles/config.just"
+
+default:
+    just --list
 
 doc:
     @cd ".." && just doc {{project}}
