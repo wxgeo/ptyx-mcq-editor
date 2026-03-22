@@ -32,15 +32,8 @@ mcq-editor = "ptyx_mcq_editor.app:main"
 
 [dependency-groups]
 dev = [
-    "mypy>=1.6.1,<2",
-    "ptyx-mcq",
-    "ptyx",
-    "black>=24",
-    "pytest>=7.4.3",
-    "types-psutil>=7.0.0.20250218,<8",
-    "python-semantic-release>=10",
-    "rust-just>=1.43.0",
-    "pyqt6-stubs>=20250824",
+    "types-psutil",
+    "pyqt6-stubs",
 ]
 
 [tool.uv]
