@@ -497,11 +497,11 @@ class FileEventsHandler(QObject):
 
     def add_latex_command(self) -> None:
         if (editor := self.current_editor) is not None:
-            editor.insertAndEdit(":LATEX-PACKAGES: ")
+            editor.insertAndEdit(":LATEX-HEADER: ")
 
     def add_latex_package(self) -> None:
         if (editor := self.current_editor) is not None:
-            editor.insertAndEdit(":LATEX-HEADER: ")
+            editor.insertAndEdit(":LATEX-PACKAGES: ")
 
     def update_ptyx_imports(self) -> None:
         if (current_doc := self.settings.docs().current_doc) is not None and self.save_doc():
