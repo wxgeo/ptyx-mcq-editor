@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-03-22)
+
+### Features
+
+- The main menu content adapts now to the type of the edited file.
+  ([`4f54c5f`](https://github.com/wxgeo/ptyx-mcq-editor/commit/4f54c5ff9e9e502bcb832114322be27e2f60a67d))
+
+
 ## v1.1.1 (2026-03-15)
 
 ### Bug Fixes
