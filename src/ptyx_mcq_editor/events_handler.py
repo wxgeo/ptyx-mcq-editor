@@ -139,10 +139,14 @@ class FileEventsHandler(QObject):
             side = self.settings.current_side
         return self.main_window.books[side]
 
+    # def current_editor(self) -> EditorWidget | None:
+    #     tab = self.book(None).currentWidget()
+    #     assert isinstance(tab, EditorTab) or tab is None, tab
+    #     return tab.editor if tab is not None else None
+
+    @property
     def current_editor(self) -> EditorWidget | None:
-        tab = self.book(None).currentWidget()
-        assert isinstance(tab, EditorTab) or tab is None, tab
-        return tab.editor if tab is not None else None
+        return self.main_window.current_mcq_editor
 
     # ------------------------------------------
     #      UI synchronization with settings
@@ -204,6 +208,7 @@ class FileEventsHandler(QObject):
             self.main_window.setWindowTitle(f"{param.WINDOW_TITLE} - {docs.current_doc.title}")
         else:
             self.main_window.setWindowTitle(param.WINDOW_TITLE)
+        self.main_window.update_main_menu()
         self.update_status_message()
         self.ui_updated.emit()
         print("UI updated.")
@@ -490,7 +495,15 @@ class FileEventsHandler(QObject):
     #      Specific actions
     # ============================
 
-    def update_ptyx_imports(self):
+    def add_latex_command(self) -> None:
+        if (editor := self.current_editor) is not None:
+            editor.insertAndEdit(":LATEX-PACKAGES: ")
+
+    def add_latex_package(self) -> None:
+        if (editor := self.current_editor) is not None:
+            editor.insertAndEdit(":LATEX-HEADER: ")
+
+    def update_ptyx_imports(self) -> None:
         if (current_doc := self.settings.docs().current_doc) is not None and self.save_doc():
             path = current_doc.path
             assert path is not None
@@ -503,7 +516,7 @@ class FileEventsHandler(QObject):
             print("No file to update.")
 
     def add_directory(self):
-        editor = self.current_editor()
+        editor = self.current_editor
         if editor is not None:
             # noinspection PyTypeChecker
             path_str = QFileDialog.getExistingDirectory(
@@ -521,7 +534,7 @@ class FileEventsHandler(QObject):
 
     def _find_current_directory_for_includes(self, current_line: int = None) -> Path:
         directory = self.settings.current_directory
-        editor = self.current_editor()
+        editor = self.current_editor
         if editor is not None:
             if current_line is None:
                 current_line = editor.getCursorPosition()[0]
@@ -547,7 +560,7 @@ class FileEventsHandler(QObject):
         """If the current line of the editor is an import directive, open the corresponding file."""
         # print(f"Open file from current line: {preview_only=}, {background=}")
         if self.settings.docs().current_doc is not None:
-            editor = self.current_editor()
+            editor = self.current_editor
             assert editor is not None
             if current_line is None:
                 current_line = editor.getCursorPosition()[0]
@@ -580,13 +593,13 @@ class FileEventsHandler(QObject):
         return False
 
     def update_status_message(self):
-        editor = self.current_editor()
+        editor = self.current_editor
         if editor is not None:
             self.main_window.statusbar.setStyleSheet("")
             self.main_window.status_label.setText(editor.status_message)
 
     def toggle_comment(self):
-        editor = self.current_editor()
+        editor = self.current_editor
         if editor is not None:
             editor.toggle_comment()
 
@@ -605,7 +618,7 @@ class FileEventsHandler(QObject):
         return False
 
     def format_file(self):
-        editor = self.current_editor()
+        editor = self.current_editor
         if editor is not None:
             editor.autoformat()
 

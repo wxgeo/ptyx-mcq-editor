@@ -125,7 +125,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
             lambda: self.publish_toolbar.setVisible(not self.publish_toolbar.isVisible())
         )
 
-        # *** 'Code' menu ***
+        # *** 'Code' menus ***
         self.action_Update_imports.triggered.connect(handler.update_ptyx_imports)
         self.action_Add_folder.triggered.connect(handler.add_directory)
         self.action_Open_file_from_current_import_line.triggered.connect(
@@ -133,6 +133,8 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         )
         self.actionComment.triggered.connect(handler.toggle_comment)
         self.actionFormat_python_code.triggered.connect(handler.format_file)
+        self.actionAdd_LaTeX_command.triggered.connect(handler.add_latex_command)
+        self.actionAdd_LaTeX_package.triggered.connect(handler.add_latex_package)
 
         # *** 'Tools' menu ***
         self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_desktop_menu_entry)
@@ -175,6 +177,14 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
             self.compilation_tabs.pdf_viewer.doc.close()
             return True
         return False
+
+    def update_main_menu(self) -> None:
+        if (editor := self.current_mcq_editor) is not None:
+            current_doc_title = editor.doc.title
+            hidden_menus = {".ex": [self.menuImports, self.menuScan], ".ptyx": [self.menuExercise]}
+            for extension, menus in hidden_menus.items():
+                for menu in menus:
+                    menu.menuAction().setVisible(not current_doc_title.endswith(extension))
 
     # noinspection PyDefaultArgument
     def update_recent_files_menu(self) -> None:

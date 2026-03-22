@@ -16,7 +16,7 @@ from ptyx_mcq_editor.editor.lexer import MyLexer, Mode
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 from ptyx_mcq_editor.generated_ui import dbg_send_scintilla_messages_ui
 from ptyx_mcq_editor.tools.python_code_tools import format_each_python_block, check_each_python_block
-
+from ptyx_mcq_editor.settings import Document
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_tab import EditorTab
@@ -181,6 +181,10 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
 
         # self.installEventFilter(EventFilter(self))
 
+    @property
+    def doc(self) -> Document:
+        return self._parent_.doc
+
     def keyPressEvent(self, event: QKeyEvent | None) -> None:
         assert event is not None
         key = event.key()
@@ -257,7 +261,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         and a message will be displayed in the status bar too.
         """
         self.main_window.statusbar.setStyleSheet("color: red;font-weight: bold")
-        current_doc_path = self._parent_.doc.path
+        current_doc_path = self.doc.path
         if current_doc_path is not None:
             current_doc_path = current_doc_path.resolve()
         if isinstance(error, PythonCodeError):
@@ -282,7 +286,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 and error.label.isdigit()
                 and (
                     file_path is None
-                    or self._parent_.doc.path is None
+                    or self.doc.path is None
                     or current_doc_path == file_path.resolve()
                 )
             ):
@@ -301,7 +305,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 self._highlight_error(row, col, end_row, end_col)
             elif (
                 file_path is not None
-                and self._parent_.doc.path is not None
+                and self.doc.path is not None
                 and current_doc_path != file_path.resolve()
                 and error.ptyx_traceback is not None
             ):
@@ -309,7 +313,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 pick_next_line_num = False
                 position = None
                 for path, position in error.ptyx_traceback:
-                    if path is not None and Path(path).resolve() == self._parent_.doc.path.resolve():
+                    if path is not None and Path(path).resolve() == self.doc.path.resolve():
                         pick_next_line_num = True
                     if pick_next_line_num:
                         break
@@ -602,3 +606,20 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
     def unselect(self):
         line, col = self.getCursorPosition()
         self.setSelection(line, col, line, col)
+
+    def insertAndEdit(self, text:str, line:int=0, col:int=0)->None:
+        """
+        Insert text at a specific position and move the cursor to the end of the inserted text.
+
+        By default, the text will be inserted at the begining of the document.
+        """
+        self.insertAt(text, line, col)
+
+        # Calculate the new position
+        lines_added = text.count('\n')
+        line += lines_added
+        # Get the length of the string after the last newline
+        col += len(text.split('\n')[-1])
+
+        self.setFocus()
+        self.setCursorPosition(line, col)
