@@ -284,11 +284,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 isinstance(error, PythonBlockError)
                 and error.label.isascii()
                 and error.label.isdigit()
-                and (
-                    file_path is None
-                    or self.doc.path is None
-                    or current_doc_path == file_path.resolve()
-                )
+                and (file_path is None or self.doc.path is None or current_doc_path == file_path.resolve())
             ):
                 shift = int(error.label) - 2
                 row = 0 if info.row is None else info.row
@@ -607,7 +603,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         line, col = self.getCursorPosition()
         self.setSelection(line, col, line, col)
 
-    def insertAndEdit(self, text:str, line:int=0, col:int=0)->None:
+    def insertAndEdit(self, text: str, line: int = 0, col: int = 0) -> None:
         """
         Insert text at a specific position and move the cursor to the end of the inserted text.
 
@@ -616,10 +612,10 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.insertAt(text, line, col)
 
         # Calculate the new position
-        lines_added = text.count('\n')
+        lines_added = text.count("\n")
         line += lines_added
         # Get the length of the string after the last newline
-        col += len(text.split('\n')[-1])
+        col += len(text.split("\n")[-1])
 
         self.setFocus()
         self.setCursorPosition(line, col)

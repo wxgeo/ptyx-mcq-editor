@@ -164,7 +164,6 @@ class CompilationError(Indicator):
 
 
 class _StudentsPath(Indicator):
-
     def _open_file(self) -> None:
         if self.editor.student_ids_path is not None and self.editor.student_ids_path.is_file():
             self.editor.main_window.file_events_handler.open_doc(paths=[self.editor.student_ids_path])
