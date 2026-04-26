@@ -1,10 +1,10 @@
-import tomllib
 from dataclasses import dataclass, field
-from enum import auto, Enum
+from enum import Enum, auto
 from pathlib import Path
-from typing import Iterator, Any
+from typing import Any, Iterator
 
 import platformdirs
+import tomllib
 from tomli_w import dumps
 
 CONFIG_PATH = Path(platformdirs.user_config_path("mcq-editor") / "config.toml")
@@ -196,7 +196,12 @@ class DocumentsCollection:
             return None
 
     def add_doc(
-        self, *, path: Path = None, doc: Document = None, select=True, position: int = None
+        self,
+        *,
+        path: Path = None,
+        doc: Document = None,
+        select=True,
+        position: int = None,
     ) -> Document:
         """Open a new document, either an empty one or one corresponding to the given path.
 
@@ -221,13 +226,30 @@ class DocumentsCollection:
         else:
             self._documents.insert(position, doc)
         if select:
-            self._current_index = len(self._documents) - 1
+            if path is not None:
+                self._current_index = self.index(path)  # len(self._documents) - 1
+            else:
+                self._current_index = self.index(doc)
         return doc
 
     def remove_doc(self, index: int) -> None:
         del self._documents[index]
 
-    def index(self, path: Path) -> int:
+    def index(self, path_or_doc: Path | Document) -> int:
+        if isinstance(path_or_doc, Path):
+            return self._path_index(path_or_doc)
+        elif isinstance(path_or_doc, Document):
+            return self._doc_index(path_or_doc)
+        else:
+            raise NotImplementedError(f"{path_or_doc!r} is neither a Path nor a Document instance.")
+
+    def _doc_index(self, document: Document) -> int:
+        for i, doc in enumerate(self._documents):
+            if doc is document:
+                return i
+        raise IndexError(f"Document not found: '{document}'.")
+
+    def _path_index(self, path: Path) -> int:
         for i, doc in enumerate(self._documents):
             if doc.path is not None and doc.path.resolve() == path.resolve():
                 return i
@@ -324,7 +346,12 @@ class Settings:
         return self.docs(side).add_doc()
 
     def move_doc(
-        self, old_side: Side, old_index: int, new_side: Side = None, new_index: int = None, select=True
+        self,
+        old_side: Side,
+        old_index: int,
+        new_side: Side = None,
+        new_index: int = None,
+        select=True,
     ) -> None:
         if new_side is None or old_side == new_side:
             if new_index is not None:
@@ -419,7 +446,10 @@ class Settings:
         return {
             "current_side": self._current_side.name,
             "recent_files": [str(path) for path in self.recent_files],
-            "docs": {"left": self._left_docs.as_dict(), "right": self._right_docs.as_dict()},
+            "docs": {
+                "left": self._left_docs.as_dict(),
+                "right": self._right_docs.as_dict(),
+            },
             "current_directory": str(self.current_directory),
         }
 
