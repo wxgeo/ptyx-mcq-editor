@@ -1,7 +1,10 @@
 import json
 import re
+import shutil
 import subprocess
+import sys
 import traceback
+from pathlib import Path
 from typing import Any
 
 from ptyx.errors import ErrorInformation
@@ -13,8 +16,16 @@ from ptyx.extensions.extended_python import (
 
 from ptyx.pretty_print import red, yellow
 
+RUFF_PATH = Path(sys.executable).parent / "ruff"
+if not RUFF_PATH.is_file():
+    RUFF_PATH = shutil.which("ruff")
+    if RUFF_PATH is None:
+        raise RuntimeError("`ruff` not found. Is it installed as a dependency?")
+
 try:
-    RUFF_VERSION = subprocess.run(["ruff", "--version"], encoding="utf8", stdout=subprocess.PIPE).stdout
+    RUFF_VERSION = subprocess.run(
+        [str(RUFF_PATH), "--version"], encoding="utf8", stdout=subprocess.PIPE
+    ).stdout
 except Exception as _e:
     RUFF_VERSION = "?"
     print(_e)
@@ -25,7 +36,7 @@ def ruff_check(code: str, select="E101,F", ignore="F821") -> list[dict[str, Any]
 
     # Checker example
     proc = subprocess.run(
-        ["ruff", "check", f"--select={select}", f"--ignore={ignore}", "--output-format=json", "-"],
+        [str(RUFF_PATH), "check", f"--select={select}", f"--ignore={ignore}", "--output-format=json", "-"],
         input=code,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,  # remove this for debugging!
@@ -91,7 +102,7 @@ def check_each_python_block(code: str) -> list[ErrorInformation]:
 
 def ruff_formater(code: str) -> str:
     """Format code using ruff."""
-    return subprocess.check_output(["ruff", "format", "-"], input=code, encoding="utf-8")
+    return subprocess.check_output([str(RUFF_PATH), "format", "-"], input=code, encoding="utf-8")
 
 
 def extended_python_ruff_formater(code: str) -> str:
