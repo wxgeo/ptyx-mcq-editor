@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent, QMouseEvent
-from PyQt6.QtWidgets import QDialog, QFileDialog
+from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent, QMouseEvent, QAction
+from PyQt6.QtWidgets import QDialog, QFileDialog, QMenu
 from ptyx.extensions.extended_python import parse_extended_python_code
 from ptyx.errors import PythonBlockError, ErrorInformation, PythonCodeError
 
@@ -85,6 +85,7 @@ class DelimiterKeyCode(IntEnum):
 class Marker(IntEnum):
     ERROR = 0
     NEW = 1
+    BOOKMARK = 2
 
 
 # class Indicator(IntEnum):
@@ -167,6 +168,10 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         # noinspection PyUnresolvedReferences
         self.textChanged.connect(self.on_text_changed)
 
+        # Define markers
+        # --------------
+
+        # Marker for code errors detected on the fly.
         self.markerDefine("|", Marker.ERROR)
         self.setMarkerBackgroundColor(QColor("red"), Marker.ERROR)
         self.setMarkerForegroundColor(QColor("red"), Marker.ERROR)
@@ -175,10 +180,14 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         # noinspection PyUnresolvedReferences
         self.marginClicked.connect(self.on_margin_clicked)
 
+        # Marker for new imports.
         self.markerDefine("N", Marker.NEW)
         self.setMarkerBackgroundColor(QColor("red"), Marker.NEW)
         self.setMarkerForegroundColor(QColor("yellow"), Marker.NEW)
-
+        # QsciScintilla.SC_MARK_VERTICALBOOKMARK is not yet available.
+        self.markerDefine(QsciScintilla.MarkerSymbol.Bookmark, Marker.BOOKMARK)
+        self.setMarkerBackgroundColor(QColor("red"), Marker.BOOKMARK)
+        self.setMarkerForegroundColor(QColor(168, 2, 35), Marker.BOOKMARK)
         # self.installEventFilter(EventFilter(self))
 
     @property
@@ -242,13 +251,37 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             self.charHovered.emit(*self.lineIndexFromPosition(position))
         super().mouseMoveEvent(event)
 
+    def _is_in_margin(self, x: int) -> bool:
+        """Check if an X coordinate falls inside any margin."""
+        total_margin_width = sum(self.marginWidth(i) for i in range(self.margins()))
+        return x < total_margin_width
+
+    def _clear_all_bookmarks(self):
+        self.markerDeleteAll(Marker.BOOKMARK)
+
+    def _show_bookmark_margin_menu(self, global_pos):
+        menu = QMenu(self)
+
+        clear_action = QAction("Clear All Bookmarks", self)
+        clear_action.triggered.connect(self._clear_all_bookmarks)
+
+        # Disable the action if there are no bookmarks
+        has_bookmarks = self.markerFindNext(0, 1 << Marker.BOOKMARK) != -1
+        clear_action.setEnabled(has_bookmarks)
+
+        menu.addAction(clear_action)
+        menu.exec(global_pos)
+
     def contextMenuEvent(self, event):
         point = event.pos()
         x = point.x()
         y = point.y()
         position = self.SendScintilla(QsciScintilla.SCI_POSITIONFROMPOINTCLOSE, x, y)
         if not self.indicators.on_right_click(*self.lineIndexFromPosition(position)):
-            super().contextMenuEvent(event)
+            if self._is_in_margin(x):
+                self._show_bookmark_margin_menu(event.globalPos())
+            else:
+                super().contextMenuEvent(event)  # Default editor context menu
 
     def is_python_block_code(self, line: int, index: int) -> bool:
         """Return `True` iff we are inside a python block code, yet not in a python string."""
@@ -381,6 +414,13 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             info = self._errors_info[line]
             msg = (f"{info.type}: " if info.type else "") + info.message
             self.SendScintilla(QsciScintilla.SCI_CALLTIPSHOW, position, msg.encode("utf8"))
+        else:
+            # Check if this line already has the bookmark marker
+            current_markers = self.markersAtLine(line)
+            if current_markers & (1 << Marker.BOOKMARK):
+                self.markerDelete(line, Marker.BOOKMARK)  # Remove bookmark
+            else:
+                self.markerAdd(line, Marker.BOOKMARK)  # Add bookmark
 
     def check_python_code(self):
         self.markerDeleteAll(Marker.ERROR)
