@@ -6,7 +6,7 @@ import textwrap
 from typing import TYPE_CHECKING
 
 import jedi  # type: ignore[import-untyped]
-from jedi.api.classes import Name
+from jedi.api.classes import Name  # type: ignore[import-untyped]
 from PyQt6.QtCore import QTimer, QThread, pyqtSignal, QPoint
 from PyQt6.Qsci import QsciScintilla, QsciAPIs
 import traceback

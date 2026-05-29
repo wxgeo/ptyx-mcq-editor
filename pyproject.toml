@@ -36,6 +36,7 @@ mcq-editor = "ptyx_mcq_editor.app:main"
 dev = [
     "types-psutil",
     "pyqt6-stubs",
+    "types-pygments",
 ]
 
 [tool.uv]
