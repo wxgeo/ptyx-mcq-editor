@@ -6,9 +6,14 @@ import textwrap
 from typing import TYPE_CHECKING
 
 import jedi  # type: ignore[import-untyped]
+from jedi.api.classes import Name
 from PyQt6.QtCore import QTimer, QThread, pyqtSignal, QPoint
 from PyQt6.Qsci import QsciScintilla, QsciAPIs
 import traceback
+
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import PythonLexer
 
 from ptyx.pretty_print import print_warning
 
@@ -22,13 +27,31 @@ from PyQt6.QtGui import QKeyEvent, QTextOption
 from ptyx.context import GLOBAL_CONTEXT
 
 
+def _format_docstring(signature: str | None, docstring: str) -> str:
+    formatter = HtmlFormatter(nowrap=True, style="default")
+    css = formatter.get_style_defs()
+
+    sig_html = ""
+    if signature:
+        sig_html = highlight("def " + signature, PythonLexer(), HtmlFormatter(nowrap=True, style="default"))
+        sig_html = f'<code>{sig_html}</code><hr style="border:none;border-top:1px solid #ccc;margin:4px 0;">'
+
+    body = docstring.strip().replace("\n", "<br>")
+
+    return f"""
+    <style>{css}</style>
+    <div>{sig_html}</div>
+    <div>{body}</div>
+    """
+
+
 class DocstringPopup(QWidget):
     """A persistent tooltip-like popup for displaying docstrings.
     Closes on Escape or click outside.
     """
 
     def __init__(self, parent=None):
-        super().__init__(parent, Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint)
+        super().__init__(parent, Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
 
         layout = QVBoxLayout(self)
@@ -46,8 +69,8 @@ class DocstringPopup(QWidget):
             QTextEdit { background: #ffffdc; }
         """)
 
-    def show_at(self, global_pos: QPoint, text: str) -> None:
-        self._text.setPlainText(text)
+    def show_at(self, global_pos: QPoint, signature: str | None, docstring: str) -> None:
+        self._text.setHtml(_format_docstring(signature, docstring))
         # Size to content
         doc = self._text.document()
         assert doc is not None
@@ -263,14 +286,20 @@ class PythonAutoCompleter:
         if python_code is None or virtual_position is None:
             return
         jedi_line, jedi_col = virtual_position
-        helps = jedi.Interpreter(python_code, [GLOBAL_CONTEXT]).help(jedi_line, jedi_col)
-        if not helps:
+        script = jedi.Interpreter(python_code, [GLOBAL_CONTEXT])
+        found: list[Name] = script.infer(jedi_line, jedi_col)
+        if not found:
             return
-        docstring = helps[0].docstring()
-        if not docstring:
-            return
+        func = found[0]
+
         pos = self.editor.positionFromLineIndex(line, col)
         x = self.editor.SendScintilla(QsciScintilla.SCI_POINTXFROMPOSITION, 0, pos)
         y = self.editor.SendScintilla(QsciScintilla.SCI_POINTYFROMPOSITION, 0, pos)
         global_pos = self.editor.mapToGlobal(QPoint(x, y + 20))
-        self.docstring_popup.show_at(global_pos, docstring)
+        try:
+            signature = func.get_signatures()[0].to_string()
+        except IndexError:
+            signature = ""
+        doc = func.docstring(raw=True)
+
+        self.docstring_popup.show_at(global_pos, signature, doc)
