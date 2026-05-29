@@ -7,6 +7,7 @@ from functools import partial
 from pathlib import Path
 from types import TracebackType
 from typing import Type
+from traceback import format_tb
 
 import argcomplete
 from PyQt6.QtCore import QRect, QPoint
@@ -14,12 +15,17 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication, QMessageBox
 from argcomplete import FilesCompleter
 from ptyx.pretty_print import print_success
+from ptyx_mcq_editor.error_dialog import ErrorDialog
 
 from ptyx_mcq_editor.main_window import McqEditorMainWindow
 from ptyx_mcq_editor.param import ICON_PATH
 
 from ptyx_mcq_editor.signal_wake_up import SignalWakeupHandler
 from ptyx_mcq_editor.tools.desktop_shortcut import install_desktop_shortcut
+
+import faulthandler
+
+faulthandler.enable()  # prints a traceback to stderr on segfault
 
 
 def my_excepthook(
@@ -31,7 +37,13 @@ def my_excepthook(
     print("Exception detected!")
     # TODO: Log the exception here?
     # noinspection PyTypeChecker
-    QMessageBox.critical(window, "Something went wrong!", f"{type(value).__name__}: {value}")
+    # QMessageBox.critical(window, "Something went wrong!", f"{type(value).__name__}: {value}")
+    ErrorDialog(
+        "Something went wrong!",
+        f"<b style='color:#fc493a'>{type(value).__name__}</b>: {value}",
+        "" if traceback is None else "\n".join(format_tb(traceback)),
+    ).exec()
+    print("hello !")
     # Call the default handler.
     sys.__excepthook__(type_, value, traceback)
 
