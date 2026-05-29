@@ -7,6 +7,7 @@ from typing import NamedTuple, TYPE_CHECKING
 from PyQt6.Qsci import QsciLexerCustom, QsciScintilla
 from PyQt6.QtGui import QColor, QFont
 from ptyx.context import GLOBAL_CONTEXT
+from ptyx_mcq_editor.editor.python_code import AllPythonContent, BlockType
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_widget import EditorWidget
@@ -110,6 +111,18 @@ class Mode(Enum):
     EXPRESSION = auto()
     CONFIG = auto()
     MCQ = auto()
+
+    def is_python(self) -> bool:
+        return self in (Mode.PYTHON, Mode.PYTHON_STRING, Mode.EXPRESSION)
+
+
+class Action(Enum):
+    NONE = auto()
+    START_PYTHON_BLOCK = auto()
+    END_PYTHON_BLOCK = auto()
+    START_PYTHON_EXPRESSION = auto()
+    END_PYTHON_EXPRESSION = auto()
+    NEW_PYTHON_CONTEXT = auto()
 
 
 class StyleInfo(NamedTuple):
@@ -217,13 +230,14 @@ TOKENS_REGEX = re.compile(
 
 
 class MyLexer(QsciLexerCustom):
-    def __init__(self, parent):
+    def __init__(self, parent: "EditorWidget"):
         super().__init__(parent)
         # Default text settings
         # ----------------------
         self.setDefaultColor(QColor("#ff000000"))
         self.setDefaultPaper(QColor("#ffffffff"))
         self.setDefaultFont(QFont("Consolas", 13))
+        self.python_content = AllPythonContent(parent)
 
         for style, (_, text_color, paper_color, is_bold, is_italic, fill_line) in STYLES_LIST.items():
             self.setColor(QColor(text_color), style)
@@ -301,20 +315,50 @@ class MyLexer(QsciLexerCustom):
             mode = Mode.DEFAULT
             previous_mode = Mode.DEFAULT
         # 4.2 Style the text in a loop
+        # `position` is used to keep track of the positions of the python blocks,
+        # which will be used notably for autocompletion.
+        position = start
+        python_block_start: int | None = None
         for i, token in enumerate(token_list):
             assert isinstance(token, str), token
             old_mode_value = mode
-            style, mode = self._get_token_style_and_mode(token, mode, style, previous_mode)
+            style, mode, action = self._get_token_style_and_mode(token, mode, style, previous_mode)
             if mode != old_mode_value:
                 previous_mode = old_mode_value
-            # In setStyling, the length is the number of bytes, not the number of unicode characters !
-            self.setStyling(len(bytearray(token, "utf-8")), style)
+            # In setStyling, the length is the number of bytes, not the number of Unicode characters !
+            length = len(token.encode("utf-8"))
+            self.setStyling(length, style)
+            if action == Action.END_PYTHON_BLOCK:
+                # This is the end of a python block.
+                # Note that `position` must be get *before* adding the delimiter length.
+                if python_block_start is not None:
+                    self.python_content.add_code_block(BlockType.BLOCK, python_block_start, position)
+            elif action == Action.END_PYTHON_EXPRESSION:
+                if python_block_start is not None:
+                    self.python_content.add_code_block(BlockType.EXPRESSION, python_block_start, position)
+            elif action == Action.NEW_PYTHON_CONTEXT:
+                self.python_content.new_context(position)
+
+            position += length
+            if action in (Action.START_PYTHON_BLOCK, Action.START_PYTHON_EXPRESSION):
+                # This is the beginning of a python block.
+                # This time, `position` must be get *after* adding the delimiter length.
+                python_block_start = position
+
             # print(repr(token), length)
+        self.python_content.invalidate_cache()
 
     @staticmethod
     def _get_token_style_and_mode(
         token: str, mode: Mode, style: Style, previous_mode: Mode
-    ) -> tuple[Style, Mode]:
+    ) -> tuple[Style, Mode, Action]:
+        """Determine the style of the token, depending on the context.
+
+        - `mode` is the current mode (the one of the previous token, if any)
+        - `style` is the current style (idem)
+        - `previous_mode` is the last *different* mode, if any.
+        """
+        action = Action.NONE
         if style == Style.PTYX_COMMENT:
             if token == "\n":
                 style = Style.DEFAULT
@@ -354,16 +398,24 @@ class MyLexer(QsciLexerCustom):
         elif token.startswith("...."):
             style = Style.PYTHON_BLOCK_DELIMITER
             assert token.rstrip("\n").rstrip(".") == "", token
-            mode = Mode.PYTHON if mode == Mode.DEFAULT else Mode.DEFAULT
+            if mode == Mode.DEFAULT:
+                action = Action.START_PYTHON_BLOCK
+                mode = Mode.PYTHON
+            else:
+                action = Action.END_PYTHON_BLOCK
+                mode = Mode.DEFAULT
         elif token == "#PYTHON":
             style = Style.PYTHON_BLOCK_DELIMITER
             mode = Mode.PYTHON
+            action = Action.START_PYTHON_BLOCK
         elif token == "#END_PYTHON" or (token == "#END" and mode == Mode.PYTHON):
             style = Style.PYTHON_BLOCK_DELIMITER
             mode = Mode.DEFAULT
+            action = Action.END_PYTHON_BLOCK
         elif token == "}" and mode == Mode.EXPRESSION:
             mode = Mode.DEFAULT
             style = Style.PTYX_TAG
+            action = Action.END_PYTHON_EXPRESSION
         elif mode in (Mode.PYTHON, mode.EXPRESSION):
             if token in REVERSED_QUOTES:
                 style = REVERSED_QUOTES[token]
@@ -389,6 +441,7 @@ class MyLexer(QsciLexerCustom):
             elif token == "#{":
                 mode = Mode.EXPRESSION
                 style = Style.PTYX_TAG
+                action = Action.START_PYTHON_EXPRESSION
             elif re.match(VAR_NAME_REGEX, token):
                 style = Style.PTYX_VARIABLE
             else:
@@ -409,6 +462,7 @@ class MyLexer(QsciLexerCustom):
             mode = Mode.EXPRESSION
         elif token.startswith("OR") and token.endswith("\n"):
             style = Style.MCQ_OR
+            action = Action.NEW_PYTHON_CONTEXT
         elif token == "%":
             style = Style.PTYX_COMMENT
         elif token.startswith("===") and mode == Mode.DEFAULT:
@@ -420,4 +474,4 @@ class MyLexer(QsciLexerCustom):
         else:
             # Default style
             style = Style.DEFAULT
-        return style, mode
+        return style, mode, action

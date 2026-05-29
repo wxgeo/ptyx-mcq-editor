@@ -22,6 +22,7 @@ dependencies = [
     "tomli-w>=1.0.0,<2",
     "ruff>=0.9.1,<0.10",
     "psutil>=7.0.0,<8",
+    "jedi>=0.20.0",
 ]
 
 [project.urls]
@@ -48,7 +49,7 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-root = "src"
-module-name= "ptyx_mcq_editor"
+module-name = "ptyx_mcq_editor"
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
