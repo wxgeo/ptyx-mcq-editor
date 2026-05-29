@@ -10,9 +10,11 @@ from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent, QMouseEvent, 
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMenu
 from ptyx.extensions.extended_python import parse_extended_python_code
 from ptyx.errors import PythonBlockError, ErrorInformation, PythonCodeError
+from ptyx_mcq_editor.editor.autocompletion import PythonAutoCompleter
 
 from ptyx_mcq_editor.editor.indicator_handlers import Indicators
 from ptyx_mcq_editor.editor.lexer import MyLexer, Mode
+from ptyx_mcq_editor.editor.python_code import AllPythonContent
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 from ptyx_mcq_editor.generated_ui import dbg_send_scintilla_messages_ui
 from ptyx_mcq_editor.tools.python_code_tools import format_each_python_block, check_each_python_block
@@ -190,6 +192,12 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.setMarkerForegroundColor(QColor(168, 2, 35), Marker.BOOKMARK)
         # self.installEventFilter(EventFilter(self))
 
+        self.completer = PythonAutoCompleter(self)
+
+    @property
+    def python_content(self) -> AllPythonContent:
+        return self._lexer.python_content
+
     @property
     def doc(self) -> Document:
         return self._parent_.doc
@@ -283,6 +291,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             else:
                 super().contextMenuEvent(event)  # Default editor context menu
 
+    # TODO: use the new `self.python_content` attribute instead?
     def is_python_block_code(self, line: int, index: int) -> bool:
         """Return `True` iff we are inside a python block code, yet not in a python string."""
         return self._lexer.get_style_and_mode(self.positionFromLineIndex(line, index))[1] == Mode.PYTHON
@@ -466,6 +475,11 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         line = self.getCursorPosition()[0]
         return self.text(line)
 
+    def get_current_line_text_before_cursor(self) -> str:
+        """Get the content of the current line before the current position."""
+        line, col = self.getCursorPosition()
+        return self.text(line)[:col]
+
     def _update_students_info(self) -> None:
         """
         Update `self.students_info` by reading the CSV file located at `self.student_ids_path`.
@@ -647,7 +661,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         """
         Insert text at a specific position and move the cursor to the end of the inserted text.
 
-        By default, the text will be inserted at the begining of the document.
+        By default, the text will be inserted at the beginning of the document.
         """
         self.insertAt(text, line, col)
 

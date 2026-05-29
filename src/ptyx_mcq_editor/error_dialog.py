@@ -9,10 +9,16 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QFrame,
-    QSizePolicy,
-    QStyle,
 )
 from PyQt6.QtCore import Qt
+
+
+def default_error_dialog(error_name: str, error_message: str, detail: str = "") -> None:
+    ErrorDialog(
+        "Something went wrong!",
+        f"<b style='color:#fc493a'>{error_name}</b>: {error_message}",
+        detail,
+    ).exec()
 
 
 class ErrorDialog(QDialog):
@@ -47,7 +53,6 @@ class ErrorDialog(QDialog):
     #  UI construction                                                     #
     # ------------------------------------------------------------------ #
     def _build_ui(self, message: str) -> None:
-        self.setWindowIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxCritical))
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)

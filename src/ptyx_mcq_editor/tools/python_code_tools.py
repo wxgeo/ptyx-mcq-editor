@@ -18,9 +18,11 @@ from ptyx.pretty_print import red, yellow
 
 RUFF_PATH = Path(sys.executable).parent / "ruff"
 if not RUFF_PATH.is_file():
-    RUFF_PATH = shutil.which("ruff")
-    if RUFF_PATH is None:
+    _global_ruff_path = shutil.which("ruff")
+    if _global_ruff_path is None:
         raise RuntimeError("`ruff` not found. Is it installed as a dependency?")
+    RUFF_PATH = Path(_global_ruff_path)
+    del _global_ruff_path
 
 try:
     RUFF_VERSION = subprocess.run(

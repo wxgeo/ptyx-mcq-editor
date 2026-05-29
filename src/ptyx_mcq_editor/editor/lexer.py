@@ -1,11 +1,14 @@
 import builtins
 import re
+import traceback
 from enum import IntEnum, auto, Enum
 from keyword import iskeyword
 from typing import NamedTuple, TYPE_CHECKING
 
 from PyQt6.Qsci import QsciLexerCustom, QsciScintilla
 from PyQt6.QtGui import QColor, QFont
+from ptyx.pretty_print import print_warning
+
 from ptyx.context import GLOBAL_CONTEXT
 from ptyx_mcq_editor.editor.python_code import AllPythonContent, BlockType
 
@@ -270,7 +273,7 @@ class MyLexer(QsciLexerCustom):
             return Style(style).name
         return ""
 
-    def styleText(self, start: int, end: int) -> None:
+    def _styleText(self, start: int, end: int) -> None:
         """Style portion of text from `start` to `end`.
 
         Note that `start` and `end` are positions in bytes (not strings),
@@ -317,12 +320,15 @@ class MyLexer(QsciLexerCustom):
         # 4.2 Style the text in a loop
         # `position` is used to keep track of the positions of the python blocks,
         # which will be used notably for autocompletion.
+        self.python_content.reset()
         position = start
         python_block_start: int | None = None
         for i, token in enumerate(token_list):
             assert isinstance(token, str), token
             old_mode_value = mode
             style, mode, action = self._get_token_style_and_mode(token, mode, style, previous_mode)
+            if action != Action.NONE:
+                print(position, action)
             if mode != old_mode_value:
                 previous_mode = old_mode_value
             # In setStyling, the length is the number of bytes, not the number of Unicode characters !
@@ -333,9 +339,11 @@ class MyLexer(QsciLexerCustom):
                 # Note that `position` must be get *before* adding the delimiter length.
                 if python_block_start is not None:
                     self.python_content.add_code_block(BlockType.BLOCK, python_block_start, position)
+                    python_block_start = None
             elif action == Action.END_PYTHON_EXPRESSION:
                 if python_block_start is not None:
                     self.python_content.add_code_block(BlockType.EXPRESSION, python_block_start, position)
+                    python_block_start = None
             elif action == Action.NEW_PYTHON_CONTEXT:
                 self.python_content.new_context(position)
 
@@ -348,6 +356,16 @@ class MyLexer(QsciLexerCustom):
             # print(repr(token), length)
         self.python_content.invalidate_cache()
 
+    def styleText(self, start: int, end: int) -> None:
+        try:
+            self._styleText(start, end)
+        except Exception as e:
+            # Intercept the error and print it.
+            # Don't raise a popup, because it would be really intrusive, and it induces a Segmentation Fault
+            # (I don't really understand why, but anyway it is better to simply print it.).
+            traceback.print_exception(e)
+            print_warning("The lexer failed.")
+
     @staticmethod
     def _get_token_style_and_mode(
         token: str, mode: Mode, style: Style, previous_mode: Mode
@@ -357,6 +375,7 @@ class MyLexer(QsciLexerCustom):
         - `mode` is the current mode (the one of the previous token, if any)
         - `style` is the current style (idem)
         - `previous_mode` is the last *different* mode, if any.
+          It used to parse python strings, and then go back to the previous mode.
         """
         action = Action.NONE
         if style == Style.PTYX_COMMENT:
@@ -438,6 +457,7 @@ class MyLexer(QsciLexerCustom):
             elif token[1:-1] in TAGS_WITH_A_PYTHON_ARG:
                 style = Style.PTYX_TAG
                 mode = Mode.EXPRESSION
+                action = Action.START_PYTHON_EXPRESSION
             elif token == "#{":
                 mode = Mode.EXPRESSION
                 style = Style.PTYX_TAG
@@ -460,6 +480,7 @@ class MyLexer(QsciLexerCustom):
             # TODO: Temporary workaround, since "?" and "{" should not be of the same style.
             style = Style.PTYX_TAG
             mode = Mode.EXPRESSION
+            action = Action.START_PYTHON_EXPRESSION
         elif token.startswith("OR") and token.endswith("\n"):
             style = Style.MCQ_OR
             action = Action.NEW_PYTHON_CONTEXT

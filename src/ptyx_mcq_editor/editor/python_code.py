@@ -38,6 +38,11 @@ class AllPythonContent:
         # Create a cache for the gathered Python code.
         self._cache: dict[int, str] = {}
 
+    def reset(self):
+        self._content = [[]]
+        self._context_start = []
+        self.invalidate_cache()
+
     def new_context(self, position: int) -> None:
         self._content.append([])
         self._context_start.append(position)
@@ -86,8 +91,6 @@ class AllPythonContent:
         Note that this code may contain unparsed "extended python" directives, which are not valid Python code.
         If you need valid Python code, you should use `AllPythonContent.current_python_code()` instead.
 
-        :param line: line of the file (starting from 0)
-        :param col: column in the file (idem)
         :return: raw Python code or `None`
         """
         text = self.editor.text().encode("utf8")
@@ -140,15 +143,17 @@ class AllPythonContent:
         """Return the string length (number of characters), given the start and end positions in bytes."""
         return len(self.editor.text().encode("utf8")[start:end].decode("utf8"))
 
-    def virtual_position(self, line: int, col: int) -> tuple[int, int] | None:
+    def virtual_position(self, line: int, col: int, first_line=0, first_col=0) -> tuple[int, int] | None:
         """
         Convert the real position in the editor to a virtual one inside the gathered Python code.
 
-        :param line: line number (starting from 0)
-        :param col: column number (idem)
+        :param line: line number
+        :param col: column number
+        :param first_line: first-line index (default: 0)
+        :param first_col: first-column index (default: 0)
         :return: virtual position (line, column),  or `None`
         """
-        # Qscintilla position (in bytes)
+        # QScintilla position (in bytes)
         position = self.editor.positionFromLineIndex(line, col)
         context_num = self._context_num(position)
         if context_num is None:
@@ -162,9 +167,10 @@ class AllPythonContent:
                 # Add the number of characters (and not the number of bytes!)
                 virtual_position += block.end - block.start
             elif block.start <= position <= block.end:
-                return self.position_to_line_col(
+                line, col = self.position_to_line_col(
                     self.python_code(context_num), virtual_position + position - block.start
                 )
+                return line + first_line, col + first_col
         return None
 
     @staticmethod

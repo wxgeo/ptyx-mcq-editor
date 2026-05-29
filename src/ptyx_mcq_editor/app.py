@@ -12,10 +12,10 @@ from traceback import format_tb
 import argcomplete
 from PyQt6.QtCore import QRect, QPoint
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QMainWindow, QApplication, QMessageBox
+from PyQt6.QtWidgets import QMainWindow, QApplication
 from argcomplete import FilesCompleter
 from ptyx.pretty_print import print_success
-from ptyx_mcq_editor.error_dialog import ErrorDialog
+from ptyx_mcq_editor.error_dialog import default_error_dialog
 
 from ptyx_mcq_editor.main_window import McqEditorMainWindow
 from ptyx_mcq_editor.param import ICON_PATH
@@ -32,17 +32,17 @@ def my_excepthook(
     type_: Type[BaseException],
     value: BaseException,
     traceback: TracebackType | None,
-    window: QMainWindow = None,
+    window: QMainWindow | None = None,
 ) -> None:
     print("Exception detected!")
     # TODO: Log the exception here?
     # noinspection PyTypeChecker
     # QMessageBox.critical(window, "Something went wrong!", f"{type(value).__name__}: {value}")
-    ErrorDialog(
-        "Something went wrong!",
-        f"<b style='color:#fc493a'>{type(value).__name__}</b>: {value}",
+    default_error_dialog(
+        type(value).__name__,
+        str(value),
         "" if traceback is None else "\n".join(format_tb(traceback)),
-    ).exec()
+    )
     print("hello !")
     # Call the default handler.
     sys.__excepthook__(type_, value, traceback)
