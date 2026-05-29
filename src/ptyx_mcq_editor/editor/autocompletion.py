@@ -2,13 +2,15 @@
 Implement autocompletion in the editor.
 """
 
+import textwrap
 from typing import TYPE_CHECKING
 
 import jedi  # type: ignore[import-untyped]
-from PyQt6.QtCore import QTimer, QThread, pyqtSignal
+from PyQt6.QtCore import QTimer, QThread, pyqtSignal, QPoint
 from PyQt6.Qsci import QsciScintilla, QsciAPIs
 import traceback
 
+from PyQt6.QtWidgets import QToolTip
 
 from ptyx.pretty_print import print_warning
 
@@ -16,28 +18,54 @@ if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 
 
-class CompletionWorker(QThread):
-    """Runs jedi in a background thread to avoid blocking the UI."""
+class Worker(QThread):
+    """
+    Runs jedi in a background thread to avoid blocking the UI.
 
-    completion_ready = pyqtSignal(list)  # list[str]
-    completion_error = pyqtSignal(str)  # carries the traceback
+    Abstract class.
+    """
 
-    def __init__(self, source: str, line: int, column: int, path: str = ""):
+    ready = pyqtSignal(list)  # list[str]
+    error = pyqtSignal(str)  # carries the traceback
+
+    def __init__(self, source: str, line: int, column: int):
         super().__init__()
         self.source = source
         self.line = line
         self.column = column
-        self.path = path
+
+    def run(self):
+        raise NotImplementedError
+
+
+class CompletionWorker(Worker):
+    """Runs jedi in a background thread to avoid blocking the UI."""
 
     def run(self):
         # noinspection PyBroadException
         try:
-            script = jedi.Script(self.source, path=self.path)
+            script = jedi.Script(self.source)
             completions = script.complete(self.line, self.column)
             names = [c.name for c in completions]
-            self.completion_ready.emit(names)
+            if names:
+                self.ready.emit(names)
         except Exception:
-            self.completion_error.emit(traceback.format_exc())
+            self.error.emit(traceback.format_exc())
+
+
+class SignatureWorker(Worker):
+    """Runs jedi in a background thread to avoid blocking the UI."""
+
+    def run(self):
+        # noinspection PyBroadException
+        try:
+            script = jedi.Script(self.source)
+            signatures = script.get_signatures(self.line, self.column)
+            if not signatures:
+                return
+            self.ready.emit([signatures[0].to_string()])
+        except Exception:
+            self.error.emit(traceback.format_exc())
 
 
 class PythonAutoCompleter:
@@ -53,11 +81,12 @@ class PythonAutoCompleter:
     def __init__(self, editor: "EditorWidget", minimal_char_count=1):
         self.editor = editor
         self.minimal_char_count = minimal_char_count
-        self._worker: CompletionWorker | None = None
+        self._worker: Worker | None = None
         self._apis: QsciAPIs | None = None
         # Last char and last word before the cursor.
         self._last_char = ""
         self._current_word = ""
+        self._current_pos = 0
         # Use a timer to avoid calling autocompletion when the user is still writing.
         # Every time the user modifies the text, the timer will be reset.
         self._debounce = QTimer()
@@ -125,11 +154,21 @@ class PythonAutoCompleter:
         word_start = self.editor.SendScintilla(QsciScintilla.SCI_WORDSTARTPOSITION, pos, True)
         word_end = self.editor.SendScintilla(QsciScintilla.SCI_WORDENDPOSITION, pos, True)
         self._current_word = self.editor.text()[word_start:word_end]
+        self._current_pos = ed.positionFromLineIndex(line, col)
 
-        self._worker = CompletionWorker(python_code, jedi_line, jedi_col)
-        self._worker.completion_ready.connect(self._on_completion_ready)
-        self._worker.completion_error.connect(self._on_completion_error)
+        # Either ask for autocompletion, or for the signature of the function/method, depending on the last char.
+        display_signature = self._last_char in ("(", ",")
+        worker_class = SignatureWorker if display_signature else CompletionWorker
+        self._worker = worker_class(python_code, jedi_line, jedi_col)
+        self._worker.ready.connect(
+            self._on_signature_ready if display_signature else self._on_completion_ready
+        )
+        self._worker.error.connect(self._on_error)
         self._worker.start()
+
+    def _on_signature_ready(self, hint: list[str]) -> None:
+        wrapped = textwrap.fill(hint[0], width=72)
+        self.editor.SendScintilla(QsciScintilla.SCI_CALLTIPSHOW, self._current_pos, wrapped.encode("utf-8"))
 
     def _on_completion_ready(self, names: list[str]) -> None:
         if not self._apis or not names:
@@ -162,6 +201,26 @@ class PythonAutoCompleter:
             # Trigger the popup (only if user is still typing)
             self.editor.autoCompleteFromAPIs()
 
-    def _on_completion_error(self, message: str) -> None:
+    def _on_error(self, message: str) -> None:
         print(message)
-        print_warning("Autocompletion failed.")
+        print_warning("Autocompletion or signature failed.")
+
+    def trigger_f1_docstring(self) -> None:
+        line, col = self.editor.getCursorPosition()
+        python_code = self.editor.python_content.current_python_code(line, col)
+        virtual_position = self.editor.python_content.virtual_position(line, col, first_line=1)
+        if python_code is None or virtual_position is None:
+            return
+        jedi_line, jedi_col = virtual_position
+        helps = jedi.Script(python_code).help(jedi_line, jedi_col)
+        if not helps:
+            return
+        docstring = helps[0].docstring()
+        if not docstring:
+            return
+        wrapped = "\n".join(textwrap.fill(line, width=80) for line in docstring.splitlines())
+        pos = self.editor.positionFromLineIndex(line, col)
+        x = self.editor.SendScintilla(QsciScintilla.SCI_POINTXFROMPOSITION, 0, pos)
+        y = self.editor.SendScintilla(QsciScintilla.SCI_POINTYFROMPOSITION, 0, pos)
+        global_pos = self.editor.mapToGlobal(QPoint(x, y))
+        QToolTip.showText(global_pos, wrapped, self.editor)

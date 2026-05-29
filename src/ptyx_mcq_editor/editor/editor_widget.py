@@ -240,6 +240,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             else:
                 # Default action.
                 super().keyPressEvent(event)
+        elif event.key() == Qt.Key.Key_F1:
+            self.completer.trigger_f1_docstring()
         else:
             # Default action.
             super().keyPressEvent(event)
