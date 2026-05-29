@@ -242,6 +242,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 super().keyPressEvent(event)
         elif event.key() == Qt.Key.Key_F1:
             self.completer.trigger_f1_docstring()
+        elif event.key() == Qt.Key.Key_Escape:
+            self.completer.docstring_popup.hide()
         else:
             # Default action.
             super().keyPressEvent(event)

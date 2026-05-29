@@ -10,12 +10,60 @@ from PyQt6.QtCore import QTimer, QThread, pyqtSignal, QPoint
 from PyQt6.Qsci import QsciScintilla, QsciAPIs
 import traceback
 
-from PyQt6.QtWidgets import QToolTip
-
 from ptyx.pretty_print import print_warning
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_widget import EditorWidget
+
+from PyQt6.QtWidgets import QWidget, QTextEdit, QVBoxLayout
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeyEvent, QTextOption
+
+from ptyx.context import GLOBAL_CONTEXT
+
+
+class DocstringPopup(QWidget):
+    """A persistent tooltip-like popup for displaying docstrings.
+    Closes on Escape or click outside.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent, Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self._text = QTextEdit()
+        self._text.setReadOnly(True)
+        self._text.setFrameStyle(0)
+        self._text.setWordWrapMode(QTextOption.WrapMode.WordWrap)
+        layout.addWidget(self._text)
+
+        # Match QToolTip appearance
+        self.setStyleSheet("""
+            QWidget { background: #ffffdc; border: 1px solid #aaaaaa; }
+            QTextEdit { background: #ffffdc; }
+        """)
+
+    def show_at(self, global_pos: QPoint, text: str) -> None:
+        self._text.setPlainText(text)
+        # Size to content
+        doc = self._text.document()
+        assert doc is not None
+        doc.setTextWidth(500)
+        self.resize(int(doc.size().width()) + 16, int(doc.size().height()) + 16)
+        self.move(global_pos)
+        self.show()
+
+    def keyPressEvent(self, event: QKeyEvent | None) -> None:
+        if event and event.key() == Qt.Key.Key_Escape:
+            self.hide()
+        else:
+            super().keyPressEvent(event)
+
+    # def mousePressEvent(self, event) -> None:
+    #     self.hide()
 
 
 class Worker(QThread):
@@ -44,7 +92,7 @@ class CompletionWorker(Worker):
     def run(self):
         # noinspection PyBroadException
         try:
-            script = jedi.Script(self.source)
+            script = jedi.Interpreter(self.source, [GLOBAL_CONTEXT])
             completions = script.complete(self.line, self.column)
             names = [c.name for c in completions]
             if names:
@@ -59,7 +107,7 @@ class SignatureWorker(Worker):
     def run(self):
         # noinspection PyBroadException
         try:
-            script = jedi.Script(self.source)
+            script = jedi.Interpreter(self.source, [GLOBAL_CONTEXT])
             signatures = script.get_signatures(self.line, self.column)
             if not signatures:
                 return
@@ -97,6 +145,7 @@ class PythonAutoCompleter:
         self._setup_scintilla()
         editor.textChanged.connect(self._on_text_changed)
         editor.cursorPositionChanged.connect(self._on_cursor_moved)
+        self.docstring_popup = DocstringPopup(editor)
 
     def _setup_scintilla(self) -> None:
         ed = self.editor
@@ -119,8 +168,10 @@ class PythonAutoCompleter:
 
     def _on_text_changed(self):
         self._debounce.start()
+        self.docstring_popup.hide()
 
     def _on_cursor_moved(self, line: int, col: int):
+        self.docstring_popup.hide()
         # Immediately hide completion if we moved out of a Python block
         if not self.editor.is_python_block_code(line, col):
             self.editor.cancelList()
@@ -212,15 +263,14 @@ class PythonAutoCompleter:
         if python_code is None or virtual_position is None:
             return
         jedi_line, jedi_col = virtual_position
-        helps = jedi.Script(python_code).help(jedi_line, jedi_col)
+        helps = jedi.Interpreter(python_code, [GLOBAL_CONTEXT]).help(jedi_line, jedi_col)
         if not helps:
             return
         docstring = helps[0].docstring()
         if not docstring:
             return
-        wrapped = "\n".join(textwrap.fill(line, width=80) for line in docstring.splitlines())
         pos = self.editor.positionFromLineIndex(line, col)
         x = self.editor.SendScintilla(QsciScintilla.SCI_POINTXFROMPOSITION, 0, pos)
         y = self.editor.SendScintilla(QsciScintilla.SCI_POINTYFROMPOSITION, 0, pos)
-        global_pos = self.editor.mapToGlobal(QPoint(x, y))
-        QToolTip.showText(global_pos, wrapped, self.editor)
+        global_pos = self.editor.mapToGlobal(QPoint(x, y + 20))
+        self.docstring_popup.show_at(global_pos, docstring)
