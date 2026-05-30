@@ -15,7 +15,7 @@ from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QMainWindow, QApplication
 from argcomplete import FilesCompleter
 from ptyx.pretty_print import print_success
-from ptyx_mcq_editor.error_dialog import default_error_dialog
+from ptyx_mcq_editor.widgets.error_dialog import default_error_dialog
 
 from ptyx_mcq_editor.main_window import McqEditorMainWindow
 from ptyx_mcq_editor.param import ICON_PATH
