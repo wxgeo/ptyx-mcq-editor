@@ -61,12 +61,18 @@ class AllPythonContent:
 
         context.append(PythonCodeBlock(block_type, start, end))
 
-    def is_inside_python_block(self, position: int) -> bool:
+    @property
+    def _current_position(self) -> int:
+        return self.editor.positionFromLineIndex(*self.editor.getCursorPosition())
+
+    def is_inside_python_block(self, position: int | None = None) -> bool:
         """Test whether the given position is inside a python block code."""
         return self._context_num(position) is not None
 
-    def _context_num(self, position: int) -> ContextNum | None:
+    def _context_num(self, position: int | None = None) -> ContextNum | None:
         """Return the current context number, if the position is inside a python block, else `None`."""
+        if position is None:
+            position = self._current_position
         match self._find_block(position):
             case context_num, _:
                 assert isinstance(context_num, int), context_num
@@ -84,7 +90,7 @@ class AllPythonContent:
                     return ContextNum(i), block
         return None
 
-    def _current_raw_python_code(self, context_num: ContextNum) -> str:
+    def _context_raw_python_code(self, context_num: ContextNum) -> str:
         """
         Return the raw Python code of the given context.
 
@@ -100,11 +106,11 @@ class AllPythonContent:
         try:
             python_code = self._cache[context_num]
         except KeyError:
-            python_code = parse_extended_python_code(self._current_raw_python_code(context_num))
+            python_code = parse_extended_python_code(self._context_raw_python_code(context_num))
             self._cache[context_num] = python_code
         return python_code
 
-    def current_python_code(self, line: int, col: int) -> str | None:
+    def context_python_code(self, line: int, col: int) -> str | None:
         """
         Return the parsed Python code of the current context.
 

@@ -74,7 +74,7 @@ class Document:
 
     @property
     def title(self) -> str:
-        name = self.path.name if self.path is not None else f"New document {self.doc_id}"
+        name = f"New document {self.doc_id}" if self.path is None else self.path.name
         return name if self.is_saved else "* " + name
 
     def rename(self, path: Path) -> None:

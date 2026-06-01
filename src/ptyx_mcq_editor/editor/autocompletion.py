@@ -11,6 +11,9 @@ from PyQt6.QtCore import QTimer, QThread, pyqtSignal, QPoint
 from PyQt6.Qsci import QsciScintilla, QsciAPIs
 import traceback
 
+from ptyx_mcq import PTYX_MCQ_TAGS
+
+from ptyx_mcq_editor.param import RESSOURCES_PATH
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
@@ -25,6 +28,46 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeyEvent, QTextOption
 
 from ptyx.context import GLOBAL_CONTEXT
+from ptyx.syntax_tree import SyntaxTreeGenerator, TagDict
+
+_LATEX_COMMANDS_FILE = RESSOURCES_PATH / "latex_commands.txt"
+LATEX_COMMANDS = sorted(
+    line for _line in _LATEX_COMMANDS_FILE.read_text("utf8").split("\n") if (line := _line.strip())
+)
+
+
+def _generate_commands_from_ptyx_tags(ptyx_tags: TagDict) -> list[str]:
+    """
+    Use pTyX tags syntax definition to generate a list of commands for autocompletion.
+
+    :param ptyx_tags: a dictionary specifying each tag syntax, see `ptyx` package for an example.
+    :return: a list of commands for autocompletion.
+    """
+    commands: list[str] = []
+    for tag in sorted(ptyx_tags):
+        command_parts = ["#", tag]
+        _python_args, _other_args, closing_tags = ptyx_tags[tag]
+        n_args = _python_args + _other_args
+        if closing_tags is None:
+            closing_tags = []
+        for closing in ("END", "@END"):
+            try:
+                closing_tags.remove(closing)
+            except ValueError:
+                pass
+        if n_args >= 1:
+            command_parts.append("{%M}")
+            command_parts.append((n_args - 1) * "{}")
+        if len(closing_tags) == 1:
+            command_parts.append("%M" if n_args == 0 else "")
+            command_parts.append("#" + closing_tags[0].lstrip("@"))
+        commands.append("".join(command_parts))
+    print(commands)
+    return commands
+
+
+PTYX_COMMANDS = _generate_commands_from_ptyx_tags(SyntaxTreeGenerator.tags)
+PTYX_MCQ_COMMANDS = _generate_commands_from_ptyx_tags(PTYX_MCQ_TAGS)
 
 
 def _format_docstring(signature: str | None, docstring: str) -> str:
@@ -43,6 +86,22 @@ def _format_docstring(signature: str | None, docstring: str) -> str:
     <div>{sig_html}</div>
     <div>{body}</div>
     """
+
+
+def _get_potential_command_stem(line_prefix: str) -> str:
+    """
+    Search for what looks like the stem of a potential LaTeX or pTyX command at the end of the given string.
+
+    If there is nothing like that, return an empty string else.
+
+    The test is very simple: any # or \\ character is detected as the start of a potential command, whatever follows.
+
+    :param line_prefix: the part of the line of text that precede the cursor.
+    :return: the start of the current LaTeX or pTyX command, including \\ or #.
+    """
+    i = max(line_prefix.rfind(char) for char in ("\\", "#"))
+
+    return line_prefix[i:] if i != -1 else ""
 
 
 class DocstringPopup(QWidget):
@@ -69,8 +128,11 @@ class DocstringPopup(QWidget):
             QTextEdit { background: #ffffdc; }
         """)
 
-    def show_at(self, global_pos: QPoint, signature: str | None, docstring: str) -> None:
-        self._text.setHtml(_format_docstring(signature, docstring))
+    def show_at(self, global_pos: QPoint, content: str, as_html: bool = False) -> None:
+        if as_html:
+            self._text.setHtml(content)
+        else:
+            self._text.setText(content)
         # Size to content
         doc = self._text.document()
         assert doc is not None
@@ -158,6 +220,7 @@ class PythonAutoCompleter:
         self._last_char = ""
         self._current_word = ""
         self._current_pos = 0
+        self._command_stem = ""
         # Use a timer to avoid calling autocompletion when the user is still writing.
         # Every time the user modifies the text, the timer will be reset.
         self._debounce = QTimer()
@@ -166,8 +229,12 @@ class PythonAutoCompleter:
         self._debounce.timeout.connect(self._trigger_completion)
 
         self._setup_scintilla()
-        editor.textChanged.connect(self._on_text_changed)
+        # Use char-added event, and not text-changed one: text-changed event is also fired
+        # without user intervention, for example when a file is loaded in the editor.
+        # This triggered Segmentation Faults sometimes.
+        editor.SCN_CHARADDED.connect(self._on_char_added)
         editor.cursorPositionChanged.connect(self._on_cursor_moved)
+        editor.SCN_AUTOCSELECTION.connect(self._on_completion_selected)
         self.docstring_popup = DocstringPopup(editor)
 
     def _setup_scintilla(self) -> None:
@@ -189,30 +256,87 @@ class PythonAutoCompleter:
             self._apis = QsciAPIs(lexer)
             self._apis.prepare()
 
-    def _on_text_changed(self):
+    def _on_char_added(self):
         self._debounce.start()
         self.docstring_popup.hide()
 
     def _on_cursor_moved(self, line: int, col: int):
+        """Actions to execute when the user moves the cursor of the editor."""
         self.docstring_popup.hide()
         # Immediately hide completion if we moved out of a Python block
         if not self.editor.is_python_block_code(line, col):
             self.editor.cancelList()
 
-    def _trigger_completion(self) -> None:
-        ed = self.editor
-        line, col = ed.getCursorPosition()
+    def _on_completion_selected(self, selection_in_bytes: bytes, position: int) -> None:
+        """Customize autocompletion, when a suggestion is selected."""
+        # IMPORTANT: Newlines must be replaced before `selection_in_bytes.find(b"%M")` is called.
+        # Else, it would return an incorrect value, since we are replacing two bytes (%N) with only one (\n).
+        selection_in_bytes = selection_in_bytes.replace(b"%N", b"\n")
+        selection = selection_in_bytes.decode("utf8")
+        shift = len(self._command_stem)
+        if "%M" in selection or "%N" in selection:
+            self.editor.SendScintilla(QsciScintilla.SCI_AUTOCCANCEL)
+            selection = selection[shift:]
+            position_shift = selection_in_bytes.find(b"%M")
+            selection = selection.replace("%M", "")
+            if position_shift == -1:
+                position_shift = len(selection_in_bytes)
+            line, col = self.editor.lineIndexFromPosition(position)
+            self.editor.insertAndEdit(selection, line, col + shift)
+            self.editor.SendScintilla(QsciScintilla.SCI_GOTOPOS, position + position_shift)
 
-        python_code = self.editor.python_content.current_python_code(line, col)
+    def _trigger_completion(self) -> None:
+        """Open a pop-up with autocompletion suggestions, if relevant, based on the cursor position."""
+        line, col = self.editor.getCursorPosition()
+        self._last_char = self.editor.text(line)[col - 1 : col]
+
+        if self.editor.python_content.is_inside_python_block():
+            # We are inside a Python code block.
+            if self.editor.python_content.is_extended_python(line):
+                # The current line does not follow the Python syntax (it is "extended python",
+                # see the pTyX plugin of the same name).
+                return
+            self._python_completion(line, col)
+        else:
+            self._latex_completion(line, col)
+
+    def _latex_completion(self, line: int, col: int) -> None:
+        """Open a pop-up with autocompletion suggestions for LaTeX code or pTyX code."""
+        potential_command_stem = _get_potential_command_stem(self.editor.text(line)[:col])
+        if len(potential_command_stem) <= self.minimal_char_count:
+            return
+        if potential_command_stem.startswith("\\"):
+            commands_list = LATEX_COMMANDS
+        else:
+            if self.editor.doc.title.endswith(".ex") or "#LOAD{MCQ}" in self.editor.text():
+                commands_list = PTYX_COMMANDS + PTYX_MCQ_COMMANDS
+            else:
+                commands_list = PTYX_COMMANDS
+
+        sep = "\t"  # use a tab as separator, since a space may be present in an autocompletion snippet.
+        item_list = sep.join(
+            command for command in commands_list if command.startswith(potential_command_stem)
+        )  # tab-separated, must be sorted
+
+        if item_list:
+            self.editor.SendScintilla(QsciScintilla.SCI_AUTOCSETSEPARATOR, ord(sep))
+            self._command_stem = potential_command_stem
+            self.editor.SendScintilla(
+                QsciScintilla.SCI_AUTOCSHOW,
+                len(potential_command_stem),  # lenEntered
+                item_list.encode("utf-8"),
+            )
+
+    def _python_completion(self, line: int, col: int) -> None:
+        """Open a pop-up with autocompletion suggestions for Python code snippets."""
+        python_code = self.editor.python_content.context_python_code(line, col)
+
         # jedi line numbers are 1-based
         virtual_position = self.editor.python_content.virtual_position(line, col, first_line=1)
-        if python_code is None or virtual_position is None:
-            # We are not inside a Python code block.
-            return
-        if self.editor.python_content.is_extended_python(line):
-            # The current line does not follow the Python syntax (it is "extended python", see pTyX plugin).
-            return
 
+        if python_code is None or virtual_position is None:
+            # Should not occur, except perhaps in case of race condition?
+            return
         # Kill previous worker if still running
         if self._worker and self._worker.isRunning():
             self._worker.terminate()
@@ -220,15 +344,15 @@ class PythonAutoCompleter:
         jedi_line, jedi_col = virtual_position
         print(f"{jedi_line=}, {jedi_col=}")
 
-        current_line = python_code.split("\n")[jedi_line - 1]
-        self._last_char = current_line[jedi_col - 1 : jedi_col]
+        # current_line = python_code.split("\n")[jedi_line - 1]
+        # self._last_char = current_line[jedi_col - 1 : jedi_col]
         # print(f"{self._last_char=}")
 
-        pos = ed.positionFromLineIndex(line, col)
+        pos = self.editor.positionFromLineIndex(line, col)
         word_start = self.editor.SendScintilla(QsciScintilla.SCI_WORDSTARTPOSITION, pos, True)
         word_end = self.editor.SendScintilla(QsciScintilla.SCI_WORDENDPOSITION, pos, True)
         self._current_word = self.editor.text()[word_start:word_end]
-        self._current_pos = ed.positionFromLineIndex(line, col)
+        self._current_pos = self.editor.positionFromLineIndex(line, col)
 
         # Either ask for autocompletion, or for the signature of the function/method, depending on the last char.
         display_signature = self._last_char in ("(", ",")
@@ -281,7 +405,7 @@ class PythonAutoCompleter:
 
     def trigger_f1_docstring(self) -> None:
         line, col = self.editor.getCursorPosition()
-        python_code = self.editor.python_content.current_python_code(line, col)
+        python_code = self.editor.python_content.context_python_code(line, col)
         virtual_position = self.editor.python_content.virtual_position(line, col, first_line=1)
         if python_code is None or virtual_position is None:
             return
@@ -302,4 +426,4 @@ class PythonAutoCompleter:
             signature = ""
         doc = func.docstring(raw=True)
 
-        self.docstring_popup.show_at(global_pos, signature, doc)
+        self.docstring_popup.show_at(global_pos, _format_docstring(signature, doc), as_html=True)

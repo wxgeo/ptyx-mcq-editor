@@ -24,14 +24,14 @@
 \author{%M}
 \bar{%M}
 \begin{%M}
-\begin{center}%N %M %N\end{center}
-\begin{enumerate}%N\item %M %N\item %N\end{enumerate}
-\begin{itemize}%N\item %M %N\item %N\end{itemize}
+\begin{center}%N %M %N\end{center}%N
+\begin{enumerate}%N\item %M %N\item %N\end{enumerate}%N
+\begin{itemize}%N\item %M %N\item %N\end{itemize}%N
 \begin{matrix} %M \end{matrix}
 \begin{pmatrix} %M \end{pmatrix}
 \begin{smallmatrix} %M \end{smallmatrix}
-\begin{minipage}{\linewidth}%N %M %N\end{minipage}
-\begin{tabular}{|l|*{4}{c|}}%N\hline%N %M \\ %N\hline%N \\%N\hline%N\end{tabular}
+\begin{minipage}{\linewidth}%N %M %N\end{minipage}%N
+\begin{tabular}{|l|*{4}{c|}}%N\hline%N %M \\ %N\hline%N \\%N\hline%N\end{tabular}%N
 \beta
 \bigcap
 \bigcup
@@ -57,7 +57,7 @@
 \documentclass{%M}
 \dot{%M}
 \emph{%M}
-\end
+\end{%M}
 \ensuremath{%M}
 \epsilon
 \equiv
