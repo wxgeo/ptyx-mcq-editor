@@ -100,7 +100,13 @@ class AllPythonContent:
         :return: raw Python code or `None`
         """
         text = self.editor.text().encode("utf8")
-        return b"".join(text[block.start : block.end] for block in self._content[context_num]).decode("utf8")
+        # Add a new line between each block.
+        # It is mandatory for the small inline python snippets.
+        # For example, "Let's compare #{a+5} and #{b+7}." would result in the detected Python code "a+5b+7" else.
+        # It is facultative for python multilines blocks, but it doesn't hurt.
+        return b"\n".join(text[block.start : block.end] for block in self._content[context_num]).decode(
+            "utf8"
+        )
 
     def python_code(self, context_num: ContextNum) -> str:
         try:
@@ -169,14 +175,18 @@ class AllPythonContent:
         virtual_position = 0
         # Blocks are supposed ordered.
         for block in context:
+            # Previous blocks
             if block.end < position:
                 # Add the number of characters (and not the number of bytes!)
-                virtual_position += block.end - block.start
+                # Don't forget to add 1, because "\n" was automatically inserted between blocks.
+                virtual_position += block.end - block.start + 1
+            # Current block
             elif block.start <= position <= block.end:
+                position_inside_the_block = position - block.start
                 line, col = self.position_to_line_col(
-                    self.python_code(context_num), virtual_position + position - block.start
+                    self.python_code(context_num), virtual_position + position_inside_the_block
                 )
-                return line + first_line, col + first_col
+                return line + first_line, col + first_col  # shift in case indexing don't start at 0.
         return None
 
     @staticmethod

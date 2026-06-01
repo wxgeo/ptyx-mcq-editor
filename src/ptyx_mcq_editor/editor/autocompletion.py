@@ -7,9 +7,10 @@ from typing import TYPE_CHECKING
 
 import jedi  # type: ignore[import-untyped]
 from jedi.api.classes import Name  # type: ignore[import-untyped]
-from PyQt6.QtCore import QTimer, QThread, pyqtSignal, QPoint
+from PyQt6.QtCore import QTimer, QThread, pyqtSignal, QPoint, QObject, QEvent
 from PyQt6.Qsci import QsciScintilla, QsciAPIs
 import traceback
+
 
 from ptyx_mcq import PTYX_MCQ_TAGS
 
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
 
 from PyQt6.QtWidgets import QWidget, QTextEdit, QVBoxLayout
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QKeyEvent, QTextOption
+from PyQt6.QtGui import QKeyEvent, QTextOption, QMouseEvent
 
 from ptyx.context import GLOBAL_CONTEXT
 from ptyx.syntax_tree import SyntaxTreeGenerator, TagDict
@@ -70,22 +71,75 @@ PTYX_COMMANDS = _generate_commands_from_ptyx_tags(SyntaxTreeGenerator.tags)
 PTYX_MCQ_COMMANDS = _generate_commands_from_ptyx_tags(PTYX_MCQ_TAGS)
 
 
-def _format_docstring(signature: str | None, docstring: str) -> str:
+def _generate_docstring(results: list[Name], definitions: list[Name]) -> str:
     formatter = HtmlFormatter(nowrap=True, style="default")
     css = formatter.get_style_defs()
+    lexer = PythonLexer()
+    if not definitions:
+        return ""
+    result = results[0] if results else None
+    definition = definitions[0]
+    try:
+        raw_signature = result.get_signatures()[0].to_string() if result else ""
+    except IndexError:
+        raw_signature = ""
 
-    sig_html = ""
+    category: tuple[str, str] = (result.type if result else "", definition.type)
+    if category[0] == "function":
+        parent = definition.parent()
+        if parent and parent.type == "class":
+            category = ("function", "method")
+    print(category)
+
+    title = ""
+    module = ""
+    signature = ""
+    docstring = result.docstring(raw=True) if result else ""
+    print("DOCSTRING:", docstring)
+    match category:
+        case "function", "function":
+            title = f"Function <b>{definition.full_name}"
+            signature = "def " + raw_signature
+        case "function", "method":
+            title = f"Method <b>{definition.name}</b> of class <b>{definition.parent().name}</b>"
+            module = definition.parent().parent().full_name
+            signature = "def " + raw_signature
+        case "class", "class":
+            title = f"Class <b>{definition.name}</b>"
+            signature = "class " + raw_signature
+            module = definition.parent().full_name
+        case "instance", "property":
+            title = f"Property <b>{definition.name}</b> of class <b>{definition.parent().name}</b>"
+            module = definition.parent().parent().full_name
+            signature = "@property\ndef " + raw_signature
+            docstring = definition.docstring(raw=True) if result else ""
+        case "instance", _:
+            _possible_types = "|".join(f"<i>{result.name}</i>" for result in results)
+            title = f"Instance <b>{definition.name}</b>: {_possible_types}"
+        case _, "param":
+            title = f"param <b>{definition.name}</b>"
+            signature = definition.description[6:]
+        case "module", "module":
+            title = f"module <b>{definition.full_name}</b>"
+        case _:
+            print_warning(f"Unknown category: {category}")
+
+    horizontal_separator = '<hr style="border:none;border-top:1px solid #ccc;margin:4px 0;">'
+
+    docstring = docstring.strip().replace("\n", "<br>") if docstring else "<i>no documentation</i>"
+
+    html = [f"<style>{css}</style>"]
+    if title:
+        html.append(f"<div style='margin-bottom: 5px'>{title}</div>")
+    if module:
+        html.append(f"<div style='margin-bottom: 5px'><i>Module: {module}</i></div>")
     if signature:
-        sig_html = highlight("def " + signature, PythonLexer(), HtmlFormatter(nowrap=True, style="default"))
-        sig_html = f'<code>{sig_html}</code><hr style="border:none;border-top:1px solid #ccc;margin:4px 0;">'
+        signature = highlight(signature, lexer, formatter).strip().replace("\n", "<br>")
+        html.append(f"<div style='background-color: #ffeac2'><code>{signature}</code></div>")
+    html.append(horizontal_separator)
+    html.append(docstring)
 
-    body = docstring.strip().replace("\n", "<br>")
-
-    return f"""
-    <style>{css}</style>
-    <div>{sig_html}</div>
-    <div>{body}</div>
-    """
+    return "\n".join(html)
 
 
 def _get_potential_command_stem(line_prefix: str) -> str:
@@ -201,7 +255,7 @@ class SignatureWorker(Worker):
             self.error.emit(traceback.format_exc())
 
 
-class PythonAutoCompleter:
+class PythonAutoCompleter(QObject):
     """
     Attach to a QsciScintilla editor.
     Provides dynamic, jedi-powered Python completion inside Python blocks
@@ -212,6 +266,7 @@ class PythonAutoCompleter:
     """
 
     def __init__(self, editor: "EditorWidget", minimal_char_count=1):
+        super().__init__(editor)
         self.editor = editor
         self.minimal_char_count = minimal_char_count
         self._worker: Worker | None = None
@@ -233,8 +288,8 @@ class PythonAutoCompleter:
         # without user intervention, for example when a file is loaded in the editor.
         # This triggered Segmentation Faults sometimes.
         editor.SCN_CHARADDED.connect(self._on_char_added)
-        editor.cursorPositionChanged.connect(self._on_cursor_moved)
         editor.SCN_AUTOCSELECTION.connect(self._on_completion_selected)
+        editor.SCN_DOUBLECLICK.connect(self._on_double_click)
         self.docstring_popup = DocstringPopup(editor)
 
     def _setup_scintilla(self) -> None:
@@ -250,6 +305,10 @@ class PythonAutoCompleter:
         ed.setAutoCompletionReplaceWord(False)
         ed.setAutoCompletionUseSingle(QsciScintilla.AutoCompletionUseSingle.AcusNever)
 
+        view_port = ed.viewport()
+        if view_port is not None:
+            view_port.installEventFilter(self)
+
         # If you already have a lexer attached:
         lexer = ed.lexer()
         if lexer:
@@ -260,12 +319,21 @@ class PythonAutoCompleter:
         self._debounce.start()
         self.docstring_popup.hide()
 
-    def _on_cursor_moved(self, line: int, col: int):
-        """Actions to execute when the user moves the cursor of the editor."""
-        self.docstring_popup.hide()
-        # Immediately hide completion if we moved out of a Python block
-        if not self.editor.is_python_block_code(line, col):
-            self.editor.cancelList()
+    def eventFilter(self, watched, event) -> bool:
+        if isinstance(event, QMouseEvent):
+            if event.type() == QEvent.Type.MouseButtonPress:
+                if event.button() == Qt.MouseButton.LeftButton:
+                    self.docstring_popup.hide()
+                    line, col = self.editor.getCursorPosition()
+                    if not self.editor.is_python_block_code(line, col):
+                        self.editor.cancelList()
+        return False  # always let the event through
+
+    def _on_double_click(self, position: int, line: int, modifiers: int) -> None:
+        # The word is already selected by Scintilla's default handler.
+        # We just reuse the same logic as F1, no need to duplicate it.
+        self.trigger_f1_docstring()
+        print("Double-click!")
 
     def _on_completion_selected(self, selection_in_bytes: bytes, position: int) -> None:
         """Customize autocompletion, when a suggestion is selected."""
@@ -411,19 +479,18 @@ class PythonAutoCompleter:
             return
         jedi_line, jedi_col = virtual_position
         script = jedi.Interpreter(python_code, [GLOBAL_CONTEXT])
-        found: list[Name] = script.infer(jedi_line, jedi_col)
-        if not found:
+        results: list[Name] = script.infer(jedi_line, jedi_col)
+        definitions: list[Name] = script.goto(jedi_line, jedi_col)
+        if not definitions:
+            current_line = python_code.split("\n")[jedi_line - 1]
+            print(f"No info for [...]{current_line}[...].")
+            print(jedi_col * "-" + "^")
             return
-        func = found[0]
 
         pos = self.editor.positionFromLineIndex(line, col)
         x = self.editor.SendScintilla(QsciScintilla.SCI_POINTXFROMPOSITION, 0, pos)
         y = self.editor.SendScintilla(QsciScintilla.SCI_POINTYFROMPOSITION, 0, pos)
         global_pos = self.editor.mapToGlobal(QPoint(x, y + 20))
-        try:
-            signature = func.get_signatures()[0].to_string()
-        except IndexError:
-            signature = ""
-        doc = func.docstring(raw=True)
 
-        self.docstring_popup.show_at(global_pos, _format_docstring(signature, doc), as_html=True)
+        docstring = _generate_docstring(results, definitions)
+        self.docstring_popup.show_at(global_pos, docstring, as_html=True)
