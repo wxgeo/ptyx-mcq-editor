@@ -2,6 +2,7 @@
 Implement autocompletion in the editor.
 """
 
+import builtins
 import textwrap
 from typing import TYPE_CHECKING
 
@@ -11,6 +12,9 @@ from PyQt6.QtCore import QTimer, QThread, pyqtSignal, QPoint, QObject, QEvent
 from PyQt6.Qsci import QsciScintilla, QsciAPIs
 import traceback
 
+from ptyx_mcq.make.extend_latex_generator import MCQLatexGenerator
+
+from ptyx.latex_generator import LatexGenerator
 
 from ptyx_mcq import PTYX_MCQ_TAGS
 
@@ -20,13 +24,13 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
 
 from ptyx.pretty_print import print_warning
+from ptyx_mcq_editor.widgets.permanent_tooltip import Tooltip
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 
-from PyQt6.QtWidgets import QWidget, QTextEdit, QVBoxLayout
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QKeyEvent, QTextOption, QMouseEvent
+from PyQt6.QtGui import QMouseEvent
 
 from ptyx.context import GLOBAL_CONTEXT
 from ptyx.syntax_tree import SyntaxTreeGenerator, TagDict
@@ -35,6 +39,7 @@ _LATEX_COMMANDS_FILE = RESSOURCES_PATH / "latex_commands.txt"
 LATEX_COMMANDS = sorted(
     line for _line in _LATEX_COMMANDS_FILE.read_text("utf8").split("\n") if (line := _line.strip())
 )
+NAME_SPACES = [GLOBAL_CONTEXT, vars(builtins)]
 
 
 def _generate_commands_from_ptyx_tags(ptyx_tags: TagDict) -> list[str]:
@@ -71,7 +76,7 @@ PTYX_COMMANDS = _generate_commands_from_ptyx_tags(SyntaxTreeGenerator.tags)
 PTYX_MCQ_COMMANDS = _generate_commands_from_ptyx_tags(PTYX_MCQ_TAGS)
 
 
-def _generate_docstring(results: list[Name], definitions: list[Name]) -> str:
+def generate_python_help_message(results: list[Name], definitions: list[Name]) -> str:
     formatter = HtmlFormatter(nowrap=True, style="default")
     css = formatter.get_style_defs()
     lexer = PythonLexer()
@@ -98,7 +103,9 @@ def _generate_docstring(results: list[Name], definitions: list[Name]) -> str:
     print("DOCSTRING:", docstring)
     match category:
         case "function", "function":
-            title = f"Function <b>{definition.full_name}"
+            title = f"Function <b>{definition.name}</b>"
+            module = definition.parent().full_name
+            print(definitions)
             signature = "def " + raw_signature
         case "function", "method":
             title = f"Method <b>{definition.name}</b> of class <b>{definition.parent().name}</b>"
@@ -142,6 +149,19 @@ def _generate_docstring(results: list[Name], definitions: list[Name]) -> str:
     return "\n".join(html)
 
 
+def generate_ptyx_help_message(tag: str) -> str:
+    name = f"_parse_{tag}_tag"
+    try:
+        doc = getattr(LatexGenerator, name).__docstring__
+    except AttributeError:
+        try:
+            doc = getattr(MCQLatexGenerator, name).__docstring__
+        except AttributeError:
+            doc = "<i>no documentation</i>"
+    title = f"<div><b>#{tag}</b></div>"
+    return title + '<hr style="border:none;border-top:1px solid #ccc;margin:4px 0;">' + f"<div>{doc}</div>"
+
+
 def _get_potential_command_stem(line_prefix: str) -> str:
     """
     Search for what looks like the stem of a potential LaTeX or pTyX command at the end of the given string.
@@ -156,53 +176,6 @@ def _get_potential_command_stem(line_prefix: str) -> str:
     i = max(line_prefix.rfind(char) for char in ("\\", "#"))
 
     return line_prefix[i:] if i != -1 else ""
-
-
-class DocstringPopup(QWidget):
-    """A persistent tooltip-like popup for displaying docstrings.
-    Closes on Escape or click outside.
-    """
-
-    def __init__(self, parent=None):
-        super().__init__(parent, Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint)
-        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        self._text = QTextEdit()
-        self._text.setReadOnly(True)
-        self._text.setFrameStyle(0)
-        self._text.setWordWrapMode(QTextOption.WrapMode.WordWrap)
-        layout.addWidget(self._text)
-
-        # Match QToolTip appearance
-        self.setStyleSheet("""
-            QWidget { background: #ffffdc; border: 1px solid #aaaaaa; }
-            QTextEdit { background: #ffffdc; }
-        """)
-
-    def show_at(self, global_pos: QPoint, content: str, as_html: bool = False) -> None:
-        if as_html:
-            self._text.setHtml(content)
-        else:
-            self._text.setText(content)
-        # Size to content
-        doc = self._text.document()
-        assert doc is not None
-        doc.setTextWidth(500)
-        self.resize(int(doc.size().width()) + 16, int(doc.size().height()) + 16)
-        self.move(global_pos)
-        self.show()
-
-    def keyPressEvent(self, event: QKeyEvent | None) -> None:
-        if event and event.key() == Qt.Key.Key_Escape:
-            self.hide()
-        else:
-            super().keyPressEvent(event)
-
-    # def mousePressEvent(self, event) -> None:
-    #     self.hide()
 
 
 class Worker(QThread):
@@ -226,12 +199,16 @@ class Worker(QThread):
 
 
 class CompletionWorker(Worker):
-    """Runs jedi in a background thread to avoid blocking the UI."""
+    """
+    Helper class to analyze Python code and suggest autocompletion.
+
+    Runs jedi in a background thread to avoid blocking the UI.
+    """
 
     def run(self):
         # noinspection PyBroadException
         try:
-            script = jedi.Interpreter(self.source, [GLOBAL_CONTEXT])
+            script = jedi.Interpreter(self.source, NAME_SPACES)
             completions = script.complete(self.line, self.column)
             names = [c.name for c in completions]
             if names:
@@ -241,12 +218,16 @@ class CompletionWorker(Worker):
 
 
 class SignatureWorker(Worker):
-    """Runs jedi in a background thread to avoid blocking the UI."""
+    """
+    Helper class to analyze Python code and suggest signature's autocompletion.
+
+    Runs jedi in a background thread to avoid blocking the UI.
+    """
 
     def run(self):
         # noinspection PyBroadException
         try:
-            script = jedi.Interpreter(self.source, [GLOBAL_CONTEXT])
+            script = jedi.Interpreter(self.source, NAME_SPACES)
             signatures = script.get_signatures(self.line, self.column)
             if not signatures:
                 return
@@ -255,14 +236,15 @@ class SignatureWorker(Worker):
             self.error.emit(traceback.format_exc())
 
 
-class PythonAutoCompleter(QObject):
+class AutoCompleter(QObject):
     """
     Attach to a QsciScintilla editor.
     Provides dynamic, jedi-powered Python completion inside Python blocks
-    of a LaTeX template.
+    of current pTyX file.
+    Some basic completion is also provided for LaTeX and pTyX code.
 
     Usage:
-        self.completer = PythonAutoCompleter(self.editor)
+        self.completer = AutoCompleter(self.editor)
     """
 
     def __init__(self, editor: "EditorWidget", minimal_char_count=1):
@@ -290,7 +272,7 @@ class PythonAutoCompleter(QObject):
         editor.SCN_CHARADDED.connect(self._on_char_added)
         editor.SCN_AUTOCSELECTION.connect(self._on_completion_selected)
         editor.SCN_DOUBLECLICK.connect(self._on_double_click)
-        self.docstring_popup = DocstringPopup(editor)
+        self.tooltip = Tooltip(editor)
 
     def _setup_scintilla(self) -> None:
         ed = self.editor
@@ -315,15 +297,25 @@ class PythonAutoCompleter(QObject):
             self._apis = QsciAPIs(lexer)
             self._apis.prepare()
 
+    def _get_current_word_range(self) -> tuple[int, int]:
+        pos = self.editor.SendScintilla(QsciScintilla.SCI_GETCURRENTPOS)
+        start = self.editor.SendScintilla(QsciScintilla.SCI_WORDSTARTPOSITION, pos, True)
+        end = self.editor.SendScintilla(QsciScintilla.SCI_WORDENDPOSITION, pos, True)
+        return start, end
+
+    def _get_current_word(self) -> str:
+        start, end = self._get_current_word_range()
+        return self.editor.text().encode("utf8")[start:end].decode("utf8")
+
     def _on_char_added(self):
         self._debounce.start()
-        self.docstring_popup.hide()
+        self.tooltip.hide()
 
     def eventFilter(self, watched, event) -> bool:
         if isinstance(event, QMouseEvent):
             if event.type() == QEvent.Type.MouseButtonPress:
                 if event.button() == Qt.MouseButton.LeftButton:
-                    self.docstring_popup.hide()
+                    self.tooltip.hide()
                     line, col = self.editor.getCursorPosition()
                     if not self.editor.is_python_block_code(line, col):
                         self.editor.cancelList()
@@ -332,7 +324,7 @@ class PythonAutoCompleter(QObject):
     def _on_double_click(self, position: int, line: int, modifiers: int) -> None:
         # The word is already selected by Scintilla's default handler.
         # We just reuse the same logic as F1, no need to duplicate it.
-        self.trigger_f1_docstring()
+        self.trigger_help()
         print("Double-click!")
 
     def _on_completion_selected(self, selection_in_bytes: bytes, position: int) -> None:
@@ -416,10 +408,7 @@ class PythonAutoCompleter(QObject):
         # self._last_char = current_line[jedi_col - 1 : jedi_col]
         # print(f"{self._last_char=}")
 
-        pos = self.editor.positionFromLineIndex(line, col)
-        word_start = self.editor.SendScintilla(QsciScintilla.SCI_WORDSTARTPOSITION, pos, True)
-        word_end = self.editor.SendScintilla(QsciScintilla.SCI_WORDENDPOSITION, pos, True)
-        self._current_word = self.editor.text()[word_start:word_end]
+        self._current_word = self._get_current_word()
         self._current_pos = self.editor.positionFromLineIndex(line, col)
 
         # Either ask for autocompletion, or for the signature of the function/method, depending on the last char.
@@ -439,6 +428,7 @@ class PythonAutoCompleter(QObject):
     def _on_completion_ready(self, names: list[str]) -> None:
         if not self._apis or not names:
             return
+        print(names, self._current_word)
         if len(names) == 1 and names[0] == self._current_word:
             # No need to show the suggestion, since it matches the current text!
             self.editor.cancelList()
@@ -471,26 +461,50 @@ class PythonAutoCompleter(QObject):
         print(message)
         print_warning("Autocompletion or signature failed.")
 
-    def trigger_f1_docstring(self) -> None:
+    def trigger_help(self) -> None:
         line, col = self.editor.getCursorPosition()
-        python_code = self.editor.python_content.context_python_code(line, col)
-        virtual_position = self.editor.python_content.virtual_position(line, col, first_line=1)
-        if python_code is None or virtual_position is None:
-            return
-        jedi_line, jedi_col = virtual_position
-        script = jedi.Interpreter(python_code, [GLOBAL_CONTEXT])
-        results: list[Name] = script.infer(jedi_line, jedi_col)
-        definitions: list[Name] = script.goto(jedi_line, jedi_col)
-        if not definitions:
-            current_line = python_code.split("\n")[jedi_line - 1]
-            print(f"No info for [...]{current_line}[...].")
-            print(jedi_col * "-" + "^")
-            return
-
         pos = self.editor.positionFromLineIndex(line, col)
         x = self.editor.SendScintilla(QsciScintilla.SCI_POINTXFROMPOSITION, 0, pos)
         y = self.editor.SendScintilla(QsciScintilla.SCI_POINTYFROMPOSITION, 0, pos)
         global_pos = self.editor.mapToGlobal(QPoint(x, y + 20))
+        if self.editor.python_content.is_inside_python_block(pos):
+            self._trigger_python_help(line, col, global_pos)
+        else:
+            self._trigger_ptyx_help(line, col, global_pos)
 
-        docstring = _generate_docstring(results, definitions)
-        self.docstring_popup.show_at(global_pos, docstring, as_html=True)
+    def _trigger_python_help(self, line: int, col: int, global_pos: QPoint) -> None:
+        python_code = self.editor.python_content.context_python_code(line, col)
+        virtual_position = self.editor.python_content.virtual_position(line, col, first_line=1)
+        print("hello!")
+        if python_code is None or virtual_position is None:
+            return
+        jedi_line, jedi_col = virtual_position
+        script = jedi.Interpreter(python_code, NAME_SPACES)
+        results: list[Name] = script.infer(jedi_line, jedi_col)
+        definitions: list[Name] = script.goto(jedi_line, jedi_col)
+        if not definitions:
+            current_line = python_code.split("\n")[jedi_line - 1]
+            print("No info for:")
+            print(current_line)
+            start, end = self._get_current_word_range()
+            _, col1 = self.editor.lineIndexFromPosition(start)
+            _, col2 = self.editor.lineIndexFromPosition(end)
+            print(col1 * "-" + (col2 - col1) * "^")
+            return
+
+        message = generate_python_help_message(results, definitions)
+        self.tooltip.show_at(global_pos, message, as_html=True)
+
+    def _trigger_ptyx_help(self, line: int, col: int, global_pos: QPoint):
+        start, end = self._get_current_word_range()
+        content = self.editor.text().encode("utf8")
+        print("previous:", content[start - 1 : start], b"#")
+        if start == 0 or content[start - 1 : start] != b"#":
+            # This is not a pTyX command
+            return
+        tag = content[start:end].decode("utf8")
+        if tag not in PTYX_COMMANDS + PTYX_MCQ_COMMANDS:
+            return
+        message = generate_ptyx_help_message(tag)
+        print("ptyx help:", message)
+        self.tooltip.show_at(global_pos, message, as_html=True)

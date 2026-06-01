@@ -10,7 +10,7 @@ from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent, QMouseEvent, 
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMenu
 from ptyx.extensions.extended_python import parse_extended_python_code
 from ptyx.errors import PythonBlockError, ErrorInformation, PythonCodeError
-from ptyx_mcq_editor.editor.autocompletion import PythonAutoCompleter
+from ptyx_mcq_editor.editor.autocompletion import AutoCompleter
 
 from ptyx_mcq_editor.editor.indicator_handlers import Indicators
 from ptyx_mcq_editor.editor.lexer import MyLexer, Mode
@@ -192,7 +192,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.setMarkerForegroundColor(QColor(168, 2, 35), Marker.BOOKMARK)
         # self.installEventFilter(EventFilter(self))
 
-        self.completer = PythonAutoCompleter(self)
+        self.completer = AutoCompleter(self)
 
     @property
     def python_content(self) -> AllPythonContent:
@@ -241,9 +241,9 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 # Default action.
                 super().keyPressEvent(event)
         elif event.key() == Qt.Key.Key_F1:
-            self.completer.trigger_f1_docstring()
+            self.completer.trigger_help()
         elif event.key() == Qt.Key.Key_Escape:
-            self.completer.docstring_popup.hide()
+            self.completer.tooltip.hide()
         else:
             # Default action.
             super().keyPressEvent(event)
