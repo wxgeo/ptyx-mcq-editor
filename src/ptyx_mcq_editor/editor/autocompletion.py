@@ -68,7 +68,7 @@ def _generate_commands_from_ptyx_tags(ptyx_tags: TagDict) -> list[str]:
             command_parts.append("%M" if n_args == 0 else "")
             command_parts.append("#" + closing_tags[0].lstrip("@"))
         commands.append("".join(command_parts))
-    print(commands)
+    # print(commands)
     return commands
 
 

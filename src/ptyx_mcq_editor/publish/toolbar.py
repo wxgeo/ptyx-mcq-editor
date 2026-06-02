@@ -7,7 +7,7 @@ from typing import cast, TYPE_CHECKING
 import psutil
 from PyQt6.QtCore import QThread
 from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QToolBar, QSpinBox, QLabel, QPushButton, QWidget, QProgressBar
+from PyQt6.QtWidgets import QToolBar, QSpinBox, QLabel, QPushButton, QWidget, QProgressBar, QCheckBox
 from ptyx.compilation import CompilationProgress, CompilationState
 
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
@@ -27,15 +27,21 @@ class PublishToolBar(QToolBar, EnhancedWidget):
         #   Widgets
         # ===========
         self.addWidget(QLabel("Number of documents: ", self))
-        self.spinbox = QSpinBox(self)
-        self.spinbox.setAccelerated(True)
-        self.spinbox.setMinimum(1)
-        self.spinbox.setMaximum(1000)
-        self.addWidget(self.spinbox)
+        self.doc_num_spinbox = QSpinBox(self)
+        self.doc_num_spinbox.setAccelerated(True)
+        self.doc_num_spinbox.setMinimum(1)
+        self.doc_num_spinbox.setMaximum(1000)
+        self.addWidget(self.doc_num_spinbox)
+        self.addWidget(QLabel())
+        self.correction_checkbox = QCheckBox(parent=self, text="correction")
+        self.correction_checkbox.setToolTip(
+            "If checked, two version of the document will be generated (with/without correction)."
+        )
+        self.addWidget(self.correction_checkbox)
         # Use an empty QLabel() as spacer.
         self.addWidget(QLabel())
         # Is there any better solution?
-        # Using `margin-right:10px` in spinbox stylesheet seemed to work
+        # Using `margin-right:10px` in doc_num_spinbox stylesheet seemed to work
         # at first glance, but causes a bug in Spinbox (a shift between
         # -/+ arrows positions and the areas sensitive to clicks).
         # self.action_generate = QAction("Generate", self)
@@ -160,7 +166,11 @@ class PublishToolBar(QToolBar, EnhancedWidget):
         # Small animation on the top of the tab, to let user know a process is running...
         self.compilation_started()
         # Store worker as attribute, or else it will be garbage-collected.
-        self.worker = worker = CompilerWorker(doc_path=doc_path, number_of_documents=self.spinbox.value())
+        self.worker = worker = CompilerWorker(
+            doc_path=doc_path,
+            number_of_documents=self.doc_num_spinbox.value(),
+            with_correction=self.correction_checkbox.isChecked(),
+        )
         # self.worker = worker = TestWorker()
         if _use_another_thread:
             self.current_thread = thread = QThread(self)

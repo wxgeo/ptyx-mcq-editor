@@ -3,6 +3,7 @@ import multiprocessing
 import os
 import pickle
 from dataclasses import dataclass
+from functools import partial
 from multiprocessing import Process, Queue
 from multiprocessing.queues import Queue as QueueType
 from pathlib import Path
@@ -33,26 +34,38 @@ class CompilerWorkerInfo(TypedDict):
     log: str
 
 
-def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType) -> None:
+def compile_file(
+    ptyx_filename: Path, number_of_documents: int, queue: QueueType, with_correction: bool = False
+) -> None:
     """Compile code from another process, using queue to give back information to the main process."""
 
     def feedback(progress: CompilationProgress):
         queue.put(progress)
 
+    make = partial(
+        make_files,
+        ptyx_filename,
+        number_of_documents=number_of_documents,
+        options=DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS,
+        feedback_func=feedback,
+    )
+
     try:
-        compilation_info, compiler = make_files(
-            ptyx_filename,
-            number_of_documents=number_of_documents,
-            options=DEFAULT_PTYX_MCQ_COMPILATION_OPTIONS,
-            feedback_func=feedback,
-        )
+        # It's time to compile!
+        compilation_info, compiler = make()
+        # If needed, compile another version with the answers included.
+        if with_correction:
+            make(correction=True)
+
         if "mcq" in compiler.loaded_extensions:
             # Don't forget to generate the config file!
             generate_config_file(compiler)
             config_file = ptyx_filename.with_suffix(CONFIG_FILE_EXTENSION)
             assert config_file.is_file()
             print_info(f"Configuration file generated: '{config_file}'.")
+
         queue.put(compilation_info)
+
     except BaseException as e:
         # An error occurred, we will share it with the main process if we can.
         # For that, we have to test that the error is serializable, before sharing it through the pipe.
@@ -83,10 +96,11 @@ def compile_file(ptyx_filename: Path, number_of_documents: int, queue: QueueType
 
 
 class CompilerWorker(QObject):
-    def __init__(self, doc_path: Path, number_of_documents: int):
+    def __init__(self, doc_path: Path, number_of_documents: int, with_correction: bool):
         super().__init__(None)
         self.doc_path = doc_path
         self.number_of_documents = number_of_documents
+        self.with_correction = with_correction
         assert self.doc_path is not None
 
     finished = pyqtSignal(dict, name="finished")
@@ -138,6 +152,7 @@ class CompilerWorker(QObject):
                     self.doc_path,
                     self.number_of_documents,
                     queue,
+                    self.with_correction,
                 ),
             )
             # Share process with main thread, to enable user to kill it if needed.
