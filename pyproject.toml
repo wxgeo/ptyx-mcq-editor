@@ -1,6 +1,6 @@
 [project]
 name = "ptyx-mcq-editor"
-version = "1.2.0"
+version = "1.3.0"
 description = ""
 authors = [{ name = "Nicolas Pourcelot", email = "nicolas.pourcelot@gmail.com" }]
 requires-python = ">=3.10"
