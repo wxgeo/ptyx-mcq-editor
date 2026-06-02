@@ -14,6 +14,7 @@ from ptyx_mcq_editor.editor.autocompletion import AutoCompleter
 
 from ptyx_mcq_editor.editor.indicator_handlers import Indicators
 from ptyx_mcq_editor.editor.lexer import MyLexer, Mode
+from ptyx_mcq_editor.editor.position_tracking import track_cursor_1d
 from ptyx_mcq_editor.editor.python_code import AllPythonContent
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 from ptyx_mcq_editor.generated_ui import dbg_send_scintilla_messages_ui
@@ -389,10 +390,31 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
             QsciScintilla.dragEnterEvent(self, event)
 
     def autoformat(self) -> None:
+        """Autoformat text, but preserve the cursor position as much as possible.
+
+        The position of the current line on the viewport must also be kept unchanged.
+        """
         # TODO: display a message in the status bar if autoformat fails.
         #  For that, `format_each_python_block()` should return a status code.
+        # 1. Keep track of previous view
+        # Store the cursor's line and index.
+        line, col = self.getCursorPosition()
+        # Store the line's position in the viewport.
+        line_offset = line - self.SendScintilla(QsciScintilla.SCI_GETFIRSTVISIBLELINE, line)
+        # first_visible = self.SendScintilla(QsciScintilla.SCI_GETFIRSTVISIBLELINE)
+
+        # 2. Reformat the text.
         # Don't use `QScintilla.setText()`, as it would clear undo/redo history.
-        self.setText(format_each_python_block(self.text()), preserve_history=True)
+        original_text = self.text()
+        formatted_text = format_each_python_block(original_text)
+        self.setText(formatted_text, preserve_history=True)
+
+        # 2. Update the cursor position after reformating.
+        new_line, new_col = track_cursor_1d(original_text, formatted_text, line, col)
+        self.setCursorPosition(new_line, new_col)
+        # 3. Restore the position of the current line in the viewport.
+        new_first_line = max(0, min(new_line - line_offset, self.lines() - 1))
+        self.SendScintilla(QsciScintilla.SCI_SETFIRSTVISIBLELINE, new_first_line)
 
     def setText(self, text: str, preserve_history=False):
         """Change editor text content.
