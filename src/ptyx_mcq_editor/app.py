@@ -6,7 +6,6 @@ from argparse import ArgumentParser
 from functools import partial
 from pathlib import Path
 from types import TracebackType
-from typing import Type
 from traceback import format_tb
 
 import argcomplete
@@ -29,7 +28,7 @@ faulthandler.enable()  # prints a traceback to stderr on segfault
 
 
 def my_excepthook(
-    type_: Type[BaseException],
+    type_: type[BaseException],
     value: BaseException,
     traceback: TracebackType | None,
     window: QMainWindow | None = None,

@@ -1,7 +1,8 @@
 from enum import Enum
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, Final, Sequence, Callable, Iterator
+from typing import TYPE_CHECKING, Final
+from collections.abc import Sequence, Callable, Iterator
 
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QDragEnterEvent

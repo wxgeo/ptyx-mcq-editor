@@ -8,7 +8,8 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 from functools import partial
 
-from typing import ClassVar, TYPE_CHECKING, Iterator, Literal
+from typing import ClassVar, TYPE_CHECKING, Literal
+from collections.abc import Iterator
 
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import Qt
