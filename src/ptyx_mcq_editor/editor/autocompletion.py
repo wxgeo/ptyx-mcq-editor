@@ -49,27 +49,25 @@ def _generate_commands_from_ptyx_tags(ptyx_tags: TagDict) -> list[str]:
     :param ptyx_tags: a dictionary specifying each tag syntax, see `ptyx` package for an example.
     :return: a list of commands for autocompletion.
     """
-    commands: list[str] = []
+    commands: set[str] = set()
     for tag in sorted(ptyx_tags):
         command_parts = ["#", tag]
         _python_args, _other_args, closing_tags = ptyx_tags[tag]
         n_args = _python_args + _other_args
         if closing_tags is None:
             closing_tags = []
-        for closing in ("END", "@END"):
-            try:
-                closing_tags.remove(closing)
-            except ValueError:
-                pass
+        else:
+            closing_tags = [tag for _tag in closing_tags if (tag := _tag.lstrip("@")) != "END"]
+            commands.update("#" + tag for tag in closing_tags if tag not in ptyx_tags)
         if n_args >= 1:
             command_parts.append("{%M}")
             command_parts.append((n_args - 1) * "{}")
         if len(closing_tags) == 1:
             command_parts.append("%M" if n_args == 0 else "")
-            command_parts.append("#" + closing_tags[0].lstrip("@"))
-        commands.append("".join(command_parts))
+            command_parts.append("#" + closing_tags[0])
+        commands.add("".join(command_parts))
     # print(commands)
-    return commands
+    return sorted(commands)
 
 
 PTYX_COMMANDS = _generate_commands_from_ptyx_tags(SyntaxTreeGenerator.tags)
