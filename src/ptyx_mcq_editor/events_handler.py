@@ -585,7 +585,9 @@ class FileEventsHandler(QObject):
                             )
                         except SamePath:
                             docs.move_doc(
-                                docs.index(import_path), docs.current_index + 1, select=not background
+                                docs.all_docs_index(import_path),
+                                docs.current_index + 1,
+                                select=not background,
                             )
                         return True
                 except IOError:

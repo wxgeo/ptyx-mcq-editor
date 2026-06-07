@@ -1,11 +1,16 @@
 import difflib
 
 
-def track_cursor_1d(original_code: str, formatted_code: str, line_idx: int, col_idx: int) -> tuple[int, int]:
+def track_cursor_1d(
+    original_code: str, formatted_code: str, line_idx: int, col_idx: int, lenient: bool = False
+) -> tuple[int, int]:
     """Tracks cursor position without mutating the AST."""
     lines = original_code.splitlines(keepends=True)
     if not (0 <= line_idx < len(lines)):
-        raise ValueError("Line index out of bounds.")
+        if lenient:
+            line_idx = max(0, min(line_idx, len(lines) - 1))
+        else:
+            raise ValueError("Line index out of bounds.")
 
     # 1. Convert 2D (line, col) to 1D absolute index
     # Ensure column doesn't exceed the specific line's length

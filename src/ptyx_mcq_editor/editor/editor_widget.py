@@ -8,6 +8,7 @@ from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent, QMouseEvent, QAction
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMenu
+
 from ptyx.extensions.extended_python import parse_extended_python_code
 from ptyx.errors import PythonBlockError, ErrorInformation, PythonCodeError
 from ptyx_mcq_editor.editor.autocompletion import AutoCompleter
@@ -410,7 +411,10 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.setText(formatted_text, preserve_history=True)
 
         # 2. Update the cursor position after reformating.
-        new_line, new_col = track_cursor_1d(original_text, formatted_text, line, col)
+        # Set `lenient` to True, since self.getCursorPosition() might return an incorrect value, if there is no cursor,
+        # and self.lines() and len(self.text().splitlines()) do not always coincide, since the latter
+        # won't count the last blank line if any.
+        new_line, new_col = track_cursor_1d(original_text, formatted_text, line, col, lenient=True)
         self.setCursorPosition(new_line, new_col)
         # 3. Restore the position of the current line in the viewport.
         new_first_line = max(0, min(new_line - line_offset, self.lines() - 1))
