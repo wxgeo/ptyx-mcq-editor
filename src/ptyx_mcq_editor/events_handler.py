@@ -1,19 +1,21 @@
+from collections.abc import Sequence, Callable, Iterator
 from enum import Enum
 from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
-from collections.abc import Sequence, Callable, Iterator
 
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QDragEnterEvent
 from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QDialogButtonBox
+
+import ptyx_mcq_editor.param as param
+from ptyx_mcq.make.include_directives.directives import Directive
+from ptyx_mcq.make.include_directives.parser import parse_directive
 from ptyx_mcq.other_commands.template import get_template_path
 from ptyx_mcq.other_commands.update import update_exercises
-
 from ptyx_mcq_editor.editor.editor_tab import EditorTab
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 from ptyx_mcq_editor.generated_ui import ask_for_saving_ui
-import ptyx_mcq_editor.param as param
 from ptyx_mcq_editor.settings import Document, Settings, Side, DocumentHasNoPath, SamePath
 
 if TYPE_CHECKING:
@@ -566,32 +568,29 @@ class FileEventsHandler(QObject):
             if current_line is None:
                 current_line = editor.getCursorPosition()[0]
             directory = self._find_current_directory_for_includes(current_line=current_line)
-            import_directive = editor.text(current_line)
-            pos = import_directive.find(prefix := "-- ")
-            if pos == -1:
-                raise ValueError("No directive in this line.")
-            else:
-                import_path = Path(import_directive[pos + len(prefix) :].strip())
-                if not import_path.is_absolute():
-                    import_path = directory / import_path
-                try:
-                    if preview_only:
-                        self.main_window.compilation_tabs.generate_pdf(doc_path=import_path)
-                    else:
-                        docs = self.settings.docs()
-                        try:
-                            docs.add_doc(
-                                path=import_path, select=not background, position=docs.current_index + 1
-                            )
-                        except SamePath:
-                            docs.move_doc(
-                                docs.all_docs_index(import_path),
-                                docs.current_index + 1,
-                                select=not background,
-                            )
-                        return True
-                except IOError:
-                    return self.create_missing_file(import_path)
+
+            import_directive = parse_directive(editor.text(current_line).rstrip())  # remove trailing \n
+            if not isinstance(import_directive, Directive):
+                raise ValueError(f"No directive in this line: {import_directive!r}.")
+            import_path = import_directive.path
+            if not import_path.is_absolute():
+                import_path = directory / import_path
+            try:
+                if preview_only:
+                    self.main_window.compilation_tabs.generate_pdf(doc_path=import_path)
+                else:
+                    docs = self.settings.docs()
+                    try:
+                        docs.add_doc(path=import_path, select=not background, position=docs.current_index + 1)
+                    except SamePath:
+                        docs.move_doc(
+                            docs.all_docs_index(import_path),
+                            docs.current_index + 1,
+                            select=not background,
+                        )
+                    return True
+            except IOError:
+                return self.create_missing_file(import_path)
 
         return False
 
