@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QDialogButtonBox
 
 import ptyx_mcq_editor.param as param
 from ptyx_mcq.make.include_directives.directives import Directive
-from ptyx_mcq.make.include_directives.parser import parse_directive
+from ptyx_mcq.make.include_directives.parser import extract_directive
 from ptyx_mcq.other_commands.template import get_template_path
 from ptyx_mcq.other_commands.update import update_exercises
 from ptyx_mcq_editor.editor.editor_tab import EditorTab
@@ -569,7 +569,7 @@ class FileEventsHandler(QObject):
                 current_line = editor.getCursorPosition()[0]
             directory = self._find_current_directory_for_includes(current_line=current_line)
 
-            import_directive = parse_directive(editor.text(current_line).rstrip())  # remove trailing \n
+            import_directive = extract_directive(editor.text(current_line).rstrip())  # remove trailing \n
             if not isinstance(import_directive, Directive):
                 raise ValueError(f"No directive in this line: {import_directive!r}.")
             import_path = import_directive.path

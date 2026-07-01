@@ -9,18 +9,18 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent, QMouseEvent, QAction
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMenu
 
-from ptyx.extensions.extended_python import parse_extended_python_code
 from ptyx.errors import PythonBlockError, ErrorInformation, PythonCodeError
+from ptyx.extensions.extended_python import parse_extended_python_code
+from ptyx_mcq.make.include_directives.parser import parse_directive
 from ptyx_mcq_editor.editor.autocompletion import AutoCompleter
-
 from ptyx_mcq_editor.editor.indicator_handlers import Indicators
 from ptyx_mcq_editor.editor.lexer import MyLexer, Mode
 from ptyx_mcq_editor.editor.position_tracking import track_cursor_1d
 from ptyx_mcq_editor.editor.python_code import AllPythonContent
 from ptyx_mcq_editor.enhanced_widget import EnhancedWidget
 from ptyx_mcq_editor.generated_ui import dbg_send_scintilla_messages_ui
-from ptyx_mcq_editor.tools.python_code_tools import format_each_python_block, check_each_python_block
 from ptyx_mcq_editor.settings import Document
+from ptyx_mcq_editor.tools.python_code_tools import format_each_python_block, check_each_python_block
 
 if TYPE_CHECKING:
     from ptyx_mcq_editor.editor.editor_tab import EditorTab
@@ -302,7 +302,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         """Return `True` iff we are inside a python block code, yet not in a python string."""
         return self._lexer.get_style_and_mode(self.positionFromLineIndex(line, index))[1] == Mode.PYTHON
 
-    def display_error(self, error: BaseException, code: str = None) -> None:
+    def display_error(self, error: BaseException, code: str | None = None) -> None:
         """Display an error when a document failed to be compiled.
 
         An error marker will appear in the editor left margin,
@@ -555,6 +555,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 and not header_ended
                 and (m := re.fullmatch(r"(ids\s*=\s*)(.+)", line)) is not None
             ):
+                # Path to the students list.
                 path = Path(m.group(2))
                 self.student_ids_path = path
                 col = len(m.group(1))
@@ -566,16 +567,20 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                 else:
                     self.indicators.wrong_students_path.apply(i, col, i, len(line))
 
-            elif line.startswith("-- "):
-                if not line[3:].lstrip().startswith("DIR:"):
-                    self.indicators.include_directive.apply(i, 3, i, len(line))
-                    n_includes += 1
-                self._directives_lines.append(i)
-            elif line.startswith("!-- "):
-                if not line[4:].lstrip().startswith("DIR:"):
-                    self.indicators.include_directive.apply(i, 4, i, len(line))
-                    n_disabled_includes += 1
-                self._directives_lines.append(i)
+            else:
+                # Included files.
+                match parse_directive(line):
+                    case m1, m2:
+                        if not m1.group("special"):
+                            shift = m1.end()
+                            start = shift + m2.start("path")
+                            end = shift + m2.end("path")
+                            self.indicators.include_directive.apply(i, start, i, end)
+                            if m1.group("disable"):
+                                n_disabled_includes += 1
+                            else:
+                                n_includes += 1
+                        self._directives_lines.append(i)
         if n_includes > 0 or n_disabled_includes > 0:
             self.status_message = f"{n_includes} imports ({n_disabled_includes} disabled)"
         else:
