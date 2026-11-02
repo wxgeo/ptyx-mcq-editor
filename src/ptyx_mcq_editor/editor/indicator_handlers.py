@@ -4,20 +4,24 @@ This module defines static classes providing specific indicators data and method
 
 import traceback
 from abc import ABC
+from collections.abc import Iterator
 from dataclasses import dataclass, asdict
 from enum import Enum
 from functools import partial
-
 from typing import ClassVar, TYPE_CHECKING, Literal
-from collections.abc import Iterator
 
 from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QCursor
-from PyQt6.QtWidgets import QMenu
+from PyQt6.QtWidgets import QMenu, QDialog
+
+from ptyx_mcq.make.extend_latex_generator import parse_question_config, HeaderConfigKeys
+from ptyx_mcq.make.include_directives.directives import Directive
+from ptyx_mcq.make.include_directives.parser import extract_directive
+from ptyx_mcq_editor.editor.include_config_dialog import ConfigDialog
 
 if TYPE_CHECKING:
-    from ptyx_mcq_editor.editor.editor_widget import EditorWidget
+    pass
 
 # Monkey patching QScintilla:
 QsciScintilla.SCI_INDICSETSTROKEWIDTH = 2751  # type: ignore
@@ -142,9 +146,26 @@ class IncludeDirective(Indicator):
         menu.addAction("Open in background\t(Ctrl+Left-Click)").triggered.connect(  # type: ignore
             lambda _: open_file(background=True)
         )
+        menu.addAction("Configure").triggered.connect(lambda _: self.configure(line, index))  # type: ignore
         # noinspection PyArgumentList
         menu.exec(QCursor.pos())
         return True
+
+    def configure(self, line: int, index: int) -> None:
+        import_directive = extract_directive(self.editor.text(line).rstrip())
+        assert isinstance(import_directive, Directive)
+        cfg = parse_question_config(import_directive.configuration)
+        dlg = ConfigDialog(cfg.get(HeaderConfigKeys.mode, ""), cfg.get(HeaderConfigKeys.weight, 1))
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            print(dlg.strategy, dlg.weight)
+            if dlg.strategy is not None:
+                cfg[HeaderConfigKeys.mode] = dlg.strategy
+            if dlg.weight != 1.0:
+                cfg[HeaderConfigKeys.weight] = f"{dlg.weight:g}"
+            new_configuration = ",".join(f"{key}={val}" for key, val in cfg.items())
+            self.editor.replace_line(line, str(import_directive.copy(configuration=new_configuration)) + "\n")
+        else:
+            print("Cancelled")
 
 
 class CompilationError(Indicator):

@@ -573,8 +573,8 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
                     case m1, m2:
                         if not m1.group("special"):
                             shift = m1.end()
-                            start = shift + m2.start("path")
-                            end = shift + m2.end("path")
+                            start = shift + m2.start()
+                            end = shift + m2.end()
                             self.indicators.include_directive.apply(i, start, i, end)
                             if m1.group("disable"):
                                 n_disabled_includes += 1
@@ -588,7 +588,7 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         self.main_window.file_events_handler.update_status_message()
 
     def replace_line(self, line: int, new_text: str) -> None:
-        """Replace a specific range of text in the document."""
+        """Replace the content of a specific line of text in the document."""
         start_pos = self.positionFromLineIndex(line, 0)
         end_pos = self.positionFromLineIndex(line, self.lineLength(line))
         self.SendScintilla(QsciScintilla.SCI_SETSELECTION, start_pos, end_pos)
