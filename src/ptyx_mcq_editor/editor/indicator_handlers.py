@@ -21,7 +21,7 @@ from ptyx_mcq.make.include_directives.parser import extract_directive
 from ptyx_mcq_editor.editor.include_config_dialog import ConfigDialog
 
 if TYPE_CHECKING:
-    pass
+    from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 
 # Monkey patching QScintilla:
 QsciScintilla.SCI_INDICSETSTROKEWIDTH = 2751  # type: ignore
@@ -155,7 +155,9 @@ class IncludeDirective(Indicator):
         import_directive = extract_directive(self.editor.text(line).rstrip())
         assert isinstance(import_directive, Directive)
         cfg = parse_question_config(import_directive.configuration)
-        dlg = ConfigDialog(cfg.get(HeaderConfigKeys.mode, ""), cfg.get(HeaderConfigKeys.weight, 1))
+        dlg = ConfigDialog(
+            cfg.get(HeaderConfigKeys.mode, ""), cfg.get(HeaderConfigKeys.weight, 1), parent=self.editor
+        )
         if dlg.exec() == QDialog.DialogCode.Accepted:
             print(dlg.strategy, dlg.weight)
             if dlg.strategy is not None:
