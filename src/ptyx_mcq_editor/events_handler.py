@@ -584,7 +584,7 @@ class FileEventsHandler(QObject):
                         docs.add_doc(path=import_path, select=not background, position=docs.current_index + 1)
                     except SamePath:
                         docs.move_doc(
-                            docs.all_docs_index(import_path),
+                            docs.index(import_path),
                             docs.current_index + 1,
                             select=not background,
                         )
