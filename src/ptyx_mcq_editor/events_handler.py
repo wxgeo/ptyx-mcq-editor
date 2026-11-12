@@ -15,6 +15,7 @@ from ptyx_mcq.other_commands.update import update_exercises, update_config_file
 from ptyx_mcq_editor.editor.editor_tab import EditorTab
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 from ptyx_mcq_editor.generated_ui import ask_for_saving_ui
+from ptyx_mcq_editor.run_with_progress import run_with_progress
 from ptyx_mcq_editor.settings import Document, Settings, Side, DocumentHasNoPath, SamePath
 
 if TYPE_CHECKING:
@@ -418,6 +419,7 @@ class FileEventsHandler(QObject):
             self.book(side).close_tab(index)
         return True
 
+    @run_with_progress("Work in progress...", "Updating the config file, please wait.")
     def update_config(self) -> None:
         doc = self.settings.docs().current_doc
         if doc is None or not doc.path.suffix == ".ptyx":

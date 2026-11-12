@@ -176,7 +176,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.actionAdd_LaTeX_package.triggered.connect(handler.add_latex_package)
 
         # *** 'Tools' menu ***
-        self.actionUpdate_config.triggered.connect(handler.update_config)
+        self.actionUpdate_config.triggered.connect(lambda: handler.update_config())
 
         # *** 'Edit' menu ***
         self.actionFind.triggered.connect(
