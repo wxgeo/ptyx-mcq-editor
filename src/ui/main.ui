@@ -1,728 +1,779 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>1509</width>
-    <height>862</height>
-   </rect>
-  </property>
-  <property name="acceptDrops">
-   <bool>false</bool>
-  </property>
-  <property name="windowTitle">
-   <string>MCQ Editor</string>
-  </property>
-  <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <widget class="QSplitter" name="splitter">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <widget class="FilesBook" name="left_tab_widget">
-       <property name="currentIndex">
-        <number>-1</number>
-       </property>
-      </widget>
-      <widget class="FilesBook" name="right_tab_widget">
-       <property name="currentIndex">
-        <number>-1</number>
-       </property>
-      </widget>
-     </widget>
-    </item>
-   </layout>
-  </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>1509</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuFichier">
-    <property name="title">
-     <string>&amp;File</string>
-    </property>
-    <widget class="QMenu" name="menu_Recent_Files">
-     <property name="title">
-      <string>&amp;Recent Files</string>
-     </property>
-     <property name="icon">
-      <iconset theme="document-open-recent">
-       <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-     </property>
-     <addaction name="actionNone"/>
-    </widget>
-    <widget class="QMenu" name="menu_New">
-     <property name="title">
-      <string>&amp;New</string>
-     </property>
-     <property name="icon">
-      <iconset theme="document-new">
-       <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-     </property>
-     <addaction name="action_Empty_file"/>
-     <addaction name="action_Mcq_ptyx_file"/>
-    </widget>
-    <addaction name="menu_New"/>
-    <addaction name="menu_Recent_Files"/>
-    <addaction name="action_Open"/>
-    <addaction name="action_Save"/>
-    <addaction name="actionSave_as"/>
-    <addaction name="actionSave_copy"/>
-    <addaction name="actionRename_move"/>
-    <addaction name="action_Close"/>
-    <addaction name="separator"/>
-    <addaction name="actionN_ew_Session"/>
-    <addaction name="separator"/>
-    <addaction name="action_Quitter"/>
-   </widget>
-   <widget class="QMenu" name="menuCompilation">
-    <property name="title">
-     <string>&amp;Make</string>
-    </property>
-    <addaction name="action_LaTeX"/>
-    <addaction name="action_Pdf"/>
-    <addaction name="actionPublish"/>
-   </widget>
-   <widget class="QMenu" name="menu_Tools">
-    <property name="title">
-     <string>&amp;Tools</string>
-    </property>
-    <addaction name="action_Add_MCQ_Editor_to_start_menu"/>
-   </widget>
-   <widget class="QMenu" name="menu_Edit">
-    <property name="title">
-     <string>&amp;Edit</string>
-    </property>
-    <addaction name="actionFind"/>
-    <addaction name="actionReplace"/>
-   </widget>
-   <widget class="QMenu" name="menu_help">
-    <property name="title">
-     <string>&amp;Help</string>
-    </property>
-   </widget>
-   <widget class="QMenu" name="menuDebug">
-    <property name="title">
-     <string>&amp;Debug</string>
-    </property>
-    <addaction name="action_Send_Qscintilla_Command"/>
-   </widget>
-   <widget class="QMenu" name="menu_Code">
-    <property name="title">
-     <string>&amp;Code</string>
-    </property>
-    <widget class="QMenu" name="menuImports">
-     <property name="title">
-      <string>&amp;Imports</string>
-     </property>
-     <addaction name="action_Update_imports"/>
-     <addaction name="action_Add_folder"/>
-     <addaction name="action_Open_file_from_current_import_line"/>
-    </widget>
-    <addaction name="actionComment"/>
-    <addaction name="actionFormat_python_code"/>
-   </widget>
-   <widget class="QMenu" name="menuScan">
-    <property name="title">
-     <string>Scan</string>
-    </property>
-    <addaction name="action_Launch_scan"/>
-   </widget>
-   <widget class="QMenu" name="menuExercise">
-    <property name="title">
-     <string>Exercise</string>
-    </property>
-    <addaction name="actionAdd_LaTeX_package"/>
-    <addaction name="actionAdd_LaTeX_command"/>
-   </widget>
-   <addaction name="menuFichier"/>
-   <addaction name="menu_Edit"/>
-   <addaction name="menu_Code"/>
-   <addaction name="menuImports"/>
-   <addaction name="menuExercise"/>
-   <addaction name="menuCompilation"/>
-   <addaction name="menuScan"/>
-   <addaction name="menu_Tools"/>
-   <addaction name="menuDebug"/>
-   <addaction name="menu_help"/>
-  </widget>
-  <widget class="QStatusBar" name="statusbar"/>
-  <widget class="QDockWidget" name="compilation_dock">
-   <property name="enabled">
-    <bool>true</bool>
-   </property>
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>800</width>
-     <height>42</height>
-    </size>
-   </property>
-   <property name="floating">
-    <bool>false</bool>
-   </property>
-   <property name="windowTitle">
-    <string>Output</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>2</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents">
-    <layout class="QVBoxLayout" name="verticalLayout_3">
-     <item>
-      <widget class="CompilationTabs" name="compilation_tabs">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="currentIndex">
-        <number>-1</number>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-  </widget>
-  <widget class="FindAndReplaceWidget" name="search_dock">
-   <property name="windowTitle">
-    <string>Find and replace</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>2</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents_2">
-    <layout class="QVBoxLayout" name="verticalLayout_2">
-     <property name="leftMargin">
-      <number>11</number>
-     </property>
-     <property name="topMargin">
-      <number>11</number>
-     </property>
-     <property name="rightMargin">
-      <number>11</number>
-     </property>
-     <property name="bottomMargin">
-      <number>11</number>
-     </property>
-     <item>
-      <layout class="QFormLayout" name="texts_fields">
-       <item row="0" column="0">
-        <widget class="QLabel" name="findLabel">
-         <property name="text">
-          <string>Fi&amp;nd</string>
-         </property>
-         <property name="buddy">
-          <cstring>find_field</cstring>
-         </property>
+    <class>MainWindow</class>
+    <widget class="QMainWindow" name="MainWindow">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>1509</width>
+                <height>862</height>
+            </rect>
+        </property>
+        <property name="acceptDrops">
+            <bool>false</bool>
+        </property>
+        <property name="windowTitle">
+            <string>MCQ Editor</string>
+        </property>
+        <widget class="QWidget" name="centralwidget">
+            <layout class="QVBoxLayout" name="verticalLayout">
+                <item>
+                    <widget class="QSplitter" name="splitter">
+                        <property name="orientation">
+                            <enum>Qt::Horizontal</enum>
+                        </property>
+                        <widget class="FilesBook" name="left_tab_widget">
+                            <property name="currentIndex">
+                                <number>-1</number>
+                            </property>
+                        </widget>
+                        <widget class="FilesBook" name="right_tab_widget">
+                            <property name="currentIndex">
+                                <number>-1</number>
+                            </property>
+                        </widget>
+                    </widget>
+                </item>
+            </layout>
         </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QLineEdit" name="find_field"/>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="replace_label">
-         <property name="text">
-          <string>Re&amp;place with</string>
-         </property>
-         <property name="buddy">
-          <cstring>replace_field</cstring>
-         </property>
+        <widget class="QMenuBar" name="menubar">
+            <property name="geometry">
+                <rect>
+                    <x>0</x>
+                    <y>0</y>
+                    <width>1509</width>
+                    <height>23</height>
+                </rect>
+            </property>
+            <widget class="QMenu" name="menuFichier">
+                <property name="title">
+                    <string>&amp;File</string>
+                </property>
+                <widget class="QMenu" name="menu_Recent_Files">
+                    <property name="title">
+                        <string>&amp;Recent Files</string>
+                    </property>
+                    <property name="icon">
+                        <iconset theme="document-open-recent">
+                            <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                        </iconset>
+                    </property>
+                    <addaction name="actionNone"/>
+                </widget>
+                <widget class="QMenu" name="menu_New">
+                    <property name="title">
+                        <string>&amp;New</string>
+                    </property>
+                    <property name="icon">
+                        <iconset theme="document-new">
+                            <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                        </iconset>
+                    </property>
+                    <addaction name="action_Empty_file"/>
+                    <addaction name="action_Mcq_ptyx_file"/>
+                </widget>
+                <addaction name="menu_New"/>
+                <addaction name="menu_Recent_Files"/>
+                <addaction name="action_Open"/>
+                <addaction name="action_Save"/>
+                <addaction name="actionSave_as"/>
+                <addaction name="actionSave_copy"/>
+                <addaction name="actionRename_move"/>
+                <addaction name="action_Close"/>
+                <addaction name="separator"/>
+                <addaction name="actionN_ew_Session"/>
+                <addaction name="separator"/>
+                <addaction name="action_Quitter"/>
+            </widget>
+            <widget class="QMenu" name="menuCompilation">
+                <property name="title">
+                    <string>&amp;Make</string>
+                </property>
+                <addaction name="action_LaTeX"/>
+                <addaction name="action_Pdf"/>
+                <addaction name="actionPublish"/>
+            </widget>
+            <widget class="QMenu" name="menu_Tools">
+                <property name="title">
+                    <string>&amp;Tools</string>
+                </property>
+                <addaction name="actionUpdate_config"/>
+            </widget>
+            <widget class="QMenu" name="menu_Edit">
+                <property name="title">
+                    <string>&amp;Edit</string>
+                </property>
+                <addaction name="actionFind"/>
+                <addaction name="actionReplace"/>
+            </widget>
+            <widget class="QMenu" name="menu_Help">
+                <property name="title">
+                    <string>&amp;Help</string>
+                </property>
+                <widget class="QMenu" name="menu_Debug">
+                    <property name="title">
+                        <string>&amp;Debug</string>
+                    </property>
+                    <addaction name="action_Send_Qscintilla_Command"/>
+                </widget>
+                <addaction name="action_Add_MCQ_Editor_to_start_menu"/>
+                <addaction name="menu_Debug"/>
+                <addaction name="action_About"/>
+            </widget>
+            <widget class="QMenu" name="menu_Code">
+                <property name="title">
+                    <string>&amp;Code</string>
+                </property>
+                <widget class="QMenu" name="menuImports">
+                    <property name="title">
+                        <string>&amp;Imports</string>
+                    </property>
+                    <addaction name="action_Update_imports"/>
+                    <addaction name="action_Add_folder"/>
+                    <addaction name="action_Open_file_from_current_import_line"/>
+                </widget>
+                <addaction name="actionComment"/>
+                <addaction name="actionFormat_python_code"/>
+            </widget>
+            <widget class="QMenu" name="menuScan">
+                <property name="title">
+                    <string>&amp;Scan</string>
+                </property>
+                <addaction name="action_Launch_scan"/>
+            </widget>
+            <widget class="QMenu" name="menuExercise">
+                <property name="title">
+                    <string>E&amp;xercise</string>
+                </property>
+                <addaction name="actionAdd_LaTeX_package"/>
+                <addaction name="actionAdd_LaTeX_command"/>
+            </widget>
+            <addaction name="menuFichier"/>
+            <addaction name="menu_Edit"/>
+            <addaction name="menu_Code"/>
+            <addaction name="menuImports"/>
+            <addaction name="menuExercise"/>
+            <addaction name="menuCompilation"/>
+            <addaction name="menuScan"/>
+            <addaction name="menu_Tools"/>
+            <addaction name="menu_Help"/>
         </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QLineEdit" name="replace_field"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QGroupBox" name="options">
-         <property name="title">
-          <string>&amp;Options</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout">
-          <item row="3" column="0">
-           <widget class="QCheckBox" name="selectionOnlyCheckBox">
+        <widget class="QStatusBar" name="statusbar"/>
+        <widget class="QDockWidget" name="compilation_dock">
+            <property name="enabled">
+                <bool>true</bool>
+            </property>
+            <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                </sizepolicy>
+            </property>
+            <property name="minimumSize">
+                <size>
+                    <width>800</width>
+                    <height>42</height>
+                </size>
+            </property>
+            <property name="floating">
+                <bool>false</bool>
+            </property>
+            <property name="windowTitle">
+                <string>Output</string>
+            </property>
+            <attribute name="dockWidgetArea">
+                <number>2</number>
+            </attribute>
+            <widget class="QWidget" name="dockWidgetContents">
+                <layout class="QVBoxLayout" name="verticalLayout_3">
+                    <item>
+                        <widget class="CompilationTabs" name="compilation_tabs">
+                            <property name="sizePolicy">
+                                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                                    <horstretch>0</horstretch>
+                                    <verstretch>0</verstretch>
+                                </sizepolicy>
+                            </property>
+                            <property name="currentIndex">
+                                <number>-1</number>
+                            </property>
+                        </widget>
+                    </item>
+                </layout>
+            </widget>
+        </widget>
+        <widget class="FindAndReplaceWidget" name="search_dock">
+            <property name="windowTitle">
+                <string>Find and replace</string>
+            </property>
+            <attribute name="dockWidgetArea">
+                <number>2</number>
+            </attribute>
+            <widget class="QWidget" name="dockWidgetContents_2">
+                <layout class="QVBoxLayout" name="verticalLayout_2">
+                    <property name="leftMargin">
+                        <number>11</number>
+                    </property>
+                    <property name="topMargin">
+                        <number>11</number>
+                    </property>
+                    <property name="rightMargin">
+                        <number>11</number>
+                    </property>
+                    <property name="bottomMargin">
+                        <number>11</number>
+                    </property>
+                    <item>
+                        <layout class="QFormLayout" name="texts_fields">
+                            <item row="0" column="0">
+                                <widget class="QLabel" name="findLabel">
+                                    <property name="text">
+                                        <string>Fi&amp;nd</string>
+                                    </property>
+                                    <property name="buddy">
+                                        <cstring>find_field</cstring>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item row="0" column="1">
+                                <widget class="QLineEdit" name="find_field"/>
+                            </item>
+                            <item row="1" column="0">
+                                <widget class="QLabel" name="replace_label">
+                                    <property name="text">
+                                        <string>Re&amp;place with</string>
+                                    </property>
+                                    <property name="buddy">
+                                        <cstring>replace_field</cstring>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item row="1" column="1">
+                                <widget class="QLineEdit" name="replace_field"/>
+                            </item>
+                        </layout>
+                    </item>
+                    <item>
+                        <layout class="QHBoxLayout" name="horizontalLayout">
+                            <item>
+                                <widget class="QGroupBox" name="options">
+                                    <property name="title">
+                                        <string>&amp;Options</string>
+                                    </property>
+                                    <layout class="QGridLayout" name="gridLayout">
+                                        <item row="3" column="0">
+                                            <widget class="QCheckBox" name="selectionOnlyCheckBox">
+                                                <property name="toolTip">
+                                                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Search only
+                                                        inside currently selected text.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+                                                    </string>
+                                                </property>
+                                                <property name="text">
+                                                    <string>&amp;Selection only</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item row="0" column="0">
+                                            <widget class="QCheckBox" name="caseCheckBox">
+                                                <property name="text">
+                                                    <string>&amp;Case sensitive</string>
+                                                </property>
+                                                <property name="checked">
+                                                    <bool>true</bool>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item row="0" column="1">
+                                            <widget class="QCheckBox" name="wholeCheckBox">
+                                                <property name="text">
+                                                    <string>&amp;Whole words only</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item row="3" column="1">
+                                            <widget class="QCheckBox" name="regexCheckBox">
+                                                <property name="toolTip">
+                                                    <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot;
+                                                        &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+                                                        &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot;
+                                                        content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+                                                        p, li { white-space: pre-wrap; }
+                                                        &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot;
+                                                        font-family:'Sans'; font-size:10pt; font-weight:400;
+                                                        font-style:normal;&quot;&gt;
+                                                        &lt;p style=&quot; margin-top:0px; margin-bottom:0px;
+                                                        margin-left:0px; margin-right:0px; -qt-block-indent:0;
+                                                        text-indent:0px;&quot;&gt;whether the text to search should be
+                                                        interpreted as a regular expression.&lt;/p&gt;
+                                                        &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px;
+                                                        margin-bottom:0px; margin-left:0px; margin-right:0px;
+                                                        -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;/p&gt;
+                                                        &lt;p style=&quot; margin-top:0px; margin-bottom:0px;
+                                                        margin-left:0px; margin-right:0px; -qt-block-indent:0;
+                                                        text-indent:0px;&quot;&gt;You may want to take a look at the
+                                                        syntax of regular expressions:&lt;/p&gt;
+                                                        &lt;p style=&quot; margin-top:0px; margin-bottom:0px;
+                                                        margin-left:0px; margin-right:0px; -qt-block-indent:0;
+                                                        text-indent:0px;&quot;&gt;&lt;a href=&quot;http://doc.trolltech.com/qregexp.html&quot;&gt;&lt;span
+                                                        style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;http://doc.trolltech.com/qregexp.html&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+                                                    </string>
+                                                </property>
+                                                <property name="text">
+                                                    <string>R&amp;egular Expression</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item row="0" column="2">
+                                            <spacer name="horizontalSpacer_2">
+                                                <property name="orientation">
+                                                    <enum>Qt::Horizontal</enum>
+                                                </property>
+                                                <property name="sizeHint" stdset="0">
+                                                    <size>
+                                                        <width>40</width>
+                                                        <height>20</height>
+                                                    </size>
+                                                </property>
+                                            </spacer>
+                                        </item>
+                                    </layout>
+                                </widget>
+                            </item>
+                        </layout>
+                    </item>
+                    <item>
+                        <layout class="QHBoxLayout" name="buttons_field">
+                            <item>
+                                <widget class="QPushButton" name="replace_all_button">
+                                    <property name="text">
+                                        <string>Replace &amp;All</string>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QPushButton" name="replace_button">
+                                    <property name="text">
+                                        <string>&amp;Replace</string>
+                                    </property>
+                                    <property name="autoDefault">
+                                        <bool>true</bool>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <spacer name="horizontalSpacer">
+                                    <property name="orientation">
+                                        <enum>Qt::Horizontal</enum>
+                                    </property>
+                                    <property name="sizeHint" stdset="0">
+                                        <size>
+                                            <width>40</width>
+                                            <height>20</height>
+                                        </size>
+                                    </property>
+                                </spacer>
+                            </item>
+                            <item>
+                                <widget class="QPushButton" name="previous_button">
+                                    <property name="text">
+                                        <string>Pre&amp;vious</string>
+                                    </property>
+                                    <property name="shortcut">
+                                        <string>Shift+F3</string>
+                                    </property>
+                                    <property name="checkable">
+                                        <bool>false</bool>
+                                    </property>
+                                    <property name="autoDefault">
+                                        <bool>true</bool>
+                                    </property>
+                                </widget>
+                            </item>
+                            <item>
+                                <widget class="QPushButton" name="next_button">
+                                    <property name="toolTip">
+                                        <string>Find next occurence (F3)</string>
+                                    </property>
+                                    <property name="text">
+                                        <string>&amp;Next</string>
+                                    </property>
+                                    <property name="shortcut">
+                                        <string>F3</string>
+                                    </property>
+                                    <property name="autoDefault">
+                                        <bool>true</bool>
+                                    </property>
+                                    <property name="default">
+                                        <bool>false</bool>
+                                    </property>
+                                </widget>
+                            </item>
+                        </layout>
+                    </item>
+                    <item>
+                        <spacer name="verticalSpacer">
+                            <property name="orientation">
+                                <enum>Qt::Vertical</enum>
+                            </property>
+                            <property name="sizeHint" stdset="0">
+                                <size>
+                                    <width>20</width>
+                                    <height>40</height>
+                                </size>
+                            </property>
+                        </spacer>
+                    </item>
+                </layout>
+            </widget>
+        </widget>
+        <widget class="PublishToolBar" name="publish_toolbar">
+            <property name="windowTitle">
+                <string>toolBar</string>
+            </property>
+            <attribute name="toolBarArea">
+                <enum>TopToolBarArea</enum>
+            </attribute>
+            <attribute name="toolBarBreak">
+                <bool>false</bool>
+            </attribute>
+        </widget>
+        <action name="action_Open">
+            <property name="icon">
+                <iconset theme="document-open">
+                    <normaloff>../../../../../../../../.designer/backup</normaloff>
+                    ../../../../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>&amp;Open</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+O</string>
+            </property>
+        </action>
+        <action name="action_Save">
+            <property name="icon">
+                <iconset theme="document-save">
+                    <normaloff>../../../../../../../../.designer/backup</normaloff>
+                    ../../../../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>&amp;Save</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+S</string>
+            </property>
+        </action>
+        <action name="actionSave_as">
+            <property name="icon">
+                <iconset theme="document-save-as">
+                    <normaloff>../../../../../../../../.designer/backup</normaloff>
+                    ../../../../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>Save &amp;as</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Shift+S</string>
+            </property>
+        </action>
+        <action name="action_Quitter">
+            <property name="icon">
+                <iconset theme="application-exit">
+                    <normaloff>../../../../../../../../.designer/backup</normaloff>
+                    ../../../../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>&amp;Quitter</string>
+            </property>
+        </action>
+        <action name="action_LaTeX">
+            <property name="icon">
+                <iconset theme="text-x-script">
+                    <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>&amp;LaTeX code preview</string>
+            </property>
             <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Search only inside currently selected text.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string extracomment="See the generated LaTeX code.">LaTeX code preview</string>
+            </property>
+            <property name="shortcut">
+                <string>Shift+F5</string>
+            </property>
+        </action>
+        <action name="action_Pdf">
+            <property name="icon">
+                <iconset theme="x-office-document">
+                    <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                </iconset>
             </property>
             <property name="text">
-             <string>&amp;Selection only</string>
+                <string>&amp;Pdf preview</string>
             </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QCheckBox" name="caseCheckBox">
-            <property name="text">
-             <string>&amp;Case sensitive</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QCheckBox" name="wholeCheckBox">
-            <property name="text">
-             <string>&amp;Whole words only</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QCheckBox" name="regexCheckBox">
             <property name="toolTip">
-             <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;whether the text to search should be interpreted as a regular expression.&lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;You may want to take a look at the syntax of regular expressions:&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;a href=&quot;http://doc.trolltech.com/qregexp.html&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;http://doc.trolltech.com/qregexp.html&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string extracomment="Preview the Pdf document.">Pdf preview</string>
+            </property>
+            <property name="shortcut">
+                <string>F5</string>
+            </property>
+        </action>
+        <action name="action_Add_MCQ_Editor_to_start_menu">
+            <property name="text">
+                <string>Add &amp;shortcut to MCQ Editor in the applications menu</string>
+            </property>
+        </action>
+        <action name="actionFind">
+            <property name="icon">
+                <iconset theme="edit-find">
+                    <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                </iconset>
             </property>
             <property name="text">
-             <string>R&amp;egular Expression</string>
+                <string>&amp;Find</string>
             </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
+            <property name="shortcut">
+                <string>Ctrl+F</string>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
+        </action>
+        <action name="actionReplace">
+            <property name="icon">
+                <iconset theme="edit-find-replace">
+                    <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                </iconset>
             </property>
-           </spacer>
-          </item>
-         </layout>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="buttons_field">
-       <item>
-        <widget class="QPushButton" name="replace_all_button">
-         <property name="text">
-          <string>Replace &amp;All</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="replace_button">
-         <property name="text">
-          <string>&amp;Replace</string>
-         </property>
-         <property name="autoDefault">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="previous_button">
-         <property name="text">
-          <string>Pre&amp;vious</string>
-         </property>
-         <property name="shortcut">
-          <string>Shift+F3</string>
-         </property>
-         <property name="checkable">
-          <bool>false</bool>
-         </property>
-         <property name="autoDefault">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="next_button">
-         <property name="toolTip">
-          <string>Find next occurence (F3)</string>
-         </property>
-         <property name="text">
-          <string>&amp;Next</string>
-         </property>
-         <property name="shortcut">
-          <string>F3</string>
-         </property>
-         <property name="autoDefault">
-          <bool>true</bool>
-         </property>
-         <property name="default">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <spacer name="verticalSpacer">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>40</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
-   </widget>
-  </widget>
-  <widget class="PublishToolBar" name="publish_toolbar">
-   <property name="windowTitle">
-    <string>toolBar</string>
-   </property>
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-  </widget>
-  <action name="action_Open">
-   <property name="icon">
-    <iconset theme="document-open">
-     <normaloff>../../../../../../../../.designer/backup</normaloff>../../../../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Open</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+O</string>
-   </property>
-  </action>
-  <action name="action_Save">
-   <property name="icon">
-    <iconset theme="document-save">
-     <normaloff>../../../../../../../../.designer/backup</normaloff>../../../../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Save</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
-   </property>
-  </action>
-  <action name="actionSave_as">
-   <property name="icon">
-    <iconset theme="document-save-as">
-     <normaloff>../../../../../../../../.designer/backup</normaloff>../../../../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>Save &amp;as</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+S</string>
-   </property>
-  </action>
-  <action name="action_Quitter">
-   <property name="icon">
-    <iconset theme="application-exit">
-     <normaloff>../../../../../../../../.designer/backup</normaloff>../../../../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Quitter</string>
-   </property>
-  </action>
-  <action name="action_LaTeX">
-   <property name="icon">
-    <iconset theme="text-x-script">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;LaTeX code preview</string>
-   </property>
-   <property name="toolTip">
-    <string extracomment="See the generated LaTeX code.">LaTeX code preview</string>
-   </property>
-   <property name="shortcut">
-    <string>Shift+F5</string>
-   </property>
-  </action>
-  <action name="action_Pdf">
-   <property name="icon">
-    <iconset theme="x-office-document">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Pdf preview</string>
-   </property>
-   <property name="toolTip">
-    <string extracomment="Preview the Pdf document.">Pdf preview</string>
-   </property>
-   <property name="shortcut">
-    <string>F5</string>
-   </property>
-  </action>
-  <action name="action_Add_MCQ_Editor_to_start_menu">
-   <property name="text">
-    <string>&amp;Add shortcut to MCQ Editor in the applications menu</string>
-   </property>
-  </action>
-  <action name="actionFind">
-   <property name="icon">
-    <iconset theme="edit-find">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Find</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+F</string>
-   </property>
-  </action>
-  <action name="actionReplace">
-   <property name="icon">
-    <iconset theme="edit-find-replace">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Replace</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+H</string>
-   </property>
-  </action>
-  <action name="actionNone">
-   <property name="text">
-    <string>EMPTY</string>
-   </property>
-  </action>
-  <action name="action_Send_Qscintilla_Command">
-   <property name="text">
-    <string>&amp;Send Qscintilla Command</string>
-   </property>
-  </action>
-  <action name="action_Close">
-   <property name="icon">
-    <iconset theme="window-close">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Close</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+W</string>
-   </property>
-  </action>
-  <action name="action_Empty_file">
-   <property name="icon">
-    <iconset theme="text-x-generic">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Empty file</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+N</string>
-   </property>
-  </action>
-  <action name="action_Mcq_ptyx_file">
-   <property name="text">
-    <string>&amp;Mcq ptyx file</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+N</string>
-   </property>
-  </action>
-  <action name="action_Update_imports">
-   <property name="icon">
-    <iconset theme="view-refresh">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Update imports</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+I</string>
-   </property>
-  </action>
-  <action name="action_Add_folder">
-   <property name="icon">
-    <iconset theme="list-add">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Add directory</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+I</string>
-   </property>
-  </action>
-  <action name="action_Open_file_from_current_import_line">
-   <property name="icon">
-    <iconset theme="go-jump">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Open file from current import line</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+O</string>
-   </property>
-  </action>
-  <action name="actionN_ew_Session">
-   <property name="icon">
-    <iconset theme="window-new">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>N&amp;ew Session</string>
-   </property>
-  </action>
-  <action name="actionComment">
-   <property name="text">
-    <string>&amp;Comment</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+M</string>
-   </property>
-  </action>
-  <action name="actionTest">
-   <property name="text">
-    <string>Test</string>
-   </property>
-  </action>
-  <action name="actionPublish">
-   <property name="icon">
-    <iconset theme="emblem-documents">
-     <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup</iconset>
-   </property>
-   <property name="text">
-    <string>Pu&amp;blish</string>
-   </property>
-   <property name="toolTip">
-    <string extracomment="Generate the Pdf document.">Publish</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+B</string>
-   </property>
-  </action>
-  <action name="action_Launch_scan">
-   <property name="text">
-    <string>&amp;Launch scan</string>
-   </property>
-  </action>
-  <action name="actionFormat_python_code">
-   <property name="text">
-    <string>Format python code</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+F</string>
-   </property>
-  </action>
-  <action name="actionSave_copy">
-   <property name="text">
-    <string>Save cop&amp;y</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Alt+Shift+S</string>
-   </property>
-  </action>
-  <action name="actionRename_move">
-   <property name="text">
-    <string>Ren&amp;ame</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Alt+S</string>
-   </property>
-  </action>
-  <action name="actionAdd_LaTeX_package">
-   <property name="text">
-    <string>Add LaTeX package</string>
-   </property>
-   <property name="toolTip">
-    <string>Load additionnal LaTeX packages</string>
-   </property>
-  </action>
-  <action name="actionAdd_LaTeX_command">
-   <property name="text">
-    <string>Add LaTeX command</string>
-   </property>
-   <property name="toolTip">
-    <string>Custom LaTeX code to be appended to the document's header</string>
-   </property>
-  </action>
- </widget>
- <customwidgets>
-  <customwidget>
-   <class>FindAndReplaceWidget</class>
-   <extends>QDockWidget</extends>
-   <header>ptyx_mcq_editor.editor.find_and_replace</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>FilesBook</class>
-   <extends>QTabWidget</extends>
-   <header>ptyx_mcq_editor.files_book</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>CompilationTabs</class>
-   <extends>QTabWidget</extends>
-   <header>ptyx_mcq_editor.preview.tab_widget</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>PublishToolBar</class>
-   <extends>QToolBar</extends>
-   <header>ptyx_mcq_editor.publish.toolbar</header>
-  </customwidget>
- </customwidgets>
- <resources/>
- <connections>
-  <connection>
-   <sender>action_Quitter</sender>
-   <signal>triggered()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>407</x>
-     <y>253</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+            <property name="text">
+                <string>&amp;Replace</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+H</string>
+            </property>
+        </action>
+        <action name="actionNone">
+            <property name="text">
+                <string>EMPTY</string>
+            </property>
+        </action>
+        <action name="action_Close">
+            <property name="icon">
+                <iconset theme="window-close">
+                    <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>&amp;Close</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+W</string>
+            </property>
+        </action>
+        <action name="action_Empty_file">
+            <property name="icon">
+                <iconset theme="text-x-generic">
+                    <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>&amp;Empty file</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+N</string>
+            </property>
+        </action>
+        <action name="action_Mcq_ptyx_file">
+            <property name="text">
+                <string>&amp;Mcq ptyx file</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Shift+N</string>
+            </property>
+        </action>
+        <action name="action_Update_imports">
+            <property name="icon">
+                <iconset theme="view-refresh">
+                    <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>&amp;Update imports</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Shift+I</string>
+            </property>
+        </action>
+        <action name="action_Add_folder">
+            <property name="icon">
+                <iconset theme="list-add">
+                    <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>&amp;Add directory</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+I</string>
+            </property>
+        </action>
+        <action name="action_Open_file_from_current_import_line">
+            <property name="icon">
+                <iconset theme="go-jump">
+                    <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>&amp;Open file from current import line</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Shift+O</string>
+            </property>
+        </action>
+        <action name="actionN_ew_Session">
+            <property name="icon">
+                <iconset theme="window-new">
+                    <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>N&amp;ew Session</string>
+            </property>
+        </action>
+        <action name="actionComment">
+            <property name="text">
+                <string>&amp;Comment</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+M</string>
+            </property>
+        </action>
+        <action name="actionTest">
+            <property name="text">
+                <string>Test</string>
+            </property>
+        </action>
+        <action name="actionPublish">
+            <property name="icon">
+                <iconset theme="emblem-documents">
+                    <normaloff>../../../../../.designer/backup</normaloff>../../../../../.designer/backup
+                </iconset>
+            </property>
+            <property name="text">
+                <string>Pu&amp;blish</string>
+            </property>
+            <property name="toolTip">
+                <string extracomment="Generate the Pdf document.">Publish</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+B</string>
+            </property>
+        </action>
+        <action name="action_Launch_scan">
+            <property name="text">
+                <string>&amp;Launch scan</string>
+            </property>
+        </action>
+        <action name="actionFormat_python_code">
+            <property name="text">
+                <string>Format python code</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Shift+F</string>
+            </property>
+        </action>
+        <action name="actionSave_copy">
+            <property name="text">
+                <string>Save cop&amp;y</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Alt+Shift+S</string>
+            </property>
+        </action>
+        <action name="actionRename_move">
+            <property name="text">
+                <string>Ren&amp;ame</string>
+            </property>
+            <property name="shortcut">
+                <string>Ctrl+Alt+S</string>
+            </property>
+        </action>
+        <action name="actionAdd_LaTeX_package">
+            <property name="text">
+                <string>Add LaTeX package</string>
+            </property>
+            <property name="toolTip">
+                <string>Load additionnal LaTeX packages</string>
+            </property>
+        </action>
+        <action name="actionAdd_LaTeX_command">
+            <property name="text">
+                <string>Add LaTeX command</string>
+            </property>
+            <property name="toolTip">
+                <string>Custom LaTeX code to be appended to the document's header</string>
+            </property>
+        </action>
+        <action name="action_About">
+            <property name="text">
+                <string>&amp;About</string>
+            </property>
+        </action>
+        <action name="actionUpdate_config">
+            <property name="text">
+                <string>&amp;Update config</string>
+            </property>
+        </action>
+        <action name="action_Send_Qscintilla_Command">
+            <property name="text">
+                <string>&amp;Send Qscintilla Command</string>
+            </property>
+        </action>
+    </widget>
+    <customwidgets>
+        <customwidget>
+            <class>FindAndReplaceWidget</class>
+            <extends>QDockWidget</extends>
+            <header>ptyx_mcq_editor.editor.find_and_replace</header>
+            <container>1</container>
+        </customwidget>
+        <customwidget>
+            <class>FilesBook</class>
+            <extends>QTabWidget</extends>
+            <header>ptyx_mcq_editor.files_book</header>
+            <container>1</container>
+        </customwidget>
+        <customwidget>
+            <class>CompilationTabs</class>
+            <extends>QTabWidget</extends>
+            <header>ptyx_mcq_editor.preview.tab_widget</header>
+            <container>1</container>
+        </customwidget>
+        <customwidget>
+            <class>PublishToolBar</class>
+            <extends>QToolBar</extends>
+            <header>ptyx_mcq_editor.publish.toolbar</header>
+        </customwidget>
+    </customwidgets>
+    <resources/>
+    <connections>
+        <connection>
+            <sender>action_Quitter</sender>
+            <signal>triggered()</signal>
+            <receiver>MainWindow</receiver>
+            <slot>close()</slot>
+            <hints>
+                <hint type="sourcelabel">
+                    <x>-1</x>
+                    <y>-1</y>
+                </hint>
+                <hint type="destinationlabel">
+                    <x>407</x>
+                    <y>253</y>
+                </hint>
+            </hints>
+        </connection>
+    </connections>
 </ui>

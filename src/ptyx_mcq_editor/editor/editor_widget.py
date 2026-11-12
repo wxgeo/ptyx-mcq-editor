@@ -8,10 +8,10 @@ from PyQt6.Qsci import QsciScintilla
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QColor, QKeyEvent, QDragEnterEvent, QMouseEvent, QAction
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMenu
-
 from ptyx.errors import PythonBlockError, ErrorInformation, PythonCodeError
 from ptyx.extensions.extended_python import parse_extended_python_code
 from ptyx_mcq.make.include_directives.parser import parse_directive
+from ptyx_mcq.tools.io_tools import is_ptyx_mcq_file
 from ptyx_mcq_editor.editor.autocompletion import AutoCompleter
 from ptyx_mcq_editor.editor.indicator_handlers import Indicators
 from ptyx_mcq_editor.editor.lexer import MyLexer, Mode
@@ -203,6 +203,17 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
     @property
     def doc(self) -> Document:
         return self._parent_.doc
+
+    @property
+    def doc_suffix(self) -> str | None:
+        """Return the extension of the file, or None if the document was never saved to or loaded from a file."""
+        path = self.doc.path
+        return None if path is None else path.suffix
+
+    @property
+    def is_ptyx_mcq_file(self) -> bool:
+        path = self.doc.path
+        return path is not None and is_ptyx_mcq_file(path)
 
     def keyPressEvent(self, event: QKeyEvent | None) -> None:
         assert event is not None
@@ -692,13 +703,14 @@ class EditorWidget(QsciScintilla, EnhancedWidget):
         line, col = self.getCursorPosition()
         self.setSelection(line, col, line, col)
 
-    def insertAndEdit(self, text: str, line: int = 0, col: int = 0) -> None:
+    def insertAndEdit(self, text: str, line: int = 0, col: int = 0, after_cursor: str = "") -> None:
         """
         Insert text at a specific position and move the cursor to the end of the inserted text.
+        Some additional text may be take place after the cursor too.
 
         By default, the text will be inserted at the beginning of the document.
         """
-        self.insertAt(text, line, col)
+        self.insertAt(text + after_cursor, line, col)
 
         # Calculate the new position
         lines_added = text.count("\n")

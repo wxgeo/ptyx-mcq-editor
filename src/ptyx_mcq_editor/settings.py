@@ -1,11 +1,11 @@
+import tomllib
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
 from typing import Any
-from collections.abc import Iterator
 
 import platformdirs
-import tomllib
 from tomli_w import dumps
 
 CONFIG_PATH = Path(platformdirs.user_config_path("mcq-editor") / "config.toml")
@@ -75,6 +75,7 @@ class Document:
 
     @property
     def title(self) -> str:
+        """The title of the doc: the name of the corresponding file if any, else 'New document <n>'."""
         name = f"New document {self.doc_id}" if self.path is None else self.path.name
         return name if self.is_saved else "* " + name
 

@@ -4,23 +4,21 @@ from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
+import ptyx_mcq_editor.param as param
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QDragEnterEvent
 from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QDialogButtonBox
-
-import ptyx_mcq_editor.param as param
 from ptyx_mcq.make.include_directives.directives import Directive
 from ptyx_mcq.make.include_directives.parser import extract_directive
 from ptyx_mcq.other_commands.template import get_template_path
-from ptyx_mcq.other_commands.update import update_exercises
+from ptyx_mcq.other_commands.update import update_exercises, update_config_file
 from ptyx_mcq_editor.editor.editor_tab import EditorTab
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 from ptyx_mcq_editor.generated_ui import ask_for_saving_ui
 from ptyx_mcq_editor.settings import Document, Settings, Side, DocumentHasNoPath, SamePath
 
 if TYPE_CHECKING:
-    from ptyx_mcq_editor.main_window import McqEditorMainWindow
-    from ptyx_mcq_editor.files_book import FilesBook
+    pass
 
 Abort = QMessageBox.StandardButton.Abort
 Discard = QMessageBox.StandardButton.Discard
@@ -117,6 +115,7 @@ class FileEventsHandler(QObject):
 
     def __init__(self, main_window: "McqEditorMainWindow"):
         super().__init__(parent=main_window)
+
         self.main_window: Final = main_window
         self.freeze_update_ui: bool = False  # See update_ui() decorator docstring.
         # self.file_missing.connect(self.create_missing_file)
@@ -208,9 +207,9 @@ class FileEventsHandler(QObject):
                 tabs.tabBar().setTabToolTip(i, str(doc.path))  # type: ignore
 
         if len(docs := self.settings.docs()) > 0:
-            self.main_window.setWindowTitle(f"{param.WINDOW_TITLE} - {docs.current_doc.title}")
+            self.main_window.setWindowTitle(f"{param.APP_NAME} - {docs.current_doc.title}")
         else:
-            self.main_window.setWindowTitle(param.WINDOW_TITLE)
+            self.main_window.setWindowTitle(param.APP_NAME)
         self.main_window.update_main_menu()
         self.update_status_message()
         self.ui_updated.emit()
@@ -417,6 +416,14 @@ class FileEventsHandler(QObject):
             self.book(side).close_tab(index)
         return True
 
+    def update_config(self) -> None:
+        doc = self.settings.docs().current_doc
+        if doc is None or not doc.path.suffix == ".ptyx":
+            print(f"I can't update config, invalid doc: {doc}.")
+        else:
+            update_config_file(doc.path)
+            print("Config updated.")
+
     # -----------------
     #      Dialogs
     # =================
@@ -500,11 +507,11 @@ class FileEventsHandler(QObject):
 
     def add_latex_command(self) -> None:
         if (editor := self.current_editor) is not None:
-            editor.insertAndEdit(":LATEX-HEADER: ")
+            editor.insertAndEdit(":LATEX-HEADER: ", after_cursor="\n")
 
     def add_latex_package(self) -> None:
         if (editor := self.current_editor) is not None:
-            editor.insertAndEdit(":LATEX-PACKAGES: ")
+            editor.insertAndEdit(":LATEX-PACKAGES: ", after_cursor="\n")
 
     def update_ptyx_imports(self) -> None:
         if (current_doc := self.settings.docs().current_doc) is not None and self.save_doc():

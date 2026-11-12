@@ -23,7 +23,7 @@ def strategy_help(strategy: ScoringStrategy | None) -> str:
     """Return the (dedented) docstring of the method implementing `strategy`."""
     if strategy is None:
         return "Use the global scoring strategy, defined in the header of the `.ptyx` file."
-    elif strategy is ScoringStrategy.SKIP:
+    elif strategy == ScoringStrategy.SKIP:
         return (
             "Ignore the question (alternatively, you can set the weight to zero)."
             "\nThis is useful to neutralize a faulty question."

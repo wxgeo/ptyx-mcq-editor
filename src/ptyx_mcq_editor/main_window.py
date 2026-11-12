@@ -7,9 +7,10 @@ from tempfile import mkdtemp
 from typing import Final, Literal
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QCloseEvent, QIcon, QDropEvent, QDragEnterEvent
-from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel
-
+from PyQt6.QtGui import QCloseEvent, QIcon, QDropEvent, QDragEnterEvent, QAction
+from PyQt6.QtWidgets import QMainWindow, QMessageBox, QLabel, QMenu, QMenuBar
+from ptyx.utilities import nn
+from ptyx_mcq_editor.about import AboutDialog
 from ptyx_mcq_editor.editor.editor_widget import EditorWidget
 from ptyx_mcq_editor.events_handler import FileEventsHandler
 from ptyx_mcq_editor.generated_ui.main_ui import Ui_MainWindow
@@ -20,6 +21,34 @@ from ptyx_mcq_editor.tools.desktop_shortcut import install_desktop_shortcut
 
 def path_hash(path: Path | str) -> str:
     return urlsafe_b64encode(hash(str(path)).to_bytes(8, signed=True)).decode("ascii").rstrip("=")
+
+
+def _update_state(container: QMenu | QMenuBar, disable_bar: bool = True):
+    has_enabled = any(a.isEnabled() for a in container.actions() if not a.isSeparator())
+    if isinstance(container, QMenu):
+        nn(container.menuAction()).setVisible(has_enabled)
+    elif disable_bar:  # QMenuBar
+        container.setEnabled(has_enabled)
+
+
+def auto_hide(container: QMenu | QMenuBar, disable_bar: bool = True):
+    """Keep a QMenu (or every menu of a QMenuBar) in sync with its actions.
+
+    For a QMenuBar, each top-level menu is handled recursively. If
+    `disable_bar` is True, the menu bar itself is also disabled when all
+    its menus are disabled.
+    """
+    for action in container.actions():
+        if action.isSeparator():
+            continue
+
+        action.changed.connect(lambda c=container: _update_state(c, disable_bar))
+
+        sub = action.menu()
+        if sub is not None:
+            auto_hide(sub, disable_bar)
+
+    _update_state(container, disable_bar)  # initial state
 
 
 class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
@@ -43,6 +72,16 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.tmp_dir = Path(mkdtemp(prefix="mcq-editor-"))
         print("created temporary directory", self.tmp_dir)
         # self.ui_updates_enabled = True
+
+        # -------------------------------------------
+        # Set which main menu items must be activated
+        # -------------------------------------------
+        self._specific_menus: dict[str, list[QMenu]] = {
+            ".ex": [self.menuExercise],
+            ".ptyx": [self.menuImports, self.menuScan],
+        }
+        self._ptyx_mcq_actions: list[QAction] = [self.actionUpdate_config]
+        auto_hide(self.menubar)
 
         # -----------------
         # Customize display
@@ -137,7 +176,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         self.actionAdd_LaTeX_package.triggered.connect(handler.add_latex_package)
 
         # *** 'Tools' menu ***
-        self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_desktop_menu_entry)
+        self.actionUpdate_config.triggered.connect(handler.update_config)
 
         # *** 'Edit' menu ***
         self.actionFind.triggered.connect(
@@ -149,6 +188,10 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
 
         # *** 'Debug' menu ***
         self.action_Send_Qscintilla_Command.triggered.connect(self.dbg_send_scintilla_command)
+
+        # *** 'Help' menu ***
+        self.action_Add_MCQ_Editor_to_start_menu.triggered.connect(self.add_desktop_menu_entry)
+        self.action_About.triggered.connect(self.about)
 
     # noinspection PyMethodOverriding
     def closeEvent(self, event: QCloseEvent | None) -> None:
@@ -179,12 +222,13 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
         return False
 
     def update_main_menu(self) -> None:
-        if (editor := self.current_mcq_editor) is not None:
-            current_doc_title = editor.doc.title
-            hidden_menus = {".ex": [self.menuImports, self.menuScan], ".ptyx": [self.menuExercise]}
-            for extension, menus in hidden_menus.items():
-                for menu in menus:
-                    menu.menuAction().setVisible(not current_doc_title.endswith(extension))
+        editor = self.current_mcq_editor
+        for extension, menus in self._specific_menus.items():
+            keep_menu = editor is not None and editor.doc_suffix == extension
+            for menu in menus:
+                nn(menu.menuAction()).setVisible(keep_menu)
+        for action in self._ptyx_mcq_actions:
+            action.setVisible(editor is not None and editor.is_ptyx_mcq_file)
 
     # noinspection PyDefaultArgument
     def update_recent_files_menu(self) -> None:
@@ -235,3 +279,6 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
             if doc_path is None:
                 doc_path = Path(f"new-doc-{doc.doc_id}")
         return self.tmp_dir / f"{'' if doc_path is None else doc_path.stem}-{path_hash(doc_path)}.{suffix}"
+
+    def about(self) -> None:
+        AboutDialog(self).exec()
