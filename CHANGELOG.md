@@ -2,6 +2,48 @@
 
 <!-- version list -->
 
+## v1.4.0 (2026-11-12)
+
+### Bug Fixes
+
+- Fix a bug when opening twice the same exercise in the background.
+  ([`8762712`](https://github.com/wxgeo/ptyx-mcq-editor/commit/87627129a23aea58ec90add9d80e45c5ff4896c9))
+
+- Fix regression induced by PyCharm trying to be smart. :(
+  ([`d0d59d6`](https://github.com/wxgeo/ptyx-mcq-editor/commit/d0d59d6da4e6f285d05eaaa21a365eaa69362d8a))
+
+- Regression in autoformat when there was no cursor in the editor.
+  ([`a330f76`](https://github.com/wxgeo/ptyx-mcq-editor/commit/a330f768385d8ed0c9f2b0b9bbd063d5264b47d2))
+
+### Features
+
+- Add an help for each strategy in the question configuration's dialog.
+  ([`8381fe9`](https://github.com/wxgeo/ptyx-mcq-editor/commit/8381fe996ebd4fe2c7ba93f36a21af0aaf915337))
+
+- Add an interface to edit the configuration of an included exercise.
+  ([`423aae8`](https://github.com/wxgeo/ptyx-mcq-editor/commit/423aae8a0bf6730d01478bafd782c34d27819f91))
+
+- Add closing tag to autocompletion.
+  ([`a433216`](https://github.com/wxgeo/ptyx-mcq-editor/commit/a433216ddbed6f7356faf48c3504e14091420f05))
+
+- Add possibility to generate the correction from the GUI.
+  ([`69a2962`](https://github.com/wxgeo/ptyx-mcq-editor/commit/69a296271c56eeff78218ced4984c721eafac7f3))
+
+- Keep track of the position of the cursor when reformatting.
+  ([`c7e687a`](https://github.com/wxgeo/ptyx-mcq-editor/commit/c7e687acf908416654d68024138e9db5f37148cb))
+
+- New menu to update configuration, refactor menus, other small enhancements.
+  ([`b2a770c`](https://github.com/wxgeo/ptyx-mcq-editor/commit/b2a770c48a027990d521ed09a21cd22a1d48cf2d))
+
+- Use the Directive class to parse the directive lines.
+  ([`09b9014`](https://github.com/wxgeo/ptyx-mcq-editor/commit/09b90140054946c86e2218cf5f91044bfd541e4b))
+
+### Refactoring
+
+- Use ptyx-mcq new directive parser.
+  ([`3c13663`](https://github.com/wxgeo/ptyx-mcq-editor/commit/3c13663cf80735f8d25f31c69f5809450a8ce4ed))
+
+
 ## v1.3.0 (2026-06-02)
 
 ### Bug Fixes
