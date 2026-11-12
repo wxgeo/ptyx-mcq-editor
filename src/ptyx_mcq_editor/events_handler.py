@@ -18,7 +18,9 @@ from ptyx_mcq_editor.generated_ui import ask_for_saving_ui
 from ptyx_mcq_editor.settings import Document, Settings, Side, DocumentHasNoPath, SamePath
 
 if TYPE_CHECKING:
-    pass
+    from ptyx_mcq_editor.main_window import McqEditorMainWindow  # PyCharm, please keep it!!
+    from ptyx_mcq_editor.files_book import FilesBook  # This one too!!
+
 
 Abort = QMessageBox.StandardButton.Abort
 Discard = QMessageBox.StandardButton.Discard
