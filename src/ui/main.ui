@@ -99,6 +99,8 @@
                     <string>&amp;Tools</string>
                 </property>
                 <addaction name="actionUpdate_config"/>
+                <addaction name="separator"/>
+                <addaction name="actionLaunch_Mcq_corrector"/>
             </widget>
             <widget class="QMenu" name="menu_Edit">
                 <property name="title">
@@ -729,6 +731,11 @@
         <action name="action_Send_Qscintilla_Command">
             <property name="text">
                 <string>&amp;Send Qscintilla Command</string>
+            </property>
+        </action>
+        <action name="actionLaunch_Mcq_corrector">
+            <property name="text">
+                <string>Launch Mcq-&amp;Corrector</string>
             </property>
         </action>
     </widget>

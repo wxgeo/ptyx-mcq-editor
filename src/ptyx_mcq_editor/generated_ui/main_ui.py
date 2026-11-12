@@ -248,6 +248,8 @@ class Ui_MainWindow(object):
         self.actionUpdate_config.setObjectName("actionUpdate_config")
         self.action_Send_Qscintilla_Command = QtGui.QAction(parent=MainWindow)
         self.action_Send_Qscintilla_Command.setObjectName("action_Send_Qscintilla_Command")
+        self.actionLaunch_Mcq_corrector = QtGui.QAction(parent=MainWindow)
+        self.actionLaunch_Mcq_corrector.setObjectName("actionLaunch_Mcq_corrector")
         self.menu_Recent_Files.addAction(self.actionNone)
         self.menu_New.addAction(self.action_Empty_file)
         self.menu_New.addAction(self.action_Mcq_ptyx_file)
@@ -267,6 +269,8 @@ class Ui_MainWindow(object):
         self.menuCompilation.addAction(self.action_Pdf)
         self.menuCompilation.addAction(self.actionPublish)
         self.menu_Tools.addAction(self.actionUpdate_config)
+        self.menu_Tools.addSeparator()
+        self.menu_Tools.addAction(self.actionLaunch_Mcq_corrector)
         self.menu_Edit.addAction(self.actionFind)
         self.menu_Edit.addAction(self.actionReplace)
         self.menu_Debug.addAction(self.action_Send_Qscintilla_Command)
@@ -411,6 +415,7 @@ class Ui_MainWindow(object):
         self.action_About.setText(_translate("MainWindow", "&About"))
         self.actionUpdate_config.setText(_translate("MainWindow", "&Update config"))
         self.action_Send_Qscintilla_Command.setText(_translate("MainWindow", "&Send Qscintilla Command"))
+        self.actionLaunch_Mcq_corrector.setText(_translate("MainWindow", "Launch Mcq-&Corrector"))
 from ptyx_mcq_editor.editor.find_and_replace import FindAndReplaceWidget
 from ptyx_mcq_editor.files_book import FilesBook
 from ptyx_mcq_editor.preview.tab_widget import CompilationTabs
