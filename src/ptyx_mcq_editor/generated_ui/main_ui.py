@@ -40,24 +40,24 @@ class Ui_MainWindow(object):
         icon = QtGui.QIcon.fromTheme("document-new")
         self.menu_New.setIcon(icon)
         self.menu_New.setObjectName("menu_New")
-        self.menuCompilation = QtWidgets.QMenu(parent=self.menubar)
-        self.menuCompilation.setObjectName("menuCompilation")
-        self.menu_Tools = QtWidgets.QMenu(parent=self.menubar)
-        self.menu_Tools.setObjectName("menu_Tools")
         self.menu_Edit = QtWidgets.QMenu(parent=self.menubar)
         self.menu_Edit.setObjectName("menu_Edit")
+        self.menu_Code = QtWidgets.QMenu(parent=self.menubar)
+        self.menu_Code.setObjectName("menu_Code")
+        self.menuImports = QtWidgets.QMenu(parent=self.menubar)
+        self.menuImports.setObjectName("menuImports")
+        self.menuExercise = QtWidgets.QMenu(parent=self.menubar)
+        self.menuExercise.setObjectName("menuExercise")
+        self.menuCompilation = QtWidgets.QMenu(parent=self.menubar)
+        self.menuCompilation.setObjectName("menuCompilation")
+        self.menuScan = QtWidgets.QMenu(parent=self.menubar)
+        self.menuScan.setObjectName("menuScan")
+        self.menu_Tools = QtWidgets.QMenu(parent=self.menubar)
+        self.menu_Tools.setObjectName("menu_Tools")
         self.menu_Help = QtWidgets.QMenu(parent=self.menubar)
         self.menu_Help.setObjectName("menu_Help")
         self.menu_Debug = QtWidgets.QMenu(parent=self.menu_Help)
         self.menu_Debug.setObjectName("menu_Debug")
-        self.menu_Code = QtWidgets.QMenu(parent=self.menubar)
-        self.menu_Code.setObjectName("menu_Code")
-        self.menuImports = QtWidgets.QMenu(parent=self.menu_Code)
-        self.menuImports.setObjectName("menuImports")
-        self.menuScan = QtWidgets.QMenu(parent=self.menubar)
-        self.menuScan.setObjectName("menuScan")
-        self.menuExercise = QtWidgets.QMenu(parent=self.menubar)
-        self.menuExercise.setObjectName("menuExercise")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -224,8 +224,6 @@ class Ui_MainWindow(object):
         self.actionN_ew_Session.setObjectName("actionN_ew_Session")
         self.actionComment = QtGui.QAction(parent=MainWindow)
         self.actionComment.setObjectName("actionComment")
-        self.actionTest = QtGui.QAction(parent=MainWindow)
-        self.actionTest.setObjectName("actionTest")
         self.actionPublish = QtGui.QAction(parent=MainWindow)
         icon = QtGui.QIcon.fromTheme("emblem-documents")
         self.actionPublish.setIcon(icon)
@@ -265,26 +263,26 @@ class Ui_MainWindow(object):
         self.menuFichier.addAction(self.actionN_ew_Session)
         self.menuFichier.addSeparator()
         self.menuFichier.addAction(self.action_Quitter)
+        self.menu_Edit.addAction(self.actionFind)
+        self.menu_Edit.addAction(self.actionReplace)
+        self.menu_Code.addAction(self.actionComment)
+        self.menu_Code.addAction(self.actionFormat_python_code)
+        self.menuImports.addAction(self.action_Update_imports)
+        self.menuImports.addAction(self.action_Add_folder)
+        self.menuImports.addAction(self.action_Open_file_from_current_import_line)
+        self.menuExercise.addAction(self.actionAdd_LaTeX_package)
+        self.menuExercise.addAction(self.actionAdd_LaTeX_command)
         self.menuCompilation.addAction(self.action_LaTeX)
         self.menuCompilation.addAction(self.action_Pdf)
         self.menuCompilation.addAction(self.actionPublish)
+        self.menuScan.addAction(self.action_Launch_scan)
         self.menu_Tools.addAction(self.actionUpdate_config)
         self.menu_Tools.addSeparator()
         self.menu_Tools.addAction(self.actionLaunch_Mcq_corrector)
-        self.menu_Edit.addAction(self.actionFind)
-        self.menu_Edit.addAction(self.actionReplace)
         self.menu_Debug.addAction(self.action_Send_Qscintilla_Command)
         self.menu_Help.addAction(self.action_Add_MCQ_Editor_to_start_menu)
         self.menu_Help.addAction(self.menu_Debug.menuAction())
         self.menu_Help.addAction(self.action_About)
-        self.menuImports.addAction(self.action_Update_imports)
-        self.menuImports.addAction(self.action_Add_folder)
-        self.menuImports.addAction(self.action_Open_file_from_current_import_line)
-        self.menu_Code.addAction(self.actionComment)
-        self.menu_Code.addAction(self.actionFormat_python_code)
-        self.menuScan.addAction(self.action_Launch_scan)
-        self.menuExercise.addAction(self.actionAdd_LaTeX_package)
-        self.menuExercise.addAction(self.actionAdd_LaTeX_command)
         self.menubar.addAction(self.menuFichier.menuAction())
         self.menubar.addAction(self.menu_Edit.menuAction())
         self.menubar.addAction(self.menu_Code.menuAction())
@@ -310,15 +308,15 @@ class Ui_MainWindow(object):
         self.menuFichier.setTitle(_translate("MainWindow", "&File"))
         self.menu_Recent_Files.setTitle(_translate("MainWindow", "&Recent Files"))
         self.menu_New.setTitle(_translate("MainWindow", "&New"))
-        self.menuCompilation.setTitle(_translate("MainWindow", "&Make"))
-        self.menu_Tools.setTitle(_translate("MainWindow", "&Tools"))
         self.menu_Edit.setTitle(_translate("MainWindow", "&Edit"))
-        self.menu_Help.setTitle(_translate("MainWindow", "&Help"))
-        self.menu_Debug.setTitle(_translate("MainWindow", "&Debug"))
         self.menu_Code.setTitle(_translate("MainWindow", "&Code"))
         self.menuImports.setTitle(_translate("MainWindow", "&Imports"))
-        self.menuScan.setTitle(_translate("MainWindow", "&Scan"))
         self.menuExercise.setTitle(_translate("MainWindow", "E&xercise"))
+        self.menuCompilation.setTitle(_translate("MainWindow", "&Make"))
+        self.menuScan.setTitle(_translate("MainWindow", "&Scan"))
+        self.menu_Tools.setTitle(_translate("MainWindow", "&Tools"))
+        self.menu_Help.setTitle(_translate("MainWindow", "&Help"))
+        self.menu_Debug.setTitle(_translate("MainWindow", "&Debug"))
         self.compilation_dock.setWindowTitle(_translate("MainWindow", "Output"))
         self.search_dock.setWindowTitle(_translate("MainWindow", "Find and replace"))
         self.findLabel.setText(_translate("MainWindow", "Fi&nd"))
@@ -330,28 +328,10 @@ class Ui_MainWindow(object):
         self.selectionOnlyCheckBox.setText(_translate("MainWindow", "&Selection only"))
         self.caseCheckBox.setText(_translate("MainWindow", "&Case sensitive"))
         self.wholeCheckBox.setText(_translate("MainWindow", "&Whole words only"))
-        self.regexCheckBox.setToolTip(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\"\n"
-"                                                        \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
-"                                                        <html><head><meta name=\"qrichtext\"\n"
-"                                                        content=\"1\" /><style type=\"text/css\">\n"
-"                                                        p, li { white-space: pre-wrap; }\n"
-"                                                        </style></head><body style=\"\n"
-"                                                        font-family:\'Sans\'; font-size:10pt; font-weight:400;\n"
-"                                                        font-style:normal;\">\n"
-"                                                        <p style=\" margin-top:0px; margin-bottom:0px;\n"
-"                                                        margin-left:0px; margin-right:0px; -qt-block-indent:0;\n"
-"                                                        text-indent:0px;\">whether the text to search should be\n"
-"                                                        interpreted as a regular expression.</p>\n"
-"                                                        <p style=\"-qt-paragraph-type:empty; margin-top:0px;\n"
-"                                                        margin-bottom:0px; margin-left:0px; margin-right:0px;\n"
-"                                                        -qt-block-indent:0; text-indent:0px;\"></p>\n"
-"                                                        <p style=\" margin-top:0px; margin-bottom:0px;\n"
-"                                                        margin-left:0px; margin-right:0px; -qt-block-indent:0;\n"
-"                                                        text-indent:0px;\">You may want to take a look at the\n"
-"                                                        syntax of regular expressions:</p>\n"
-"                                                        <p style=\" margin-top:0px; margin-bottom:0px;\n"
-"                                                        margin-left:0px; margin-right:0px; -qt-block-indent:0;\n"
-"                                                        text-indent:0px;\"><a href=\"http://doc.trolltech.com/qregexp.html\"><span\n"
+        self.regexCheckBox.setToolTip(_translate("MainWindow", "<html><head/><body><p>Whether the\n"
+"                                                        text to search should be interpreted as a regular expression.</p><p>You\n"
+"                                                        may want to take a look at the syntax of regular expressions:</p><p><a\n"
+"                                                        href=\"http://doc.trolltech.com/qregexp.html\"><span\n"
 "                                                        style=\" text-decoration: underline; color:#0000ff;\">http://doc.trolltech.com/qregexp.html</span></a></p></body></html>\n"
 "                                                    "))
         self.regexCheckBox.setText(_translate("MainWindow", "R&egular Expression"))
@@ -359,7 +339,7 @@ class Ui_MainWindow(object):
         self.replace_button.setText(_translate("MainWindow", "&Replace"))
         self.previous_button.setText(_translate("MainWindow", "Pre&vious"))
         self.previous_button.setShortcut(_translate("MainWindow", "Shift+F3"))
-        self.next_button.setToolTip(_translate("MainWindow", "Find next occurence (F3)"))
+        self.next_button.setToolTip(_translate("MainWindow", "Find next occurrence (F3)"))
         self.next_button.setText(_translate("MainWindow", "&Next"))
         self.next_button.setShortcut(_translate("MainWindow", "F3"))
         self.publish_toolbar.setWindowTitle(_translate("MainWindow", "toolBar"))
@@ -369,7 +349,7 @@ class Ui_MainWindow(object):
         self.action_Save.setShortcut(_translate("MainWindow", "Ctrl+S"))
         self.actionSave_as.setText(_translate("MainWindow", "Save &as"))
         self.actionSave_as.setShortcut(_translate("MainWindow", "Ctrl+Shift+S"))
-        self.action_Quitter.setText(_translate("MainWindow", "&Quitter"))
+        self.action_Quitter.setText(_translate("MainWindow", "&Quit"))
         self.action_LaTeX.setText(_translate("MainWindow", "&LaTeX code preview"))
         self.action_LaTeX.setToolTip(_translate("MainWindow", "LaTeX code preview"))
         self.action_LaTeX.setShortcut(_translate("MainWindow", "Shift+F5"))
@@ -397,7 +377,6 @@ class Ui_MainWindow(object):
         self.actionN_ew_Session.setText(_translate("MainWindow", "N&ew Session"))
         self.actionComment.setText(_translate("MainWindow", "&Comment"))
         self.actionComment.setShortcut(_translate("MainWindow", "Ctrl+M"))
-        self.actionTest.setText(_translate("MainWindow", "Test"))
         self.actionPublish.setText(_translate("MainWindow", "Pu&blish"))
         self.actionPublish.setToolTip(_translate("MainWindow", "Publish"))
         self.actionPublish.setShortcut(_translate("MainWindow", "Ctrl+B"))
@@ -409,7 +388,7 @@ class Ui_MainWindow(object):
         self.actionRename_move.setText(_translate("MainWindow", "Ren&ame"))
         self.actionRename_move.setShortcut(_translate("MainWindow", "Ctrl+Alt+S"))
         self.actionAdd_LaTeX_package.setText(_translate("MainWindow", "Add LaTeX package"))
-        self.actionAdd_LaTeX_package.setToolTip(_translate("MainWindow", "Load additionnal LaTeX packages"))
+        self.actionAdd_LaTeX_package.setToolTip(_translate("MainWindow", "Load additional LaTeX packages"))
         self.actionAdd_LaTeX_command.setText(_translate("MainWindow", "Add LaTeX command"))
         self.actionAdd_LaTeX_command.setToolTip(_translate("MainWindow", "Custom LaTeX code to be appended to the document\'s header"))
         self.action_About.setText(_translate("MainWindow", "&About"))
