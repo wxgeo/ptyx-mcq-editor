@@ -177,6 +177,7 @@ class McqEditorMainWindow(QMainWindow, Ui_MainWindow):
 
         # *** 'Tools' menu ***
         self.actionUpdate_config.triggered.connect(lambda: handler.update_config())
+        self.actionLaunch_Mcq_corrector.triggered.connect(lambda: handler.launch_mcq_corrector())
 
         # *** 'Edit' menu ***
         self.actionFind.triggered.connect(

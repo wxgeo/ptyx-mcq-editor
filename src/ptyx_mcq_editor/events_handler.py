@@ -1,3 +1,5 @@
+import shutil
+import subprocess
 from collections.abc import Sequence, Callable, Iterator
 from enum import Enum
 from functools import wraps
@@ -508,6 +510,17 @@ class FileEventsHandler(QObject):
     # ----------------------------
     #      Specific actions
     # ============================
+
+    def launch_mcq_corrector(self) -> None:
+        print("Launching MCQ Corrector...")
+        exe = shutil.which("mcq-corrector")
+        if exe is None:
+            raise RuntimeError("The command `mcq-corrector` is not installed or not on PATH")
+        args = [exe]
+        if (editor := self.current_editor) is not None and (path := editor.doc.path) is not None:
+            args.append(str(path))
+        subprocess.Popen(args)
+        # QProcess.startDetached(sys.executable, ["-m", "ptyx_mcq_corrector.main"])
 
     def add_latex_command(self) -> None:
         if (editor := self.current_editor) is not None:
